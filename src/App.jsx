@@ -14,7 +14,7 @@ import { FeedScreen }        from "./screens/FeedScreen";
 import { ProfileScreen }     from "./screens/ProfileScreen";
 import { SavedScreen }       from "./screens/SavedScreen";
 import { AdminScreen }       from "./screens/AdminScreen";
-import { DeskHome, DeskFeed, DeskProfile, DeskLogin } from "./screens/desktop/DesktopLayout";
+import { DeskHome, DeskFeed, DeskProfile, DeskLogin, DeskFlowWrapper } from "./screens/desktop/DesktopLayout";
 
 const MOBILE_SCREENS = {
   tutorial:   TutorialScreen,
@@ -32,19 +32,23 @@ const MOBILE_SCREENS = {
   admin:      AdminScreen,
 };
 
-const DESKTOP_SCREENS = {
-  tutorial:   DeskLogin,
-  login:      DeskLogin,
+/* On desktop, screens without a dedicated layout use DeskFlowWrapper to keep sidebar visible */
+const DESKTOP_FULL = {
+  tutorial:   () => <DeskLogin/>,
+  login:      () => <DeskLogin/>,
+  home:       () => <DeskHome/>,
+  feed:       () => <DeskFeed/>,
+  profile:    () => <DeskProfile/>,
+};
+
+const DESKTOP_FLOW = {
   onboarding: OnboardingScreen,
-  home:       DeskHome,
-  random:     DeskHome,
-  idea:       DeskHome,
-  setupTimer: DeskHome,
-  timer:      DeskHome,
-  upload:     DeskHome,
-  feed:       DeskFeed,
-  profile:    DeskProfile,
-  saved:      DeskHome,
+  random:     RandomScreen,
+  idea:       IdeaScreen,
+  setupTimer: TimerSetupScreen,
+  timer:      TimerScreen,
+  upload:     UploadScreen,
+  saved:      SavedScreen,
   admin:      AdminScreen,
 };
 
@@ -63,23 +67,28 @@ export default function App() {
   const ctx = useMemo(() => ({ state, dispatch }), [state]);
   const isDesktop = useIsDesktop();
 
-  const MobileScreen  = MOBILE_SCREENS[state.screen]  ?? HomeScreen;
-  const DesktopScreen = DESKTOP_SCREENS[state.screen] ?? DeskHome;
+  const MobileScreen = MOBILE_SCREENS[state.screen] ?? HomeScreen;
 
   if (isDesktop) {
+    const FullScreen = DESKTOP_FULL[state.screen];
+    const FlowScreen = DESKTOP_FLOW[state.screen];
+
     return (
       <AppContext.Provider value={ctx}>
-        <div style={{ minHeight: "100vh", background: "var(--paper)", display: "flex", flexDirection: "column" }}>
+        <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "var(--paper)", overflow: "hidden" }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={state.screen}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ type: "spring", stiffness: 380, damping: 32 }}
-              style={{ display: "flex", flex: 1, minHeight: "100vh" }}
+              style={{ display: "flex", flex: 1, overflow: "hidden" }}
             >
-              <DesktopScreen/>
+              {FullScreen
+                ? <FullScreen/>
+                : <DeskFlowWrapper Screen={FlowScreen ?? HomeScreen}/>
+              }
             </motion.div>
           </AnimatePresence>
         </div>
@@ -89,7 +98,7 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <div style={{ minHeight: "100dvh", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "100dvh", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={state.screen}

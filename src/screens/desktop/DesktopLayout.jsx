@@ -124,6 +124,20 @@ function DeskTopbar({ title, sub }) {
   );
 }
 
+/* ─── Flow wrapper — puts any mobile screen inside the sidebar layout ─── */
+export function DeskFlowWrapper({ Screen, navId }) {
+  const { state } = useApp();
+  const navCurrent = navId || (["feed","profile","saved"].includes(state.screen) ? state.screen : "home");
+  return (
+    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <DeskSidebar current={navCurrent}/>
+      <main className="desk-main" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <Screen/>
+      </main>
+    </div>
+  );
+}
+
 /* ─── Desktop Home ─── */
 export function DeskHome() {
   const { state, dispatch } = useApp();
