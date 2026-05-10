@@ -14,10 +14,12 @@ export function ProfileScreen() {
   const level = getUserLevel(profile.completedChallenges);
   const [tab, setTab] = useState("Perfil");
 
-  const [editName, setEditName] = useState(profile.displayName);
-  const [editBio,  setEditBio]  = useState(profile.bio);
-  const [saving,   setSaving]   = useState(false);
-  const [saved,    setSaved]    = useState(false);
+  const [editName,    setEditName]    = useState(profile.displayName);
+  const [editBio,     setEditBio]     = useState(profile.bio ?? "");
+  const [editEmail,   setEditEmail]   = useState(profile.email ?? "");
+  const [editSocials, setEditSocials] = useState(profile.socials ?? { instagram: "", tiktok: "", pinterest: "" });
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
 
   const favTechs = TECHNIQUES.filter(t => state.favoriteTechniques.includes(t.id));
 
@@ -25,9 +27,9 @@ export function ProfileScreen() {
     setSaving(true);
     try {
       if (IS_LOGGED_IN) {
-        await updateProfile({ displayName: editName, bio: editBio });
+        await updateProfile({ displayName: editName, bio: editBio, email: editEmail, socials: editSocials });
       }
-      dispatch({ type: "UPDATE_PROFILE", data: { displayName: editName, bio: editBio } });
+      dispatch({ type: "UPDATE_PROFILE", data: { displayName: editName, bio: editBio, email: editEmail, socials: editSocials } });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
@@ -149,36 +151,40 @@ export function ProfileScreen() {
               <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 16 }}>Editar perfil</p>
 
               <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre</label>
-              <input
-                type="text"
-                value={editName}
-                onChange={e => setEditName(e.target.value)}
-                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", marginBottom: 14 }}
-              />
+              <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
+                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
 
               <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Biografía</label>
-              <textarea
-                value={editBio}
-                onChange={e => setEditBio(e.target.value)}
+              <textarea value={editBio} onChange={e => setEditBio(e.target.value)}
                 placeholder="Cuéntanos sobre ti..."
-                style={{ width: "100%", height: 90, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", marginBottom: 16 }}
-              />
+                style={{ width: "100%", height: 80, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
 
-              <button
-                onClick={handleSaveProfile}
-                disabled={saving}
-                className="stk"
-                style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginBottom: 24 }}
-              >
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Email</label>
+              <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
+                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 13, outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
+
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Redes sociales</p>
+              {[
+                { key: "instagram", label: "Instagram", placeholder: "@usuario" },
+                { key: "tiktok",    label: "TikTok",    placeholder: "@usuario" },
+                { key: "pinterest", label: "Pinterest", placeholder: "usuario" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key} style={{ marginBottom: 10 }}>
+                  <label style={{ fontWeight: 700, fontSize: 11, display: "block", marginBottom: 4, color: "rgba(20,17,15,.6)" }}>{label}</label>
+                  <input type="text" value={editSocials[key] ?? ""} onChange={e => setEditSocials(s => ({ ...s, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 10, padding: "8px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, outline: "none", background: "var(--paper-2)" }} />
+                </div>
+              ))}
+
+              <button onClick={handleSaveProfile} disabled={saving} className="stk"
+                style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginTop: 16, marginBottom: 24 }}>
                 {saved ? "✓ Guardado" : saving ? "Guardando..." : "Guardar cambios"}
               </button>
 
               <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 20 }}>
-                <button
-                  onClick={handleLogout}
-                  className="stk-sm"
-                  style={{ width: "100%", height: 48, background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}
-                >
+                <button onClick={handleLogout} className="stk-sm"
+                  style={{ width: "100%", height: 48, background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
                   Cerrar sesión
                 </button>
               </div>

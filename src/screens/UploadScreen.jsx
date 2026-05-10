@@ -190,7 +190,7 @@ export function UploadScreen() {
               disabled={compressing}
               className="stk"
               style={{
-                width: "100%", aspectRatio: "3/4",
+                width: "100%", height: 220,
                 border: "3px dashed var(--ink)",
                 background: "var(--rose)",
                 borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", overflow: "hidden", cursor: "pointer",

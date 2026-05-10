@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wordmark } from "../../components/Wordmark";
 import { ArtTile } from "../../components/ArtTile";
 import { RarityBadge } from "../../components/RarityBadge";
@@ -9,6 +9,7 @@ import {
   IArrowR, ILock, ICam, IShare, IPlus, IBolt, ICircle, IArrowL,
 } from "../../components/Icons";
 import { getUserLevel, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY, SEASONS } from "../../data/parameters";
+import { fetchArtworks, addReaction, updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN } from "../../utils/api";
 
 /* ─── Sidebar ─── */
 function DeskSidebar({ current }) {
@@ -80,7 +81,7 @@ function DeskSidebar({ current }) {
 
       {/* User card */}
       <div style={{ marginTop: "auto" }}>
-        <div style={{ display: "flex", gap: 10, padding: "10px 8px", borderRadius: 12, background: "var(--rose)", border: "2px solid var(--ink)", boxShadow: "3px 3px 0 var(--ink)", alignItems: "center" }}>
+        <div onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile" })} style={{ display: "flex", gap: 10, padding: "10px 8px", borderRadius: 12, background: "var(--rose)", border: "2px solid var(--ink)", boxShadow: "3px 3px 0 var(--ink)", alignItems: "center", cursor: "pointer" }}>
           <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <IUser s={18}/>
           </div>
@@ -200,20 +201,17 @@ export function DeskHome() {
               ))}
             </div>
 
-            {/* Recent works */}
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-                <h3 className="serif" style={{ fontSize: 28 }}>Tus últimas obras</h3>
-                <span className="mono" style={{ fontSize: 10, fontWeight: 700, textDecoration: "underline", cursor: "pointer" }} onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}>VER TODO →</span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gridTemplateRows: "180px 180px", gap: 10 }}>
-                <div style={{ gridRow: "1 / span 2", position: "relative" }}>
-                  <ArtTile kind={0} height={370}/>
-                </div>
-                {[2, 3, 4, 5].map(k => (
-                  <div key={k} style={{ position: "relative" }}><ArtTile kind={k} height={180}/></div>
-                ))}
-              </div>
+            {/* Recent works placeholder */}
+            <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 20, borderRadius: 16, textAlign: "center" }}>
+              <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Aquí aparecerán tus obras</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>// COMPLETA TU PRIMER RETO Y PUBLÍCALO</p>
+              <button
+                onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
+                className="stk-sm"
+                style={{ marginTop: 14, height: 38, padding: "0 16px", borderRadius: 10, background: "var(--acid)", border: "2px solid var(--ink)", fontWeight: 800, fontSize: 12, cursor: "pointer" }}
+              >
+                Ver el feed de la comunidad →
+              </button>
             </div>
           </div>
 
@@ -262,34 +260,6 @@ export function DeskHome() {
               </div>
             </div>
 
-            {/* Feed preview */}
-            <div style={{ borderRadius: 16, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: 16, boxShadow: "3px 3px 0 var(--ink)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-                <p style={{ fontWeight: 800, fontSize: 13 }}>En la comunidad ahora</p>
-                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "var(--coral)" }}>● 1.2K ONLINE</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[
-                  { u: "@duendeart", a: "publicó",            c: "var(--lilac)", r: "Épico" },
-                  { u: "@karu_san",  a: "completó reto épico", c: "var(--sky)",   r: "Raro" },
-                  { u: "@noir.line", a: "subió de nivel",      c: "var(--rose)" },
-                ].map((p, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", paddingBottom: i < 2 ? 10 : 0, borderBottom: i < 2 ? "1px dashed rgba(20,17,15,.18)" : "none" }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: p.c, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <IUser s={16}/>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12 }}><b>{p.u}</b> {p.a}</p>
-                      <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>HACE {2 + i * 4} MIN</p>
-                    </div>
-                    {p.r && <RarityBadge rarity={p.r}/>}
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })} className="stk-sm" style={{ width: "100%", height: 38, marginTop: 12, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 10, fontWeight: 800, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                Ver todo el feed <IArrowR s={14}/>
-              </button>
-            </div>
           </div>
         </div>
       </main>

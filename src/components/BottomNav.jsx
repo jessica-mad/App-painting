@@ -13,10 +13,7 @@ export function BottomNav({ current }) {
   const { dispatch } = useApp();
 
   const nav = (id) => {
-    const map = {
-      home: "HOME", feed: "FEED", random: "RANDOM", saved: "SAVED", profile: "PROFILE",
-    };
-    if (map[id]) dispatch({ type: "SET_SCREEN", screen: map[id] });
+    dispatch({ type: "SET_SCREEN", screen: id });
   };
 
   return (

@@ -49,6 +49,7 @@ export const initialState = {
   screen:           startScreen(),
   user:             wpUser,
   favoriteTechniques: JSON.parse(localStorage.getItem("inkrush_techniques") || "[]"),
+  savedIdeas:       JSON.parse(localStorage.getItem("inkrush_saved") || "[]"),
   selectedParams:   ["Emociones", "Animales", "Eventos"],
   /* idea = { variables: [...], params: [...] } — guarda los params usados */
   currentIdea:      null,
@@ -109,6 +110,18 @@ export function reducer(state, action) {
 
     case "UPDATE_PROFILE":
       return { ...state, profile: { ...state.profile, ...action.data } };
+
+    case "SAVE_IDEA": {
+      const newSaved = [...state.savedIdeas, action.idea];
+      localStorage.setItem("inkrush_saved", JSON.stringify(newSaved));
+      return { ...state, savedIdeas: newSaved };
+    }
+
+    case "REMOVE_IDEA": {
+      const filtered = state.savedIdeas.filter((_, i) => i !== action.index);
+      localStorage.setItem("inkrush_saved", JSON.stringify(filtered));
+      return { ...state, savedIdeas: filtered };
+    }
 
     default:
       return state;

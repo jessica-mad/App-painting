@@ -111,7 +111,12 @@ export function IdeaScreen() {
             >
               <IDice s={16}/> {rollsLeft > 0 ? "Otra idea" : "Sin intentos"}
             </button>
-            <button className="stk" style={{ background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button
+              onClick={() => dispatch({ type: "SAVE_IDEA", idea: currentIdea })}
+              className="stk"
+              style={{ background: "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              title="Guardar idea"
+            >
               <IBookmark s={20}/>
             </button>
           </div>
