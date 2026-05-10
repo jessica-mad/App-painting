@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Wordmark } from "../../components/Wordmark";
-import { ArtTile } from "../../components/ArtTile";
 import { RarityBadge } from "../../components/RarityBadge";
 import { useApp } from "../../data/store";
 import {
@@ -271,25 +270,79 @@ export function DeskHome() {
 const FEED_FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana", "Acuarela", "Tinta"];
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
+function DeskFeedCard({ post, index }) {
+  const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
+  const user = post.username ?? post.user ?? "Artista";
+  const tech = post.technique ?? "—";
+  const rarity = post.rarity ?? "Común";
+  const tags = post.variables ?? post.tags ?? [];
+
+  return (
+    <div className="stk-sm" style={{ background: "var(--paper-2)", borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px" }}>
+        <div style={{ width: 34, height: 34, borderRadius: 999, border: "2px solid var(--ink)", background: COL_CYCLE[index % COL_CYCLE.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <IUser s={16}/>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: 800, fontSize: 12 }}>{user}</p>
+          <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{tech.toUpperCase()}</p>
+        </div>
+        <RarityBadge rarity={rarity}/>
+      </div>
+      {tags.length > 0 && (
+        <div style={{ display: "flex", gap: 5, padding: "0 14px 8px", flexWrap: "wrap" }}>
+          {tags.slice(0, 3).map((t, j) => (
+            <span key={j} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>
+              {typeof t === "string" ? t : t.value}
+            </span>
+          ))}
+        </div>
+      )}
+      {images.length > 0 ? (
+        <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden" }}>
+          <img src={images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
+        </div>
+      ) : (
+        <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {post.prompt && <p className="serif" style={{ fontSize: 14, padding: "12px 16px", textAlign: "center", lineHeight: 1.3 }}>{post.prompt}</p>}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, padding: 12 }}>
+        <button
+          onClick={() => post.id && addReaction(post.id, "like").catch(() => {})}
+          style={{ flex: 1, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 800, fontSize: 11, cursor: "pointer" }}
+        >
+          <IHeart s={13}/> {post.likes ?? 0}
+        </button>
+        <button
+          onClick={() => post.id && addReaction(post.id, "inspire").catch(() => {})}
+          style={{ flex: 1, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 800, fontSize: 11, cursor: "pointer" }}
+        >
+          <IInspire s={13}/> {post.inspires ?? 0}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function DeskFeed() {
   const { dispatch } = useApp();
   const [filter, setFilter] = useState("Para ti");
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const posts = [
-    { u: "@malva.ink",  t: "Acuarela",    r: "Legendario", k: 0, prompt: "melancolía + cuervo + carnaval", likes: 312, ins: 89 },
-    { u: "@duendeart",  t: "Tinta",        r: "Épico",      k: 4, prompt: "nostalgia + zorro + biblioteca",  likes: 142, ins: 36 },
-    { u: "@karu_san",   t: "Lápiz",        r: "Raro",       k: 2, prompt: "calma + ciervo + bosque mágico",  likes: 98,  ins: 22 },
-    { u: "@noir.line",  t: "Pastel",       r: "Épico",      k: 3, prompt: "asombro + ballena + tormenta",    likes: 211, ins: 54 },
-    { u: "@papel_roto", t: "Tinta china",  r: "Legendario", k: 1, prompt: "soledad + lobo + ciudad muerta",  likes: 489, ins: 127 },
-    { u: "@tinta.azul", t: "Acuarela",     r: "Raro",       k: 5, prompt: "alegría + colibrí + jardín",      likes: 76,  ins: 18 },
-  ];
+  useEffect(() => {
+    fetchArtworks()
+      .then(data => { if (data?.artworks) setPosts(data.artworks); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
       <DeskSidebar current="feed"/>
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <DeskTopbar sub="LO MEJOR DE LA COMUNIDAD HOY" title="Feed"/>
-        {/* Filters bar */}
         <div style={{ padding: "12px 28px", borderBottom: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           {FEED_FILTERS.map(f => {
             const active = f === filter;
@@ -303,42 +356,22 @@ export function DeskFeed() {
               }}>{f}</button>
             );
           })}
-          <button className="stk-sm" style={{ marginLeft: "auto", height: 36, padding: "0 12px", borderRadius: 10, background: "var(--paper-2)", border: "2px solid var(--ink)", fontWeight: 800, fontSize: 11, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-            <ISpark s={14}/> Más relevantes
-          </button>
         </div>
 
         <div className="scroll" style={{ flex: 1, padding: 22, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, alignContent: "start" }}>
-          {posts.map((p, i) => (
-            <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", borderRadius: 16, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px" }}>
-                <div style={{ width: 34, height: 34, borderRadius: 999, border: "2px solid var(--ink)", background: COL_CYCLE[i % COL_CYCLE.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <IUser s={16}/>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 800, fontSize: 12 }}>{p.u}</p>
-                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{p.t.toUpperCase()}</p>
-                </div>
-                <RarityBadge rarity={p.r}/>
-              </div>
-              <div style={{ position: "relative" }}>
-                <ArtTile kind={p.k} height={200}/>
-                <div style={{ position: "absolute", left: 10, right: 10, bottom: 10, background: "rgba(20,17,15,.85)", color: "#fff", borderRadius: 8, padding: "6px 10px", border: "1.5px solid var(--ink)" }}>
-                  <p className="serif" style={{ fontSize: 13, lineHeight: 1.2 }}>{p.prompt}</p>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8, padding: 12 }}>
-                <button style={{ flex: 1, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 800, fontSize: 11, cursor: "pointer" }}>
-                  <IHeart s={13}/> {p.likes}
-                </button>
-                <button style={{ flex: 1, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 800, fontSize: 11, cursor: "pointer" }}>
-                  <IInspire s={13}/> {p.ins}
-                </button>
-                <button style={{ width: 32, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <IBookmark s={14}/>
-                </button>
-              </div>
+          {loading && (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 0" }}>
+              <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// CARGANDO FEED...</p>
             </div>
+          )}
+          {!loading && posts.length === 0 && (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 24px" }}>
+              <p className="serif" style={{ fontSize: 32, lineHeight: 1 }}>Sin obras aún</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 10 }}>Completa tu primer reto y sube tu obra a la comunidad.</p>
+            </div>
+          )}
+          {posts.map((post, i) => (
+            <DeskFeedCard key={post.id ?? i} post={post} index={i}/>
           ))}
         </div>
       </main>
@@ -347,13 +380,41 @@ export function DeskFeed() {
 }
 
 /* ─── Desktop Profile ─── */
-const PROFILE_TABS = ["Obras", "Logros", "Estadísticas"];
+const PROFILE_TABS = ["Obras", "Editar", "Logros", "Estadísticas"];
 
 export function DeskProfile() {
   const { state, dispatch } = useApp();
   const { profile } = state;
   const level = getUserLevel(profile.completedChallenges);
   const [tab, setTab] = useState("Obras");
+
+  const [editName,    setEditName]    = useState(profile.displayName);
+  const [editBio,     setEditBio]     = useState(profile.bio ?? "");
+  const [editEmail,   setEditEmail]   = useState(profile.email ?? "");
+  const [editSocials, setEditSocials] = useState(profile.socials ?? { instagram: "", tiktok: "", pinterest: "" });
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      if (IS_LOGGED_IN) {
+        await updateProfile({ displayName: editName, bio: editBio, email: editEmail, socials: editSocials });
+      }
+      dispatch({ type: "UPDATE_PROFILE", data: { displayName: editName, bio: editBio, email: editEmail, socials: editSocials } });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
+  };
+
+  const handleLogout = () => {
+    if (IS_LOGGED_IN) {
+      window.location.href = WP_LOGOUT_URL;
+    } else {
+      dispatch({ type: "LOGOUT" });
+    }
+  };
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -414,12 +475,16 @@ export function DeskProfile() {
             <>
               <div>
                 <h3 className="serif" style={{ fontSize: 24, marginBottom: 12 }}>Obras recientes · {profile.completedChallenges}</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-                  {[0, 1, 2, 3, 4, 5, 6, 7].map(k => (
-                    <div key={k} style={{ position: "relative" }}>
-                      <ArtTile kind={k % 6} height={150}/>
-                    </div>
-                  ))}
+                <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 20, borderRadius: 16, textAlign: "center" }}>
+                  <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Aquí aparecerán tus obras</p>
+                  <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>// COMPLETA TU PRIMER RETO Y PUBLÍCALO</p>
+                  <button
+                    onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
+                    className="stk-sm"
+                    style={{ marginTop: 14, height: 38, padding: "0 16px", borderRadius: 10, background: "var(--acid)", border: "2px solid var(--ink)", fontWeight: 800, fontSize: 12, cursor: "pointer" }}
+                  >
+                    Ver el feed de la comunidad →
+                  </button>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -444,6 +509,51 @@ export function DeskProfile() {
                 </div>
               </div>
             </>
+          )}
+
+          {tab === "Editar" && (
+            <div style={{ gridColumn: "1 / -1", maxWidth: 560 }}>
+              <p style={{ fontWeight: 800, fontSize: 14, marginBottom: 20 }}>Editar perfil</p>
+
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre</label>
+              <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
+                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
+
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Biografía</label>
+              <textarea value={editBio} onChange={e => setEditBio(e.target.value)}
+                placeholder="Cuéntanos sobre ti..."
+                style={{ width: "100%", height: 80, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
+
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Email</label>
+              <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
+                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 13, outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
+
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Redes sociales</p>
+              {[
+                { key: "instagram", label: "Instagram", placeholder: "@usuario" },
+                { key: "tiktok",    label: "TikTok",    placeholder: "@usuario" },
+                { key: "pinterest", label: "Pinterest", placeholder: "usuario" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key} style={{ marginBottom: 10 }}>
+                  <label style={{ fontWeight: 700, fontSize: 11, display: "block", marginBottom: 4, color: "rgba(20,17,15,.6)" }}>{label}</label>
+                  <input type="text" value={editSocials[key] ?? ""} onChange={e => setEditSocials(s => ({ ...s, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 10, padding: "8px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, outline: "none", background: "var(--paper-2)" }} />
+                </div>
+              ))}
+
+              <button onClick={handleSaveProfile} disabled={saving} className="stk"
+                style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginTop: 16, marginBottom: 24 }}>
+                {saved ? "✓ Guardado" : saving ? "Guardando..." : "Guardar cambios"}
+              </button>
+
+              <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 20 }}>
+                <button onClick={handleLogout} className="stk-sm"
+                  style={{ width: "100%", height: 48, background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+                  Cerrar sesión
+                </button>
+              </div>
+            </div>
           )}
 
           {tab === "Logros" && (
