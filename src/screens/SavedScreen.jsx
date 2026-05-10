@@ -1,9 +1,9 @@
-import { motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
 import { RARITY } from "../data/parameters";
+import { IBookmark, ITimer, ITrash } from "../components/Icons";
 
 const SAVED_IDEAS = [
   { id: "s1", variables: ["melancolía", "cuervo", "carnaval"], rarity: RARITY.EPICO, params: ["Emociones", "Animales", "Eventos"] },
@@ -16,50 +16,73 @@ export function SavedScreen() {
 
   return (
     <Phone>
-      <div className="flex flex-col h-full">
-        <div className="px-5 pt-4 pb-3 shrink-0">
-          <h2 className="text-2xl font-black">Ideas guardadas 🔖</h2>
-          <p className="text-xs font-semibold text-neutral-500 mt-1">{SAVED_IDEAS.length} ideas para cuando estés listo</p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div style={{ padding: "8px 22px 10px", borderBottom: "2px solid var(--ink)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 className="serif" style={{ fontSize: 30, lineHeight: 1 }}>Guardados</h2>
+            <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <IBookmark s={12} stroke="var(--acid)"/> {SAVED_IDEAS.length}
+            </span>
+          </div>
+          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>
+            // IDEAS PARA CUANDO ESTÉS LISTO
+          </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5 pb-20 space-y-3">
-          {SAVED_IDEAS.map((idea, i) => (
-            <motion.div
-              key={idea.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
-              className="rounded-2xl border-2 border-black bg-white p-4 sticker-shadow"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex flex-wrap gap-1">
-                  {idea.variables.map(v => (
-                    <span key={v} className="text-xs font-black bg-[#DFFF23] border border-black px-2 py-0.5 rounded-full capitalize">
-                      {v}
-                    </span>
-                  ))}
+        <div className="scroll" style={{ flex: 1, padding: "14px 22px 90px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {SAVED_IDEAS.map((idea) => (
+            <div key={idea.id} className="stk" style={{ background: "var(--paper-2)", padding: 0, borderRadius: 18, overflow: "hidden" }}>
+              {/* Rarity bar */}
+              <div style={{
+                height: 4,
+                background: idea.rarity === RARITY.LEGENDARIO ? "var(--acid)" : idea.rarity === RARITY.EPICO ? "var(--lilac)" : idea.rarity === RARITY.RARO ? "var(--sky)" : "rgba(20,17,15,.12)"
+              }}/>
+              <div style={{ padding: "14px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1, marginRight: 8 }}>
+                    {idea.variables.map(v => (
+                      <span key={v} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 800 }}>
+                        {v}
+                      </span>
+                    ))}
+                  </div>
+                  <RarityBadge rarity={idea.rarity}/>
                 </div>
-                <RarityBadge rarity={idea.rarity} size="sm" />
+
+                <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.65)", lineHeight: 1.4, marginBottom: 12 }}>
+                  Ilustra <b>{idea.variables[0]}</b> encontrando <b>{idea.variables[1]}</b> en <b>{idea.variables[2]}</b>.
+                </p>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => dispatch({ type: "SET_SCREEN", screen: "setupTimer" })}
+                    className="stk"
+                    style={{ flex: 1, height: 42, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 12, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+                  >
+                    <ITimer s={14}/> Aceptar reto
+                  </button>
+                  <button
+                    style={{ width: 42, height: 42, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  >
+                    <ITrash s={16}/>
+                  </button>
+                </div>
               </div>
-              <p className="text-sm font-black text-neutral-600 mb-3">
-                Ilustra {idea.variables[0]} encontrando {idea.variables[1]} en {idea.variables[2]}.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => dispatch({ type: "SET_SCREEN", screen: "setupTimer" })}
-                  className="flex-1 h-10 rounded-xl border-2 border-black bg-[#DFFF23] font-black text-xs sticker-shadow"
-                >
-                  🎯 Aceptar reto
-                </button>
-                <button className="w-10 h-10 rounded-xl border-2 border-black bg-white flex items-center justify-center sticker-shadow">
-                  🗑️
-                </button>
-              </div>
-            </motion.div>
+            </div>
           ))}
+
+          {SAVED_IDEAS.length === 0 && (
+            <div style={{ textAlign: "center", padding: "48px 0" }}>
+              <p className="serif" style={{ fontSize: 24 }}>Sin ideas guardadas</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
+                // GUARDA IDEAS DESDE EL RANDÓMETRO
+              </p>
+            </div>
+          )}
         </div>
 
-        <BottomNav current="saved" />
+        <BottomNav current="saved"/>
       </div>
     </Phone>
   );

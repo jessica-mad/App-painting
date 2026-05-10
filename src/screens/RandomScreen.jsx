@@ -1,63 +1,28 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, pickVariables } from "../data/parameters";
+import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
 
-/* Columna del slot machine */
-function SlotColumn({ label, icon, value, rolling, color }) {
-  return (
-    <div className="flex-1 flex flex-col gap-1">
-      <div
-        className="h-20 rounded-2xl border-2 border-black overflow-hidden relative flex flex-col items-center justify-center"
-        style={{ backgroundColor: color + "40" }}
-      >
-        <AnimatePresence mode="wait">
-          {rolling ? (
-            <motion.div key="rolling"
-              animate={{ y: [0, -30, 30, -15, 0] }}
-              transition={{ duration: 0.4, repeat: Infinity, ease: "easeInOut" }}
-              className="text-2xl"
-            >🎲</motion.div>
-          ) : value ? (
-            <motion.div key={value.value}
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -30, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 450, damping: 28 }}
-              className="px-2 text-center"
-            >
-              <p className="text-[11px] font-black leading-tight capitalize">{value.value}</p>
-            </motion.div>
-          ) : (
-            <motion.p key="empty" className="text-2xl text-black/20">?</motion.p>
-          )}
-        </AnimatePresence>
-      </div>
-      <p className="text-[10px] font-black text-center text-black/50 truncate">
-        {icon} {label}
-      </p>
-    </div>
-  );
-}
+const CAT_ICONS = { emo: IHeart, ani: IFlame, lug: IDiamond, obj: IBolt, evt: IStar, col: IBrush };
+const CAT_COLORS = {
+  emo: "var(--rose)", ani: "var(--butter)", lug: "var(--sky)",
+  obj: "var(--mint)", evt: "var(--lilac)", col: "var(--acid)",
+};
 
 export function RandomScreen() {
   const { state, dispatch } = useApp();
   const { selectedParams, rollsLeft, activeSeason } = state;
   const [rolling, setRolling] = useState(false);
   const [slots, setSlots] = useState([null, null, null]);
-  const [shaking, setShaking] = useState(false);
 
-  /* Toggle con FIFO: si ya hay 3 y tocas uno nuevo, reemplaza el primero */
   const toggle = (paramId) => {
     if (selectedParams.includes(paramId)) {
-      // Deseleccionar (mínimo 1)
-      if (selectedParams.length > 1) {
+      if (selectedParams.length > 1)
         dispatch({ type: "SET_PARAMS", params: selectedParams.filter(p => p !== paramId) });
-      }
     } else {
-      // Añadir: si ya hay 3, quitar el primero (FIFO)
       const next = selectedParams.length >= 3
         ? [...selectedParams.slice(1), paramId]
         : [...selectedParams, paramId];
@@ -68,11 +33,10 @@ export function RandomScreen() {
   const doRoll = () => {
     if (rolling || rollsLeft <= 0 || selectedParams.length === 0) return;
     setRolling(true);
-    setShaking(true);
+    setSlots([null, null, null]);
 
     const results = pickVariables(selectedParams, activeSeason);
 
-    // Revelar progresivamente
     [300, 500, 700].slice(0, selectedParams.length).forEach((t, i) => {
       setTimeout(() => {
         setSlots(prev => { const n = [...prev]; n[i] = results[i]; return n; });
@@ -81,8 +45,6 @@ export function RandomScreen() {
 
     setTimeout(() => {
       setRolling(false);
-      setShaking(false);
-      // Guardar idea CON los params usados (evita desfase en IdeaScreen)
       dispatch({ type: "SET_IDEA", idea: results, params: [...selectedParams] });
       dispatch({ type: "SET_SCREEN", screen: "idea" });
     }, 950);
@@ -90,123 +52,153 @@ export function RandomScreen() {
 
   return (
     <Phone>
-      <div className="flex flex-col h-full">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header */}
-        <div className="px-5 pt-4 pb-3 shrink-0">
-          <h2 className="text-2xl font-black leading-tight">
-            🎰 El <span className="bg-black text-[#DFFF23] px-2 rounded-xl">Randometro</span>
-          </h2>
-          <p className="text-xs font-semibold text-neutral-500 mt-1">
-            Toca para activar · Toca otro para intercambiar
+        <div style={{ padding: "8px 22px 6px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <IDice s={24}/>
+            <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>
+              El{" "}
+              <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "0 8px", borderRadius: 8, fontFamily: "Space Grotesk", fontStyle: "normal", fontWeight: 700, fontSize: 22, letterSpacing: "-0.04em" }}>
+                Randometro
+              </span>
+            </h2>
+          </div>
+          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 6 }}>
+            // TOCA PARA ACTIVAR · TOCA OTRO PARA INTERCAMBIAR
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5 pb-20 space-y-4">
-          {/* Chips de parámetros */}
-          <div className="flex flex-wrap gap-2">
-            {PARAM_CATEGORIES.map((cat, idx) => {
-              const isSelected = selectedParams.includes(cat.id);
-              const slot = selectedParams.indexOf(cat.id); // posición (0,1,2)
+        <div className="scroll" style={{ flex: 1, padding: "10px 22px 90px" }}>
+          {/* Category chips */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            {PARAM_CATEGORIES.map((cat) => {
+              const active = selectedParams.includes(cat.id);
+              const slot = selectedParams.indexOf(cat.id);
+              const CatIcon = CAT_ICONS[cat.id] || IDice;
+              const col = CAT_COLORS[cat.id] || "var(--paper-2)";
               return (
-                <motion.button
+                <button
                   key={cat.id}
-                  whileTap={{ scale: 0.90 }}
                   onClick={() => toggle(cat.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full border-2 border-black font-black text-xs transition-all ${isSelected ? "sticker-shadow" : ""}`}
-                  style={{ backgroundColor: isSelected ? cat.color : "white" }}
+                  className={active ? "stk-sm" : ""}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    background: active ? col : "var(--paper-2)",
+                    border: "2px solid var(--ink)",
+                    borderRadius: 999, padding: "6px 12px",
+                    fontSize: 12, fontWeight: 700, cursor: "pointer",
+                    boxShadow: active ? "3px 3px 0 var(--ink)" : "none",
+                  }}
                 >
-                  {cat.icon} {cat.label}
-                  {isSelected && (
-                    <span className="w-4 h-4 rounded-full bg-black text-white text-[9px] flex items-center justify-center">
+                  <CatIcon s={14}/>
+                  {cat.label}
+                  {active && (
+                    <span style={{ width: 16, height: 16, borderRadius: 999, background: "var(--ink)", color: "var(--acid)", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {slot + 1}
                     </span>
                   )}
-                </motion.button>
+                </button>
               );
             })}
           </div>
 
-          {/* Hint de slots */}
-          <p className="text-[10px] font-black text-neutral-400">
-            {selectedParams.length < 3
-              ? `Puedes añadir ${3 - selectedParams.length} más`
-              : "Toca uno nuevo para intercambiar el primero seleccionado"}
-          </p>
-
-          {/* Máquina */}
-          <motion.div
-            animate={shaking ? { x: [-4,4,-4,4,-2,2,0], y: [0,-2,2,-2,2,0] } : {}}
-            transition={{ duration: 0.4 }}
-            className="rounded-3xl border-4 border-black bg-gradient-to-br from-pink-200 via-[#DFFF23] to-cyan-200 p-4 sticker-shadow-xl"
-          >
-            {/* Barra de título */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex gap-1.5">
-                {["bg-red-400","bg-yellow-400","bg-green-400"].map(c => (
-                  <div key={c} className={`w-2.5 h-2.5 rounded-full ${c} border border-black`} />
-                ))}
+          {/* Machine */}
+          <div className="stk-lg" style={{ background: "var(--paper-2)", padding: 14, position: "relative", overflow: "hidden" }}>
+            <div className="stripes-acid" style={{ position: "absolute", inset: 0, opacity: 0.6 }}/>
+            <div style={{ position: "relative" }}>
+              {/* Machine header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 5 }}>
+                  {["var(--coral)", "var(--butter)", "var(--mint)"].map((c, j) => (
+                    <span key={j} style={{ width: 11, height: 11, borderRadius: 999, background: c, border: "1.5px solid var(--ink)" }}/>
+                  ))}
+                </div>
+                <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RANDOMETRO 3000</span>
               </div>
-              <span className="text-[10px] font-black bg-black text-[#DFFF23] px-2 py-0.5 rounded-full tracking-widest">
-                RANDOMETRO 3000
-              </span>
+
+              {/* Slots grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+                {[0, 1, 2].map(i => {
+                  const cat = PARAM_CATEGORIES.find(c => c.id === selectedParams[i]);
+                  const val = slots[i];
+                  return (
+                    <div key={i}>
+                      <div style={{
+                        height: 78, border: "2px solid var(--ink)", borderRadius: 14,
+                        background: "var(--paper-2)", display: "flex", alignItems: "center",
+                        justifyContent: "center", textAlign: "center", padding: 6, position: "relative",
+                        overflow: "hidden",
+                      }}>
+                        <span style={{ position: "absolute", top: 4, left: 6 }} className="mono">
+                          <span style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>0{i + 1}</span>
+                        </span>
+                        <AnimatePresence mode="wait">
+                          {rolling && !val ? (
+                            <motion.div key="rolling" animate={{ y: [0, -20, 20, -10, 0] }} transition={{ duration: 0.35, repeat: Infinity }}>
+                              <IDice s={24} stroke="rgba(20,17,15,.3)"/>
+                            </motion.div>
+                          ) : val ? (
+                            <motion.p key={val.value} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} style={{ fontWeight: 800, fontSize: 12, textTransform: "lowercase" }}>
+                              {val.value}
+                            </motion.p>
+                          ) : (
+                            <span style={{ fontWeight: 800, fontSize: 22, color: "rgba(20,17,15,.2)" }}>?</span>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                      <p className="mono" style={{ fontSize: 9, fontWeight: 700, textAlign: "center", marginTop: 4, color: "rgba(20,17,15,.6)" }}>
+                        {cat ? cat.label.toUpperCase() : "—"}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Randomize button */}
+              <button
+                onClick={doRoll}
+                disabled={rolling || rollsLeft <= 0}
+                className="stk"
+                style={{
+                  width: "100%", height: 54, background: "var(--ink)", color: "var(--acid)",
+                  border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 16,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                  cursor: rollsLeft > 0 ? "pointer" : "not-allowed", opacity: rollsLeft <= 0 ? 0.5 : 1,
+                }}
+              >
+                <IDice s={20} stroke="var(--acid)"/>
+                {rolling ? "Mezclando..." : rollsLeft > 0 ? "¡RANDOMIZAR!" : "Sin intentos hoy"}
+              </button>
             </div>
+          </div>
 
-            {/* Slots */}
-            <div className="flex gap-2 mb-3">
-              {[0,1,2].map(i => {
-                const cat = PARAM_CATEGORIES.find(c => c.id === selectedParams[i]);
-                return (
-                  <SlotColumn
-                    key={i}
-                    label={cat?.label ?? "—"}
-                    icon={cat?.icon ?? ""}
-                    color={cat?.color ?? "#E8E8E8"}
-                    value={selectedParams[i] ? slots[i] : null}
-                    rolling={rolling && !!selectedParams[i]}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Botón randomizar */}
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={doRoll}
-              disabled={rolling || rollsLeft <= 0}
-              className="w-full h-14 rounded-2xl border-2 border-black bg-black text-[#DFFF23] font-black text-base sticker-shadow disabled:opacity-50"
-            >
-              {rolling ? "🎲 Mezclando..." : rollsLeft > 0 ? "🎲 ¡RANDOMIZAR!" : "Sin intentos hoy"}
-            </motion.button>
-          </motion.div>
-
-          {/* Contador de intentos */}
-          <div className="flex items-center justify-between rounded-2xl border-2 border-black bg-white px-4 py-3">
+          {/* Tries counter */}
+          <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 14, marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p className="font-black text-sm">Intentos restantes</p>
-              <p className="text-xs font-semibold text-neutral-400">
-                {rollsLeft > 0 ? "Úsalos con sabiduría ✨" : "Vuelve mañana"}
-              </p>
+              <p style={{ fontWeight: 800, fontSize: 13 }}>Intentos restantes</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>// ÚSALOS CON SABIDURÍA</p>
             </div>
-            <div className="flex gap-1.5">
-              {[0,1,2].map(i => (
-                <div key={i}
-                  className={`w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-sm ${i < rollsLeft ? "bg-[#DFFF23]" : "bg-neutral-100 text-neutral-300"}`}
-                >
-                  {i < rollsLeft ? "🎲" : "×"}
+            <div style={{ display: "flex", gap: 6 }}>
+              {[0, 1, 2].map(j => (
+                <div key={j} style={{
+                  width: 30, height: 30, borderRadius: 999, border: "2px solid var(--ink)",
+                  background: j < rollsLeft ? "var(--acid)" : "var(--paper)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {j < rollsLeft ? <IDice s={14}/> : <IX s={14} stroke="rgba(20,17,15,.3)"/>}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Tip */}
-          <div className="rounded-2xl border-2 border-black bg-[#EFE8FF] px-4 py-3">
-            <p className="font-black text-xs">
-              💡 Las variables Épicas y Legendarias tienen menor probabilidad. ¡Mezcla bien!
-            </p>
+          <div className="stk-sm" style={{ background: "var(--lilac)", padding: 12, marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
+            <ISpark s={20}/>
+            <p style={{ fontWeight: 700, fontSize: 11, lineHeight: 1.3 }}>Las variables Épicas y Legendarias tienen menor probabilidad. Mezcla bien.</p>
           </div>
         </div>
 
-        <BottomNav current="random" />
+        <BottomNav current="random"/>
       </div>
     </Phone>
   );

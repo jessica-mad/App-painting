@@ -1,57 +1,38 @@
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
+import { IMusic, IPause, IPlay, IReload, ICheck, ISpark, IStar, IDiamond, ICircle, IArrowR } from "../components/Icons";
 
-function CircularProgress({ progress, size = 240, strokeWidth = 16, color = "#DFFF23" }) {
+function CircularProgress({ progress, size = 240, strokeWidth = 14 }) {
   const r = (size - strokeWidth) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - progress);
+  const cx = size / 2;
+  const cy = size / 2;
+  const tickX = cx + r * Math.cos((progress * 2 * Math.PI) - Math.PI / 2);
+  const tickY = cy + r * Math.sin((progress * 2 * Math.PI) - Math.PI / 2);
 
   return (
-    <svg width={size} height={size} className="absolute inset-0">
-      <circle
-        cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke="#E8E8E8" strokeWidth={strokeWidth}
+    <svg width={size} height={size} style={{ position: "absolute", inset: 0 }}>
+      <circle cx={cx} cy={cy} r={r + 16} fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="1" strokeDasharray="2 6"/>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,.1)" strokeWidth={strokeWidth}/>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--acid)" strokeWidth={strokeWidth}
+        strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
+        transform={`rotate(-90 ${cx} ${cy})`}
       />
-      <circle
-        cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke={color} strokeWidth={strokeWidth}
-        strokeDasharray={circ}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        className="progress-ring__circle"
-        style={{ transformOrigin: "50% 50%", transform: "rotate(-90deg)" }}
-      />
+      {progress > 0 && (
+        <circle cx={tickX} cy={tickY} r="9" fill="var(--coral)" stroke="var(--ink)" strokeWidth="2"/>
+      )}
     </svg>
   );
 }
 
-function Particle({ delay }) {
-  const emojis = ["✦", "○", "◇", "★", "△"];
-  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-  return (
-    <motion.span
-      className="absolute text-black/10 text-xl font-black pointer-events-none select-none"
-      style={{
-        left: `${10 + Math.random() * 80}%`,
-        top: `${10 + Math.random() * 80}%`,
-      }}
-      animate={{
-        y: [0, -30, 0],
-        opacity: [0.1, 0.4, 0.1],
-        rotate: [0, 15, -15, 0],
-      }}
-      transition={{
-        duration: 3 + Math.random() * 2,
-        repeat: Infinity,
-        delay: delay,
-      }}
-    >
-      {emoji}
-    </motion.span>
-  );
-}
+const DECO = [
+  { top: "10%", left: "8%",  Icon: ISpark,   s: 16 },
+  { top: "18%", left: "85%", Icon: IStar,    s: 14 },
+  { top: "30%", left: "12%", Icon: IDiamond, s: 12 },
+  { top: "78%", left: "88%", Icon: ICircle,  s: 10 },
+];
 
 export function TimerScreen() {
   const { state, dispatch } = useApp();
@@ -88,154 +69,112 @@ export function TimerScreen() {
   const min = String(Math.floor(seconds / 60)).padStart(2, "0");
   const sec = String(seconds % 60).padStart(2, "0");
   const progress = isFree ? 0 : 1 - seconds / totalSeconds;
+  const pct = Math.round(progress * 100);
 
-  const reset = () => {
-    setSeconds(isFree ? 0 : timerConfig.duration.seconds);
-    setRunning(false);
-    setFinished(false);
-  };
-
-  const finish = () => {
-    dispatch({ type: "COMPLETE_CHALLENGE" });
-  };
+  const reset = () => { setSeconds(isFree ? 0 : timerConfig.duration.seconds); setRunning(false); setFinished(false); };
+  const finish = () => dispatch({ type: "COMPLETE_CHALLENGE" });
 
   if (finished) {
     return (
-      <Phone bg="bg-[#DFFF23]">
-        <div className="flex flex-col items-center justify-center h-full px-6">
-          <motion.div
-            initial={{ scale: 0, rotate: -10 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 250, damping: 20 }}
-            className="text-8xl mb-6"
-          >
-            🎉
-          </motion.div>
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-3xl font-black text-center mb-2"
-          >
-            ¡Reto completado!
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-sm font-semibold text-center text-neutral-700 mb-8"
-          >
-            Increíble trabajo artista 🎨<br />
-            Ahora sube tu resultado a la comunidad.
-          </motion.p>
-          {/* Confetti particles */}
-          {["🎨","✦","🌟","○","★"].map((e, i) => (
-            <motion.span
-              key={i}
-              className="absolute text-3xl pointer-events-none"
-              style={{ left: `${15 + i * 18}%`, top: "10%" }}
-              animate={{ y: [0, 200], opacity: [1, 0], rotate: [0, 360] }}
-              transition={{ duration: 2, delay: i * 0.1, repeat: Infinity }}
-            >
-              {e}
-            </motion.span>
-          ))}
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            onClick={finish}
-            className="w-full h-14 rounded-2xl border-2 border-black bg-black text-[#DFFF23] font-black sticker-shadow-md"
-          >
-            📤 Subir mi dibujo
-          </motion.button>
+      <Phone dark>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 22px" }}>
+          <div className="stk-lg" style={{ background: "var(--acid)", padding: "32px 24px", textAlign: "center", position: "relative", overflow: "hidden", width: "100%" }}>
+            <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.2 }}/>
+            <div style={{ position: "relative" }}>
+              <div className="serif" style={{ fontSize: 72, lineHeight: 1 }}>🎉</div>
+              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>¡Reto completado!</h2>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, lineHeight: 1.4 }}>Increíble trabajo artista.<br/>Sube tu resultado a la comunidad.</p>
+              <div className="perforated" style={{ margin: "20px 0 16px" }}/>
+              <button onClick={finish} className="stk" style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
+                Subir mi dibujo <IArrowR s={18} stroke="var(--acid)"/>
+              </button>
+            </div>
+          </div>
         </div>
       </Phone>
     );
   }
 
   return (
-    <Phone bg="bg-[#111111]">
-      <div className="flex flex-col h-full relative">
-        {/* Particles */}
-        {Array.from({ length: 6 }).map((_, i) => <Particle key={i} delay={i * 0.5} />)}
+    <Phone dark>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
+        {/* Deco */}
+        {DECO.map((d, i) => (
+          <span key={i} style={{ position: "absolute", top: d.top, left: d.left, color: "rgba(255,255,255,.18)", pointerEvents: "none" }}>
+            <d.Icon s={d.s}/>
+          </span>
+        ))}
 
         {/* Music card */}
-        <div className="mx-5 mt-4 rounded-2xl border-2 border-white/20 bg-white/10 p-3 flex items-center gap-3 shrink-0 z-10">
-          <span className="text-2xl">{timerConfig.music.icon}</span>
-          <div className="flex-1">
-            <p className="font-black text-white text-sm">{timerConfig.music.title}</p>
-            <p className="text-xs text-white/50">{musicOn ? "reproduciendo · ∞ loop" : "en pausa"}</p>
+        <div style={{ margin: "10px 22px", border: "2px solid rgba(255,255,255,.22)", borderRadius: 16, background: "rgba(255,255,255,.06)", padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(223,255,35,.15)", border: "1.5px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <IMusic s={20} stroke="var(--acid)"/>
           </div>
-          {/* Sound bars */}
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 800, fontSize: 13, color: "#fff" }}>{timerConfig.music.title}</p>
+            <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{musicOn ? "REPRODUCIENDO · ∞ LOOP" : "EN PAUSA"}</p>
+          </div>
           {musicOn && (
-            <div className="flex gap-0.5 items-end h-5">
-              {[3,5,7,4,6].map((h, i) => (
-                <div key={i} className="w-1 bg-[#DFFF23] rounded-full"
-                  style={{ height: `${h}px`, animation: `float${i % 2 + 1} ${0.4 + i * 0.08}s ease-in-out infinite` }}
-                />
+            <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 16 }}>
+              {[8, 12, 5, 14, 9].map((h, j) => (
+                <span key={j} style={{ width: 2, height: h, background: "var(--acid)", borderRadius: 2 }}/>
               ))}
             </div>
           )}
-          <button onClick={() => setMusicOn(m => !m)} className="w-8 h-8 rounded-full border border-white/30 flex items-center justify-center text-white text-sm">
-            {musicOn ? "⏸" : "▶"}
+          <button onClick={() => setMusicOn(m => !m)} style={{ width: 30, height: 30, borderRadius: 999, border: "1.5px solid rgba(255,255,255,.4)", background: "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            {musicOn ? <IPause s={14} stroke="#fff"/> : <IPlay s={14} stroke="#fff"/>}
           </button>
         </div>
 
-        {/* Timer circle */}
-        <div className="flex-1 flex flex-col items-center justify-center z-10">
-          <div className="relative w-60 h-60 flex items-center justify-center">
-            <CircularProgress progress={progress} size={240} />
-            {/* Inner glow */}
-            <div className="w-48 h-48 rounded-full border-4 border-white/10 flex flex-col items-center justify-center bg-white/5 countdown-pulse">
-              <p className="text-5xl font-black text-white">{min}:{sec}</p>
-              <p className="text-xs font-black text-white/50 mt-1">
-                {running ? (isFree ? "creando..." : "pomodoro activo") : "listo para iniciar"}
+        {/* Timer ring */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 30 }}>
+          <div style={{ position: "relative", width: 240, height: 240 }}>
+            <CircularProgress progress={progress} size={240}/>
+            <div style={{ position: "absolute", inset: 30, borderRadius: 999, background: "rgba(255,255,255,.04)", border: "2px solid rgba(255,255,255,.1)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.5)" }}>
+                {running ? (isFree ? "MODO LIBRE" : "POMODORO ACTIVO") : "LISTO PARA INICIAR"}
               </p>
+              <p className="serif" style={{ fontSize: 64, lineHeight: 1, color: "#fff", marginTop: 4, letterSpacing: "-0.02em" }}>{min}:{sec}</p>
               {!isFree && (
-                <p className="text-xs font-black text-[#DFFF23] mt-1">
-                  {Math.round(progress * 100)}% completado
-                </p>
+                <span style={{ marginTop: 8, padding: "3px 10px", border: "1.5px solid var(--acid)", borderRadius: 999, color: "var(--acid)", fontFamily: "JetBrains Mono", fontSize: 10, fontWeight: 700 }}>
+                  {pct}% completado
+                </span>
               )}
             </div>
           </div>
 
           {/* Controls */}
-          <div className="flex gap-4 mt-8">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+            <button onClick={reset} style={{ width: 56, height: 56, borderRadius: 999, border: "2px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <IReload s={22} stroke="#fff"/>
+            </button>
+            <button
               onClick={() => setRunning(r => !r)}
-              className="w-20 h-20 rounded-full border-4 border-[#DFFF23] bg-[#DFFF23] text-black flex items-center justify-center text-3xl sticker-shadow-lg"
+              className="stk"
+              style={{ width: 84, height: 84, borderRadius: 999, background: "var(--acid)", border: "3px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 4px var(--ink), 6px 6px 0 var(--ink)", cursor: "pointer" }}
             >
-              {running ? "⏸" : "▶"}
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={reset}
-              className="w-16 h-16 rounded-full border-2 border-white/30 bg-white/10 text-white flex items-center justify-center text-2xl self-center"
-            >
-              ↺
-            </motion.button>
+              {running ? <IPause s={32} stroke="var(--ink)"/> : <IPlay s={32} stroke="var(--ink)"/>}
+            </button>
+            <button onClick={finish} style={{ width: 56, height: 56, borderRadius: 999, border: "2px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <ICheck s={22} stroke="#fff"/>
+            </button>
           </div>
         </div>
 
         {/* Bottom */}
-        <div className="px-5 pb-6 shrink-0 z-10">
-          <div className="flex items-center gap-2 mb-4 rounded-2xl border border-white/10 bg-white/5 p-3">
-            <span className="text-lg">{timerConfig.music.icon}</span>
-            <p className="text-xs font-semibold text-white/60">
-              {timerConfig.duration.label === "Tiempo libre" ? "Sesión libre" : `Sesión de ${timerConfig.duration.label}`}
-              {" · "}Modo pomodoro
+        <div style={{ padding: "0 22px 28px" }}>
+          <div style={{ border: "1.5px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", padding: 12, borderRadius: 14, marginBottom: 10, display: "flex", gap: 10, alignItems: "center" }}>
+            <ISpark s={18} stroke="rgba(255,255,255,.7)"/>
+            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.6)" }}>
+              SESIÓN DE {timerConfig.duration.label.toUpperCase()} · MODO POMODORO
             </p>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
+          <button
             onClick={finish}
-            className="w-full h-12 rounded-2xl border-2 border-white/30 bg-white/10 text-white font-black"
+            style={{ width: "100%", height: 48, borderRadius: 16, border: "1.5px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
           >
-            Finalizar y subir dibujo →
-          </motion.button>
+            Finalizar y subir <IArrowR s={16} stroke="#fff"/>
+          </button>
         </div>
       </div>
     </Phone>

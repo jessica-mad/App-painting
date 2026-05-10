@@ -1,8 +1,15 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { TECHNIQUES } from "../data/parameters";
+import { IBrush, ICheck } from "../components/Icons";
+
+const TECH_COLORS = {
+  "acuarela": "var(--sky)", "tinta": "var(--ink)", "lapiz": "var(--paper-2)",
+  "carbon": "var(--lilac)", "pastel": "var(--rose)", "oleo": "var(--mint)",
+  "digital": "var(--butter)", "gouache": "var(--coral)", "marcador": "var(--paper-2)",
+};
+const TECH_TEXT = { "tinta": "var(--acid)", "gouache": "#fff" };
 
 export function OnboardingScreen() {
   const { dispatch } = useApp();
@@ -20,87 +27,69 @@ export function OnboardingScreen() {
 
   return (
     <Phone>
-      <div className="flex flex-col h-full px-5">
-        {/* Header */}
-        <div className="pt-4 pb-3">
-          <div className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#DFFF23] px-3 py-1 text-xs font-black">
-            Paso 1 de 1
-          </div>
-          <h2 className="text-2xl font-black mt-3 leading-tight">
-            Elige tus{" "}
-            <span className="bg-black text-[#DFFF23] px-2 rounded-xl">3 técnicas</span>{" "}
-            favoritas
-          </h2>
-          <p className="text-xs font-semibold text-neutral-500 mt-1">
-            Esto personaliza tu experiencia. Puedes cambiarlas luego.
-          </p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "10px 22px 22px" }}>
+        <div style={{ display: "inline-flex", alignSelf: "flex-start", padding: "4px 12px", border: "2px solid var(--ink)", borderRadius: 999, background: "var(--acid)", fontSize: 10, fontWeight: 800, fontFamily: "JetBrains Mono" }}>
+          PASO 1 / 1
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-3 gap-3 flex-1">
-          {TECHNIQUES.map((tech, i) => {
-            const isSelected = selected.includes(tech.id);
-            const isDisabled = !isSelected && selected.length >= 3;
+        <h2 className="serif" style={{ fontSize: 30, marginTop: 10, lineHeight: 1.05 }}>
+          Elige tus{" "}
+          <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "0 6px", borderRadius: 6, fontFamily: "Space Grotesk", fontStyle: "normal", fontWeight: 700, fontSize: 22, letterSpacing: "-0.04em" }}>
+            3 técnicas
+          </span>{" "}
+          favoritas
+        </h2>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 6 }}>// PERSONALIZA TU EXPERIENCIA · CAMBIABLE LUEGO</p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 18, flex: 1 }}>
+          {TECHNIQUES.map((t) => {
+            const on = selected.includes(t.id);
+            const bg = TECH_COLORS[t.id] || "var(--paper-2)";
+            const col = TECH_TEXT[t.id] || "var(--ink)";
             return (
-              <motion.button
-                key={tech.id}
-                whileTap={{ scale: 0.92 }}
-                onClick={() => toggle(tech.id)}
-                disabled={isDisabled}
-                className={`relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-black p-3 font-black text-xs transition-all
-                  ${isSelected ? "sticker-shadow-md" : "sticker-shadow"}
-                  ${isDisabled ? "opacity-40" : ""}
-                `}
+              <button
+                key={t.id}
+                onClick={() => toggle(t.id)}
+                className={on ? "stk" : "stk-sm"}
                 style={{
-                  backgroundColor: isSelected ? tech.color : "white",
-                  outline: isSelected ? "3px solid #DFFF23" : "none",
-                  outlineOffset: "2px",
+                  background: bg, color: col,
+                  padding: "10px 6px",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                  position: "relative", borderRadius: 14,
+                  outline: on ? "3px solid var(--acid)" : "none", outlineOffset: 2,
+                  cursor: "pointer",
                 }}
-                animate={isSelected ? { scale: [1, 1.06, 1] } : {}}
-                transition={{ duration: 0.3 }}
               >
-                <div
-                  className="w-12 h-12 rounded-xl border-2 border-black flex items-center justify-center text-2xl"
-                  style={{ backgroundColor: tech.color }}
-                >
-                  {tech.icon}
+                <div style={{ width: 36, height: 36, borderRadius: 10, border: "2px solid currentColor", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <IBrush s={20} stroke={col}/>
                 </div>
-                <span>{tech.label}</span>
-                {isSelected && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full border-2 border-black bg-[#DFFF23] flex items-center justify-center text-[10px]"
-                  >
-                    ✓
-                  </motion.span>
+                <span style={{ fontSize: 11, fontWeight: 800 }}>{t.label}</span>
+                {on && (
+                  <span style={{ position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: 999, background: "var(--acid)", border: "1.5px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <ICheck s={11} stroke="var(--ink)"/>
+                  </span>
                 )}
-              </motion.button>
+              </button>
             );
           })}
         </div>
 
-        {/* Counter + CTA */}
-        <div className="pt-4 pb-6">
-          <div className="flex justify-between items-center mb-3">
-            <span className="font-black text-sm">
-              {selected.length}/3 seleccionadas
-            </span>
-            <div className="flex gap-1">
-              {[0,1,2].map(i => (
-                <div key={i} className={`w-8 h-2 rounded-full border border-black ${i < selected.length ? "bg-black" : "bg-neutral-200"}`} />
-              ))}
-            </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 }}>
+          <span className="mono" style={{ fontSize: 11, fontWeight: 800 }}>{selected.length} / 3 SELECCIONADAS</span>
+          <div style={{ display: "flex", gap: 4 }}>
+            {[0,1,2].map(i => (
+              <span key={i} style={{ width: 22, height: 6, borderRadius: 999, border: "1.5px solid var(--ink)", background: i < selected.length ? "var(--ink)" : "transparent" }}/>
+            ))}
           </div>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={confirm}
-            disabled={selected.length < 1}
-            className="w-full h-14 rounded-2xl border-2 border-black bg-[#DFFF23] font-black sticker-shadow-md active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all disabled:opacity-40"
-          >
-            {selected.length < 1 ? "Selecciona al menos 1" : "¡Comenzar a crear! 🎨"}
-          </motion.button>
         </div>
+
+        <button
+          onClick={confirm} disabled={selected.length < 1}
+          className="stk"
+          style={{ marginTop: 12, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: selected.length < 1 ? 0.5 : 1 }}
+        >
+          <IBrush s={18}/> ¡Comenzar a crear!
+        </button>
       </div>
     </Phone>
   );

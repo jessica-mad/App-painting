@@ -1,38 +1,40 @@
-import { RARITY_COLORS, RARITY_EMOJI } from "../data/parameters";
+import { ICircle, IDiamond, ITriangle, IStar } from "./Icons";
+
+const RARITY_MAP = {
+  "Común":      { color: "#E8E1D0",        glyph: ICircle,   label: "Común" },
+  "Raro":       { color: "var(--sky)",     glyph: IDiamond,  label: "Raro" },
+  "Épico":      { color: "var(--lilac)",   glyph: ITriangle, label: "Épico" },
+  "Legendario": { color: "var(--acid)",    glyph: IStar,     label: "Legendario" },
+};
 
 export function RarityBadge({ rarity, size = "sm" }) {
-  const colors = RARITY_COLORS[rarity];
-  const emoji = RARITY_EMOJI[rarity];
-  const isLegendary = rarity === "Legendario";
-
+  const c = RARITY_MAP[rarity] || RARITY_MAP["Común"];
+  const big = size === "md";
+  const Glyph = c.glyph;
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border-2 border-black font-black ${size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs"} ${isLegendary ? "animate-pulse" : ""}`}
-      style={{ backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }}
-    >
-      {emoji} {rarity}
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      background: c.color, border: "2px solid var(--ink)",
+      borderRadius: 999, padding: big ? "3px 10px" : "2px 7px",
+      fontFamily: "JetBrains Mono", fontWeight: 700,
+      fontSize: big ? 11 : 9, textTransform: "uppercase", letterSpacing: "0.06em",
+    }}>
+      <Glyph s={big ? 13 : 11} sw={2}/>{c.label}
     </span>
   );
 }
 
 export function SeasonBadge({ season }) {
   if (!season) return null;
-  const colors = {
-    "Primavera": { bg: "#D6FFE8", text: "#006633" },
-    "Verano": { bg: "#FFF3D6", text: "#AA5500" },
-    "Otoño": { bg: "#FFE8D6", text: "#884422" },
-    "Invierno": { bg: "#D6F5FF", text: "#004466" },
-    "Halloween": { bg: "#FF8C00", text: "#1a0000" },
-    "Navidad": { bg: "#CC0000", text: "#FFFFFF" },
-    "San Valentín": { bg: "#FF69B4", text: "#660033" },
-  };
-  const c = colors[season] || { bg: "#EEE", text: "#333" };
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-black"
-      style={{ backgroundColor: c.bg, color: c.text }}
-    >
-      🌿 {season}
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      background: "var(--sky)", border: "2px solid var(--ink)",
+      borderRadius: 999, padding: "2px 8px",
+      fontFamily: "JetBrains Mono", fontWeight: 700, fontSize: 9,
+      textTransform: "uppercase", letterSpacing: "0.06em",
+    }}>
+      {season}
     </span>
   );
 }

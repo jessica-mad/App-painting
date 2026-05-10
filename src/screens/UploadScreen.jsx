@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { TECHNIQUES, getUserLevel } from "../data/parameters";
 import { createArtwork, IS_LOGGED_IN } from "../utils/api";
+import { IArrowL, IBrush, ICam, ILock, IShare, IArrowR } from "../components/Icons";
+
+const TECH_COLORS = {
+  acuarela: "var(--sky)", tinta: "var(--paper-2)", lapiz: "var(--paper-2)",
+  carbon: "var(--lilac)", pastel: "var(--rose)", oleo: "var(--mint)",
+  digital: "var(--butter)", gouache: "var(--coral)", marcador: "var(--paper-2)",
+};
 
 export function UploadScreen() {
   const { state, dispatch } = useApp();
@@ -14,9 +20,9 @@ export function UploadScreen() {
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
 
-  const level = getUserLevel(profile.completedChallenges);
-  const canVideo = profile.completedChallenges >= 10;
-  const videoMissing = 10 - profile.completedChallenges;
+  const level       = getUserLevel(profile.completedChallenges);
+  const canVideo    = profile.completedChallenges >= 10;
+  const videoNeeded = Math.max(0, 10 - profile.completedChallenges);
 
   const publish = async () => {
     setSaving(true);
@@ -32,7 +38,7 @@ export function UploadScreen() {
         });
       }
       setDone(true);
-      setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "feed" }), 1800);
+      setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "feed" }), 1600);
     } catch {
       setSaving(false);
     }
@@ -40,14 +46,20 @@ export function UploadScreen() {
 
   if (done) {
     return (
-      <Phone bg="bg-[#DFFF23]">
-        <div className="flex flex-col items-center justify-center h-full px-6 gap-5">
-          <motion.div initial={{ scale:0 }} animate={{ scale:1 }}
-            transition={{ type:"spring", stiffness:260, damping:18 }} className="text-8xl">🚀</motion.div>
-          <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }} className="text-center">
-            <h2 className="text-3xl font-black">¡Publicado!</h2>
-            <p className="text-sm font-semibold text-neutral-600 mt-2">Tu obra ya está en la comunidad InkRush ✨</p>
-          </motion.div>
+      <Phone>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 22px" }}>
+          <div className="stk-lg" style={{ background: "var(--acid)", padding: "36px 24px", textAlign: "center", position: "relative", overflow: "hidden", width: "100%" }}>
+            <div className="stripes-y" style={{ position: "absolute", inset: 0, opacity: 0.4 }}/>
+            <div style={{ position: "relative" }}>
+              <p className="serif" style={{ fontSize: 72, lineHeight: 1 }}>🚀</p>
+              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>¡Publicado!</h2>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, color: "rgba(20,17,15,.65)" }}>Tu obra ya está en la comunidad InkRush.</p>
+              <div className="perforated" style={{ margin: "20px 0 16px" }}/>
+              <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })} className="stk" style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
+                Ver en el Feed <IArrowR s={18} stroke="var(--acid)"/>
+              </button>
+            </div>
+          </div>
         </div>
       </Phone>
     );
@@ -55,36 +67,52 @@ export function UploadScreen() {
 
   return (
     <Phone>
-      <div className="flex flex-col h-full px-5">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
         {/* Header */}
-        <div className="pt-4 pb-3 shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <button onClick={() => dispatch({ type:"SET_SCREEN", screen:"timer" })}
-              className="text-sm font-black">← Volver</button>
-            <span className="text-xs font-black bg-black text-[#DFFF23] px-3 py-1 rounded-full">
-              {level.emoji} {level.name}
-            </span>
-          </div>
-          <h2 className="text-2xl font-black">Sube tu resultado 🎨</h2>
-          <p className="text-xs font-semibold text-neutral-500 mt-0.5">Comparte tu obra con la comunidad</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button
+            onClick={() => dispatch({ type: "SET_SCREEN", screen: "timer" })}
+            style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, padding: 0, cursor: "pointer" }}
+          >
+            <IArrowL s={16}/> Volver
+          </button>
+          <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <IBrush s={12} stroke="var(--acid)"/> {level.name}
+          </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar pb-4 space-y-4">
-          {/* Foto */}
-          <motion.button whileTap={{ scale:0.98 }} onClick={() => setHasPhoto(true)}
-            className={`w-full rounded-3xl border-4 border-dashed border-black py-8 flex flex-col items-center gap-2.5 transition-all ${hasPhoto ? "bg-[#D6FFE8] border-solid" : "bg-gradient-to-br from-pink-100 to-cyan-100"}`}
-          >
-            <span className="text-5xl">{hasPhoto ? "✅" : "📷"}</span>
-            <p className="font-black text-sm">{hasPhoto ? "Foto lista · toca para cambiar" : "Toca para añadir foto"}</p>
-          </motion.button>
+        <h2 className="serif" style={{ fontSize: 30, marginTop: 8, lineHeight: 1 }}>Sube tu resultado</h2>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// COMPARTE TU OBRA CON LA COMUNIDAD</p>
 
-          {/* Prompt */}
+        <div className="scroll" style={{ flex: 1, marginTop: 14 }}>
+          {/* Photo zone */}
+          <button
+            onClick={() => setHasPhoto(h => !h)}
+            className="stk"
+            style={{
+              width: "100%", height: 180,
+              border: hasPhoto ? "2px solid var(--ink)" : "3px dashed var(--ink)",
+              background: hasPhoto ? "var(--mint)" : "var(--rose)",
+              borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", overflow: "hidden", cursor: "pointer",
+            }}
+          >
+            <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.2 }}/>
+            <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+              <ICam s={28}/>
+            </div>
+            <p style={{ fontWeight: 800, fontSize: 13, position: "relative" }}>
+              {hasPhoto ? "Foto lista · toca para cambiar" : "Toca para añadir foto"}
+            </p>
+            <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>JPG · PNG · 4:5 RECOMENDADO</p>
+          </button>
+
+          {/* Prompt tags */}
           {currentIdea && (
-            <div className="rounded-2xl border-2 border-black bg-[#FFFDF3] p-4">
-              <p className="text-[10px] font-black text-neutral-400 mb-1.5 uppercase tracking-wider">Reto completado</p>
-              <div className="flex flex-wrap gap-1">
+            <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 12, marginTop: 14 }}>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// RETO COMPLETADO</p>
+              <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                 {currentIdea.variables.map(v => (
-                  <span key={v.value} className="text-xs font-black bg-[#DFFF23] border border-black px-2 py-0.5 rounded-full capitalize">
+                  <span key={v.value} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 800 }}>
                     {v.value}
                   </span>
                 ))}
@@ -92,70 +120,71 @@ export function UploadScreen() {
             </div>
           )}
 
-          {/* Técnica */}
-          <div>
-            <p className="font-black text-sm mb-2">Técnica usada</p>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {TECHNIQUES.map(t => (
-                <button key={t.id} onClick={() => setTechnique(t.id)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-black font-black text-xs transition-all ${technique===t.id ? "sticker-shadow" : ""}`}
-                  style={{ backgroundColor: technique===t.id ? t.color : "white" }}
-                >
-                  {t.icon} {t.label}
-                </button>
-              ))}
-            </div>
+          {/* Technique */}
+          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 16, marginBottom: 8 }}>Técnica usada</p>
+          <div className="scroll" style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
+            {TECHNIQUES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTechnique(t.id)}
+                style={{
+                  flexShrink: 0, padding: "6px 12px", borderRadius: 12,
+                  border: "2px solid var(--ink)",
+                  background: technique === t.id ? (TECH_COLORS[t.id] || "var(--acid)") : "var(--paper-2)",
+                  fontSize: 11, fontWeight: 700,
+                  boxShadow: technique === t.id ? "3px 3px 0 var(--ink)" : "none",
+                  display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer",
+                }}
+              >
+                <IBrush s={13}/> {t.label}
+              </button>
+            ))}
           </div>
 
-          {/* Descripción */}
-          <div>
-            <p className="font-black text-sm mb-2">Descripción <span className="text-neutral-400 font-semibold">(opcional)</span></p>
-            <textarea value={description} onChange={e => setDescription(e.target.value)}
-              placeholder="Cuéntanos sobre tu proceso creativo..."
-              rows={3}
-              className="w-full rounded-2xl border-2 border-black bg-white px-4 py-3 font-semibold text-sm resize-none outline-none"
-            />
-          </div>
+          {/* Description */}
+          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 16, marginBottom: 6 }}>
+            Descripción <span className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>(OPCIONAL)</span>
+          </p>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Cuéntanos sobre tu proceso creativo..."
+            style={{ width: "100%", height: 84, border: "2px solid var(--ink)", borderRadius: 14, padding: 12, fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 12, resize: "none", outline: "none", background: "var(--paper-2)" }}
+          />
 
           {/* Video */}
-          <div>
-            <p className="font-black text-sm mb-2">Video de proceso (10s)</p>
-            {canVideo ? (
-              <button className="w-full h-12 rounded-2xl border-2 border-black bg-white font-black text-sm flex items-center justify-center gap-2 sticker-shadow">
-                🎥 Añadir video
-              </button>
-            ) : (
-              <div className="rounded-2xl border-2 border-black bg-neutral-100 p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">🔒</span>
-                  <div>
-                    <p className="font-black text-sm">Video bloqueado</p>
-                    <p className="text-xs font-semibold text-neutral-500">
-                      Faltan {videoMissing} reto{videoMissing!==1?"s":""} para desbloquearlo
-                    </p>
-                  </div>
+          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 12, marginBottom: 8 }}>Video de proceso (10s)</p>
+          {canVideo ? (
+            <button className="stk-sm" style={{ width: "100%", height: 48, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 12, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}>
+              <ICam s={18}/> Añadir video
+            </button>
+          ) : (
+            <div className="stk-sm" style={{ background: "#EFEAD8", padding: 12 }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <ILock s={18}/>
                 </div>
-                <div className="h-1.5 rounded-full border border-black bg-white">
-                  <div className="h-full rounded-full bg-[#DFFF23]"
-                    style={{ width:`${(profile.completedChallenges/10)*100}%` }} />
+                <div>
+                  <p style={{ fontWeight: 800, fontSize: 12 }}>Video bloqueado</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.55)" }}>FALTAN {videoNeeded} RETO{videoNeeded !== 1 ? "S" : ""} PARA DESBLOQUEAR</p>
                 </div>
-                <p className="text-[10px] font-black text-neutral-400 mt-1">
-                  {profile.completedChallenges}/10 retos
-                </p>
               </div>
-            )}
-          </div>
+              <div style={{ height: 6, borderRadius: 999, border: "1.5px solid var(--ink)", background: "var(--paper-2)", overflow: "hidden" }}>
+                <div style={{ width: `${(profile.completedChallenges / 10) * 100}%`, height: "100%", background: "var(--acid)" }}/>
+              </div>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{profile.completedChallenges}/10 RETOS</p>
+            </div>
+          )}
         </div>
 
-        {/* Publicar */}
-        <div className="pb-5 shrink-0">
-          <motion.button whileTap={{ scale:0.97 }} onClick={publish}
-            disabled={saving}
-            className="w-full h-13 py-3 rounded-2xl border-2 border-black bg-[#DFFF23] font-black sticker-shadow-md active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all disabled:opacity-60"
-          >
-            {saving ? "Publicando..." : "🚀 Publicar en la comunidad"}
-          </motion.button>
-        </div>
+        <button
+          onClick={publish}
+          disabled={saving}
+          className="stk"
+          style={{ marginTop: 14, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: saving ? 0.6 : 1 }}
+        >
+          <IShare s={18}/> {saving ? "Publicando..." : "Publicar en la comunidad"}
+        </button>
       </div>
     </Phone>
   );

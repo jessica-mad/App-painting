@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { DURATIONS, MUSIC_TRACKS } from "../data/parameters";
+import { IArrowL, ITimer, IMusic, IPlay } from "../components/Icons";
 
 export function TimerSetupScreen() {
   const { dispatch } = useApp();
@@ -11,129 +11,111 @@ export function TimerSetupScreen() {
   const [musicOn, setMusicOn] = useState(true);
 
   const start = () => {
-    dispatch({
-      type: "SET_TIMER_CONFIG",
-      config: { duration, music, musicOn },
-    });
+    dispatch({ type: "SET_TIMER_CONFIG", config: { duration, music, musicOn } });
     dispatch({ type: "SET_SCREEN", screen: "timer" });
   };
 
   return (
     <Phone>
-      <div className="flex flex-col h-full px-5">
-        {/* Header */}
-        <div className="pt-4 pb-3 shrink-0">
-          <button
-            onClick={() => dispatch({ type: "SET_SCREEN", screen: "idea" })}
-            className="text-sm font-black mb-3 block"
-          >
-            ← Volver
-          </button>
-          <h2 className="text-2xl font-black">Prepara tu sesión 🎨</h2>
-          <p className="text-xs font-semibold text-neutral-500 mt-1">
-            Elige tu tiempo y ambiente musical
-          </p>
-        </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
+        <button
+          onClick={() => dispatch({ type: "SET_SCREEN", screen: "idea" })}
+          style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}
+        >
+          <IArrowL s={16}/> Volver
+        </button>
+        <h2 className="serif" style={{ fontSize: 28, marginTop: 8, lineHeight: 1 }}>Prepara tu sesión</h2>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// ELIGE TIEMPO Y AMBIENTE MUSICAL</p>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
+        <div className="scroll" style={{ flex: 1, marginTop: 16 }}>
           {/* Duration */}
-          <div className="mb-5">
-            <p className="font-black mb-3">⏱️ Duración del reto</p>
-            <div className="grid grid-cols-2 gap-3">
-              {DURATIONS.map(d => (
-                <motion.button
-                  key={d.label}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setDuration(d)}
-                  className={`h-20 rounded-2xl border-2 border-black flex flex-col items-center justify-center gap-1 font-black transition-all
-                    ${duration.label === d.label ? "bg-[#DFFF23] sticker-shadow-md" : "bg-white sticker-shadow"}`}
-                >
-                  <span className="text-2xl">{d.emoji}</span>
-                  <span className="text-sm">{d.label}</span>
-                </motion.button>
-              ))}
-            </div>
+          <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <ITimer s={14}/> Duración
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
+            {DURATIONS.map((d) => (
+              <button
+                key={d.label}
+                onClick={() => setDuration(d)}
+                className={duration.label === d.label ? "stk" : "stk-sm"}
+                style={{
+                  height: 76, background: duration.label === d.label ? "var(--acid)" : "var(--paper-2)",
+                  border: "2px solid var(--ink)", borderRadius: 14,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+                  cursor: "pointer",
+                }}
+              >
+                <ITimer s={22}/>
+                <span style={{ fontFamily: "JetBrains Mono", fontWeight: 800, fontSize: 13 }}>{d.label}</span>
+              </button>
+            ))}
           </div>
 
           {/* Music */}
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="font-black">🎵 Música ambiente</p>
-                <p className="text-xs font-semibold text-neutral-500">Loop infinito para concentrarse</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div>
+              <p style={{ fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <IMusic s={14}/> Música ambiente
+              </p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 2 }}>LOOP INFINITO PARA CONCENTRARSE</p>
+            </div>
+            <button
+              onClick={() => setMusicOn(m => !m)}
+              style={{ width: 50, height: 26, borderRadius: 999, border: "2px solid var(--ink)", background: musicOn ? "var(--acid)" : "var(--paper)", position: "relative", cursor: "pointer" }}
+            >
+              <div style={{ position: "absolute", top: 1, left: musicOn ? 25 : 2, width: 20, height: 20, borderRadius: 999, background: "#fff", border: "2px solid var(--ink)", transition: "left 0.2s" }}/>
+            </button>
+          </div>
+
+          {musicOn && (
+            <div className="stk" style={{ background: "var(--ink)", color: "#fff", padding: 12, display: "flex", alignItems: "center", gap: 10, marginBottom: 12, borderRadius: 14 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(223,255,35,.18)", border: "1.5px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IMusic s={18} stroke="var(--acid)"/>
               </div>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setMusicOn(m => !m)}
-                className={`w-14 h-7 rounded-full border-2 border-black relative transition-colors ${musicOn ? "bg-[#DFFF23]" : "bg-neutral-200"}`}
-              >
-                <motion.div
-                  animate={{ x: musicOn ? 28 : 2 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className="absolute top-0.5 w-5 h-5 rounded-full border-2 border-black bg-white"
-                />
-              </motion.button>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 800, fontSize: 13 }}>{music.title}</p>
+                <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.5)" }}>{music.mood?.toUpperCase()}</p>
+              </div>
+              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 14 }}>
+                {[6, 10, 4, 12, 8].map((h, j) => (
+                  <span key={j} style={{ width: 2, height: h, background: "var(--acid)", borderRadius: 2 }}/>
+                ))}
+              </div>
             </div>
+          )}
 
-            {/* Now playing indicator */}
-            {musicOn && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-3 rounded-2xl border-2 border-black bg-black text-white p-3 mb-3"
+          <div className="scroll" style={{ display: "flex", gap: 10, paddingBottom: 4 }}>
+            {MUSIC_TRACKS.map((track) => (
+              <button
+                key={track.id}
+                onClick={() => { setMusic(track); setMusicOn(true); }}
+                style={{
+                  minWidth: 140, padding: 12, borderRadius: 18,
+                  border: "2px solid var(--ink)",
+                  background: music.id === track.id ? "var(--acid)" : "var(--paper-2)",
+                  boxShadow: music.id === track.id ? "var(--shadow)" : "3px 3px 0 var(--ink)",
+                  outline: music.id === track.id ? "2px solid var(--ink)" : "none", outlineOffset: 2,
+                  cursor: "pointer", textAlign: "left",
+                }}
               >
-                <span className="text-2xl">{music.icon}</span>
-                <div className="flex-1">
-                  <p className="font-black text-sm">{music.title}</p>
-                  <p className="text-xs text-white/60">{music.mood}</p>
+                <div style={{ width: 38, height: 38, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+                  <IMusic s={20}/>
                 </div>
-                <div className="flex gap-0.5">
-                  {[1,2,3,4].map(b => (
-                    <div key={b} className="w-1 rounded-full bg-[#DFFF23]"
-                      style={{ height: `${8 + Math.random() * 12}px`, animation: `float${b % 2 + 1} ${0.5 + b * 0.1}s ease-in-out infinite` }}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-              {MUSIC_TRACKS.map(track => (
-                <motion.button
-                  key={track.id}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => { setMusic(track); setMusicOn(true); }}
-                  className={`min-w-[130px] rounded-3xl border-2 border-black p-4 text-left transition-all
-                    ${music.id === track.id ? "sticker-shadow-md" : "sticker-shadow"}
-                  `}
-                  style={{
-                    backgroundColor: music.id === track.id ? "#DFFF23" : "white",
-                    outline: music.id === track.id ? "3px solid #111" : "none",
-                    outlineOffset: "2px",
-                  }}
-                >
-                  <div className="text-3xl mb-2">{track.icon}</div>
-                  <div className="text-xs font-black leading-tight">{track.title}</div>
-                  <div className="text-[10px] font-semibold text-neutral-500 mt-0.5">{track.mood}</div>
-                  <div className="mt-2 rounded-full bg-black px-2 py-0.5 text-center text-[9px] font-black text-white">
-                    ∞ LOOP
-                  </div>
-                </motion.button>
-              ))}
-            </div>
+                <p style={{ fontWeight: 800, fontSize: 12, lineHeight: 1.1 }}>{track.title}</p>
+                <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{track.mood?.toUpperCase()}</p>
+                <span style={{ display: "inline-block", marginTop: 8, background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 9, fontWeight: 800, fontFamily: "JetBrains Mono" }}>∞ LOOP</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="pb-6 shrink-0">
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={start}
-            className="w-full h-14 rounded-2xl border-2 border-black bg-[#DFFF23] font-black sticker-shadow-md active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all"
-          >
-            🚀 ¡Iniciar sesión creativa!
-          </motion.button>
-        </div>
+        <button
+          onClick={start}
+          className="stk"
+          style={{ marginTop: 14, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
+        >
+          <IPlay s={18}/> ¡Iniciar sesión creativa!
+        </button>
       </div>
     </Phone>
   );

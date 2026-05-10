@@ -1,138 +1,156 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
+import { ArtTile } from "../components/ArtTile";
 import { fetchArtworks, addReaction } from "../utils/api";
 import { SAMPLE_POSTS } from "../data/parameters";
+import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser } from "../components/Icons";
 
-function ReactionBtn({ icon, count, active, color, onTap }) {
-  const [popped, setPopped] = useState(false);
-  const tap = () => { setPopped(true); onTap(); setTimeout(() => setPopped(false), 380); };
-  return (
-    <motion.button whileTap={{ scale:0.85 }} onClick={tap}
-      className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-black font-black text-xs relative overflow-hidden transition-all ${active?"sticker-shadow":""}`}
-      style={{ backgroundColor: active ? color : "white" }}
-    >
-      <AnimatePresence>
-        {popped && (
-          <motion.span key="pop" className="absolute -top-6 pointer-events-none text-base"
-            initial={{ y:0, opacity:1 }} animate={{ y:-18, opacity:0 }} exit={{}} transition={{ duration:0.35 }}>
-            {icon}
-          </motion.span>
-        )}
-      </AnimatePresence>
-      {icon} {count}
-    </motion.button>
-  );
-}
+const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Temporada"];
+const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
-function ArtCard({ post }) {
-  const [likes,    setLikes]    = useState(post.likes ?? post.meta?.likes ?? 0);
-  const [inspires, setInspires] = useState(post.inspires ?? post.meta?.inspires ?? 0);
-  const [tries,    setTries]    = useState(post.tries ?? post.meta?.tries ?? 0);
-  const [reacted,  setReacted]  = useState({ like:false, inspire:false, try:false });
+function ArtCard({ post, idx }) {
+  const [likes,    setLikes]    = useState(post.likes    ?? 0);
+  const [inspires, setInspires] = useState(post.inspires ?? 0);
+  const [tries,    setTries]    = useState(post.tries    ?? 0);
+  const [reacted,  setReacted]  = useState({ like: false, inspire: false, try: false });
 
   const react = (type) => {
     if (post.id) addReaction(post.id, type).catch(() => {});
-    const map = { like: [setLikes, "like"], inspire: [setInspires, "inspire"], try: [setTries, "try"] };
-    const [setter] = map[type];
     const was = reacted[type];
-    setter(n => was ? n-1 : n+1);
+    if (type === "like")    setLikes(n    => was ? n - 1 : n + 1);
+    if (type === "inspire") setInspires(n => was ? n - 1 : n + 1);
+    if (type === "try")     setTries(n    => was ? n - 1 : n + 1);
     setReacted(r => ({ ...r, [type]: !was }));
   };
 
-  const tags    = post.variables ?? post.tags ?? [];
-  const avatar  = post.avatar ?? "🎨";
-  const user    = post.username ?? post.user ?? "Artista";
-  const tech    = post.technique ?? "—";
-  const dur     = post.duration ?? "";
-  const rarity  = post.rarity ?? "Común";
-  const prompt  = post.prompt ?? tags.join(" + ");
-  const grad    = post.gradient ?? "from-purple-300 via-pink-300 to-slate-600";
+  const tags   = post.variables ?? post.tags ?? [];
+  const user   = post.username ?? post.user ?? "Artista";
+  const tech   = post.technique ?? "—";
+  const rarity = post.rarity ?? "Común";
+  const prompt = post.prompt ?? tags.join(" + ");
+  const col    = COL_CYCLE[idx % COL_CYCLE.length];
+
+  const reactions = [
+    { Ico: IHeart,   count: likes,    type: "like",    col: "var(--rose)",   active: reacted.like },
+    { Ico: IInspire, count: inspires, type: "inspire", col: "var(--lilac)",  active: reacted.inspire },
+    { Ico: IFlame,   count: tries,    type: "try",     col: "var(--butter)", active: reacted.try },
+  ];
 
   return (
-    <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }}
-      className="rounded-3xl border-2 border-black bg-white overflow-hidden sticker-shadow-md mb-4"
-    >
-      <div className="p-3.5 pb-0 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full border-2 border-black bg-gradient-to-br from-cyan-200 to-pink-200 flex items-center justify-center text-xl shrink-0">
-          {avatar}
+    <div className="stk" style={{ background: "var(--paper-2)", padding: 0, marginBottom: 14, borderRadius: 18, overflow: "hidden", boxShadow: "var(--shadow-lg)" }}>
+      {/* Author row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px" }}>
+        <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: col, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <IUser s={18}/>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-black text-sm truncate">{user}</p>
-          <p className="text-xs text-neutral-400 font-semibold">{tech}{dur ? ` · ${dur}` : ""}</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: 800, fontSize: 13 }}>{user}</p>
+          <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{tech.toUpperCase()} · 32 MIN</p>
         </div>
-        <RarityBadge rarity={rarity} size="sm" />
+        <RarityBadge rarity={rarity}/>
       </div>
 
-      <div className="flex gap-1.5 px-3.5 pt-2 flex-wrap">
-        {tags.map(t => (
-          <span key={t} className="text-[10px] font-black bg-[#DFFF23] border border-black px-2 py-0.5 rounded-full capitalize">
-            {t}
-          </span>
-        ))}
-      </div>
+      {/* Tags */}
+      {tags.length > 0 && (
+        <div style={{ display: "flex", gap: 6, padding: "0 14px 10px", flexWrap: "wrap" }}>
+          {tags.map((t, i) => (
+            <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
+              {typeof t === "string" ? t : t.value}
+            </span>
+          ))}
+        </div>
+      )}
 
-      <div className={`relative mt-2 h-56 bg-gradient-to-br ${grad} flex items-center justify-center`}>
-        <span className="text-9xl drop-shadow-xl opacity-80 float-1">{avatar}</span>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+      {/* Artwork */}
+      <div style={{ position: "relative" }}>
+        <ArtTile kind={idx} height={260}/>
         {prompt && (
-          <div className="absolute bottom-3 left-3 right-3 bg-black/60 backdrop-blur-sm rounded-xl px-3 py-1.5">
-            <p className="text-xs font-black text-white leading-snug line-clamp-2">{prompt}</p>
+          <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, background: "rgba(20,17,15,.85)", color: "#fff", borderRadius: 10, padding: "8px 10px", border: "1.5px solid var(--ink)" }}>
+            <p className="serif" style={{ fontSize: 14, lineHeight: 1.2 }}>{prompt}</p>
           </div>
         )}
       </div>
 
-      <div className="flex gap-2 p-3">
-        <ReactionBtn icon="❤️" count={likes}    active={reacted.like}    color="#FFD6E7" onTap={() => react("like")} />
-        <ReactionBtn icon="✨" count={inspires} active={reacted.inspire} color="#EFE8FF" onTap={() => react("inspire")} />
-        <ReactionBtn icon="🔥" count={tries}    active={reacted.try}     color="#FFE8D6" onTap={() => react("try")} />
+      {/* Reactions */}
+      <div style={{ display: "flex", gap: 8, padding: 12 }}>
+        {reactions.map((b, j) => (
+          <button
+            key={j}
+            onClick={() => react(b.type)}
+            style={{
+              flex: 1, height: 38, borderRadius: 12, border: "2px solid var(--ink)",
+              background: b.active ? b.col : "var(--paper-2)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              fontWeight: 800, fontSize: 12,
+              boxShadow: b.active ? "3px 3px 0 var(--ink)" : "none",
+              cursor: "pointer",
+            }}
+          >
+            <b.Ico s={15}/> {b.count}
+          </button>
+        ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "🌸 Temporada"];
-
 export function FeedScreen() {
-  const [filter, setFilter]   = useState("Para ti");
-  const [posts, setPosts]     = useState(SAMPLE_POSTS);
-  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState("Para ti");
+  const [posts, setPosts]   = useState(SAMPLE_POSTS);
 
   useEffect(() => {
-    setLoading(true);
     fetchArtworks()
       .then(data => { if (data?.artworks?.length) setPosts(data.artworks); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {});
   }, []);
 
   return (
     <Phone>
-      <div className="flex flex-col h-full">
-        <div className="px-5 pt-4 pb-2 shrink-0">
-          <h2 className="text-2xl font-black">Feed ✦</h2>
-          <div className="flex gap-2 mt-2.5 overflow-x-auto no-scrollbar pb-1">
-            {FILTERS.map(f => (
-              <button key={f} onClick={() => setFilter(f)}
-                className={`shrink-0 px-3 py-1.5 rounded-full border-2 border-black font-black text-xs transition-all ${filter===f ? "bg-black text-[#DFFF23] sticker-shadow" : "bg-white"}`}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div style={{ padding: "8px 22px 6px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>Feed</h2>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span className="stk-sm" style={{ width: 36, height: 36, borderRadius: 10, background: "var(--paper-2)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <ISpark s={18}/>
+              </span>
+              <span className="stk-sm" style={{ width: 36, height: 36, borderRadius: 10, background: "var(--paper-2)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <IBookmark s={18}/>
+              </span>
+            </div>
+          </div>
+          {/* Filters */}
+          <div className="scroll" style={{ display: "flex", gap: 8, marginTop: 10, paddingBottom: 4 }}>
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                style={{
+                  flexShrink: 0, padding: "5px 12px", borderRadius: 999,
+                  border: "2px solid var(--ink)",
+                  background: filter === f ? "var(--ink)" : "var(--paper-2)",
+                  color: filter === f ? "var(--acid)" : "var(--ink)",
+                  fontWeight: 700, fontSize: 11,
+                  boxShadow: filter === f ? "3px 3px 0 var(--ink)" : "none",
+                  cursor: "pointer",
+                }}
+              >
                 {f}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5 pb-20 pt-2">
-          {loading && (
-            <div className="flex justify-center py-10 text-2xl">
-              <span className="spin-slow inline-block">⟳</span>
-            </div>
-          )}
-          {!loading && posts.map(p => <ArtCard key={p.id} post={p} />)}
+        <div className="scroll" style={{ flex: 1, padding: "8px 18px 90px" }}>
+          {posts.map((post, i) => (
+            <ArtCard key={post.id ?? i} post={post} idx={i}/>
+          ))}
         </div>
 
-        <BottomNav current="feed" />
+        <BottomNav current="feed"/>
       </div>
     </Phone>
   );

@@ -1,10 +1,18 @@
-import { motion } from "framer-motion";
 import { Phone } from "../components/Phone";
-import { RarityBadge, SeasonBadge } from "../components/RarityBadge";
+import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { PARAM_CATEGORIES, RARITY_COLORS, getOverallRarity, generatePrompt } from "../data/parameters";
+import { PARAM_CATEGORIES, getOverallRarity, generatePrompt } from "../data/parameters";
+import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar } from "../components/Icons";
 
 const CAT_MAP = Object.fromEntries(PARAM_CATEGORIES.map(c => [c.id, c]));
+const CAT_ICONS_EL = { emo: IHeart, ani: IFlame, lug: IStar, obj: IBrush, evt: IStar, col: IBrush };
+
+const VAR_COLORS = {
+  "Común":      "var(--paper-2)",
+  "Raro":       "var(--sky)",
+  "Épico":      "var(--lilac)",
+  "Legendario": "var(--acid)",
+};
 
 export function IdeaScreen() {
   const { state, dispatch } = useApp();
@@ -16,109 +24,104 @@ export function IdeaScreen() {
   }
 
   const { variables, params } = currentIdea;
-  const rarity       = getOverallRarity(variables);
-  const prompt       = generatePrompt(variables);
-  const rarityColors = RARITY_COLORS[rarity];
-  const isLegendary  = rarity === "Legendario";
+  const rarity = getOverallRarity(variables);
+  const prompt = generatePrompt(variables);
+  const rotations = [-1, 1, -0.5];
 
   return (
     <Phone>
-      <div className="flex flex-col h-full px-5">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "0 22px" }}>
         {/* Header */}
-        <div className="pt-4 pb-3 shrink-0">
-          <div className="flex items-center justify-between">
-            <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
-              className="text-sm font-black">
-              ← Volver
-            </button>
-            <RarityBadge rarity={rarity} size="md" />
-          </div>
-          <h2 className="text-2xl font-black mt-2 leading-tight">Tu idea ✨</h2>
+        <div style={{ paddingTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button
+            onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
+            style={{ display: "flex", gap: 6, alignItems: "center", fontWeight: 800, fontSize: 13, background: "transparent", border: "none", cursor: "pointer" }}
+          >
+            <IArrowL s={16}/> Volver
+          </button>
+          <RarityBadge rarity={rarity} size="md"/>
         </div>
+        <h2 className="serif" style={{ fontSize: 36, marginTop: 8, lineHeight: 1 }}>Tu idea</h2>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar pb-4 space-y-3">
-          {/* Cards de variables */}
+        <div className="scroll" style={{ flex: 1, paddingTop: 14, paddingBottom: 20 }}>
+          {/* Variable cards */}
           {variables.map((variable, i) => {
-            const cat       = CAT_MAP[params[i]] ?? {};
-            const varColors = RARITY_COLORS[variable.rarity];
+            const cat = CAT_MAP[params[i]] ?? {};
+            const CatIcon = CAT_ICONS_EL[params[i]] || IHeart;
+            const bg = VAR_COLORS[variable.rarity] || "var(--paper-2)";
             return (
-              <motion.div key={`${variable.value}-${i}`}
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: i * 0.1, type: "spring", stiffness: 320, damping: 26 }}
-                className="flex items-center gap-3 rounded-2xl border-2 border-black p-3 sticker-shadow"
-                style={{ backgroundColor: varColors.bg }}
-              >
-                <div className="w-11 h-11 rounded-xl border-2 border-black bg-white flex items-center justify-center text-xl shrink-0">
-                  {cat.icon ?? "✦"}
+              <div key={`${variable.value}-${i}`} className="stk" style={{
+                background: bg, padding: 12, marginBottom: 10,
+                display: "flex", gap: 10, alignItems: "center",
+                transform: `rotate(${rotations[i] || 0}deg)`,
+              }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <CatIcon s={22}/>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">{params[i]}</p>
-                  <p className="font-black text-sm leading-tight capitalize">{variable.value}</p>
+                <div style={{ flex: 1 }}>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// {cat.label?.toUpperCase() || params[i]?.toUpperCase()}</p>
+                  <p style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1, marginTop: 2, textTransform: "lowercase" }}>{variable.value}</p>
                 </div>
-                <div className="flex flex-col gap-1 items-end shrink-0">
-                  <RarityBadge rarity={variable.rarity} size="sm" />
-                  {variable.season && <SeasonBadge season={variable.season} />}
-                </div>
-              </motion.div>
+                <RarityBadge rarity={variable.rarity}/>
+              </div>
             );
           })}
 
-          {/* Tarjeta del prompt */}
-          <motion.div
-            initial={{ rotate: -3, opacity: 0 }}
-            animate={{ rotate: -1.5, opacity: 1 }}
-            transition={{ delay: 0.35 }}
-            className="rounded-3xl border-4 border-black p-5 relative overflow-hidden"
-            style={{
-              backgroundColor: isLegendary ? "#FFE066" : "#FFFDF3",
-              boxShadow: `6px 6px 0 ${rarityColors.border}`,
-            }}
-          >
-            {isLegendary && <span className="absolute top-2 right-3 text-xl float-1">🌟</span>}
-            <p className="text-[10px] font-black text-neutral-400 mb-1.5 uppercase tracking-widest">Tu reto</p>
-            <p className="text-lg font-black leading-snug">{prompt}</p>
-            {isLegendary && (
-              <div className="mt-3 inline-flex items-center gap-1.5 bg-black text-[#DFFF23] rounded-full px-3 py-1 text-xs font-black">
-                🌟 ¡Combinación legendaria! Rarísima.
+          {/* Prompt ticket */}
+          <div style={{ position: "relative", marginTop: 14, transform: "rotate(-1deg)" }}>
+            <div className="stk-lg" style={{ background: "var(--butter)", padding: 0, borderRadius: 22, overflow: "hidden", position: "relative", border: "3px solid var(--ink)" }}>
+              <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.18 }}/>
+              <div style={{ position: "relative", padding: "20px 18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <span className="tag">// TU RETO</span>
+                  <span className="stamp" style={{ background: rarity === "Legendario" ? "var(--coral)" : "var(--acid)", color: rarity === "Legendario" ? "#fff" : "var(--ink)", borderColor: rarity === "Legendario" ? "#fff" : "var(--ink)" }}>
+                    ★ {rarity.toLowerCase()}
+                  </span>
+                </div>
+                <p className="serif" style={{ fontSize: 22, lineHeight: 1.1, letterSpacing: "-0.005em" }}>
+                  {prompt}
+                </p>
+                <div className="perforated" style={{ margin: "16px -8px 10px" }}/>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>INKRUSH · HOY</span>
+                  <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>RAREZA ×{variables.length}</span>
+                </div>
               </div>
-            )}
-          </motion.div>
+            </div>
+          </div>
 
-          {/* Intentos restantes */}
           {rollsLeft > 0 && (
-            <div className="flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
-              <span className="text-base">🎲</span>
-              <p className="text-xs font-black">
-                Te quedan{" "}
-                <span className="bg-[#DFFF23] px-1 rounded font-black">{rollsLeft}</span>
-                {" "}intento{rollsLeft !== 1 ? "s" : ""} hoy
+            <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 10, marginTop: 14, display: "flex", gap: 10, alignItems: "center" }}>
+              <IDice s={18}/>
+              <p style={{ fontSize: 11, fontWeight: 700 }}>
+                Te quedan <span style={{ background: "var(--acid)", padding: "0 4px", borderRadius: 4 }}>{rollsLeft}</span> intento{rollsLeft !== 1 ? "s" : ""} hoy
               </p>
             </div>
           )}
         </div>
 
-        {/* Acciones */}
-        <div className="pb-5 space-y-2.5 shrink-0">
-          <div className="grid grid-cols-[1fr_52px] gap-2.5">
-            <motion.button whileTap={{ scale: 0.97 }}
+        {/* Actions */}
+        <div style={{ paddingBottom: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 56px", gap: 10 }}>
+            <button
               onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
               disabled={rollsLeft <= 0}
-              className="h-12 rounded-2xl border-2 border-black bg-white font-black text-sm sticker-shadow active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all disabled:opacity-40"
+              className="stk"
+              style={{ height: 48, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: rollsLeft > 0 ? "pointer" : "not-allowed", opacity: rollsLeft <= 0 ? 0.4 : 1 }}
             >
-              {rollsLeft > 0 ? "🎲 Otra idea" : "Sin intentos"}
-            </motion.button>
-            <motion.button whileTap={{ scale: 0.9 }}
-              className="h-12 rounded-2xl border-2 border-black bg-[#FFD6E7] flex items-center justify-center text-xl sticker-shadow"
-              aria-label="Guardar"
-            >🔖</motion.button>
+              <IDice s={16}/> {rollsLeft > 0 ? "Otra idea" : "Sin intentos"}
+            </button>
+            <button className="stk" style={{ background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <IBookmark s={20}/>
+            </button>
           </div>
-          <motion.button whileTap={{ scale: 0.97 }}
+          <button
             onClick={() => dispatch({ type: "SET_SCREEN", screen: "setupTimer" })}
-            className="w-full h-13 py-3 rounded-2xl border-2 border-black bg-[#DFFF23] font-black sticker-shadow-md active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all"
+            className="stk"
+            style={{ height: 56, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
           >
-            🎯 ¡Aceptar reto!
-          </motion.button>
+            <IBrush s={20}/> ¡Aceptar reto!
+          </button>
         </div>
       </div>
     </Phone>

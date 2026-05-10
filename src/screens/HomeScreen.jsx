@@ -1,191 +1,156 @@
-import { motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
+import { Wordmark } from "../components/Wordmark";
+import { ArtTile } from "../components/ArtTile";
 import { useApp } from "../data/store";
-import { getUserLevel, SAMPLE_POSTS, RARITY_COLORS } from "../data/parameters";
-
-function DoodleBackground() {
-  const doodles = ["✦", "○", "△", "◇", "★", "☆", "◉", "▲"];
-  return (
-    <>
-      {doodles.map((d, i) => (
-        <span
-          key={i}
-          className="absolute text-black/5 font-black select-none pointer-events-none"
-          style={{
-            fontSize: `${20 + (i * 8)}px`,
-            top: `${10 + i * 11}%`,
-            left: i % 2 === 0 ? `${5 + i * 8}%` : undefined,
-            right: i % 2 !== 0 ? `${5 + i * 5}%` : undefined,
-            animation: `float${(i % 2) + 1} ${4 + i * 0.5}s ease-in-out infinite`,
-          }}
-        >
-          {d}
-        </span>
-      ))}
-    </>
-  );
-}
+import { getUserLevel, SAMPLE_POSTS } from "../data/parameters";
+import { IUser, IBrush, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR } from "../components/Icons";
 
 export function HomeScreen() {
   const { state, dispatch } = useApp();
   const { profile } = state;
   const level = getUserLevel(profile.completedChallenges);
+  const pct = Math.min(100, Math.round((profile.completedChallenges % 10) / 10 * 100));
 
   return (
     <Phone>
-      <div className="relative flex flex-col h-full overflow-hidden">
-        <DoodleBackground />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+        {/* deco */}
+        <svg style={{ position: "absolute", top: 80, right: -20, opacity: 0.06, pointerEvents: "none" }} width="120" height="120" viewBox="0 0 24 24">
+          <path d="M12 4l2.4 5.4 5.6.5-4.2 3.8 1.2 5.6L12 16l-5 3.3 1.2-5.6L4 9.9l5.6-.5z" fill="var(--ink)"/>
+        </svg>
 
         {/* Header */}
-        <div className="px-5 pt-3 pb-2 shrink-0 z-10">
-          <div className="flex items-center justify-between">
+        <div style={{ padding: "8px 22px 10px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p className="text-xs font-black text-neutral-400">Hola de nuevo 👋</p>
-              <h1 className="text-2xl font-black leading-none">
-                Ink<span className="bg-black text-[#DFFF23] px-1.5 rounded-lg">Rush</span>
-              </h1>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.45)" }}>// HOLA DE NUEVO</p>
+              <Wordmark size={26}/>
             </div>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile" })}
-              className="w-12 h-12 rounded-full border-2 border-black bg-gradient-to-br from-cyan-200 to-pink-200 flex items-center justify-center text-2xl sticker-shadow"
+              style={{ width: 46, height: 46, borderRadius: 999, border: "2px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 var(--ink)", position: "relative", cursor: "pointer" }}
             >
-              {profile.avatar}
-            </motion.button>
+              <IUser s={22}/>
+              {profile.streak > 0 && (
+                <span style={{ position: "absolute", bottom: -4, right: -4, width: 18, height: 18, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800 }}>
+                  {profile.streak}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5 pb-20 z-10">
-          {/* Level card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border-2 border-black p-4 mb-4 relative overflow-hidden sticker-shadow"
-            style={{ backgroundColor: level.color }}
-          >
-            <div className="absolute top-2 right-4 text-5xl opacity-20 float-1">{level.emoji}</div>
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{level.emoji}</span>
-              <div>
-                <p className="font-black text-sm">{level.name}</p>
-                <p className="text-xs font-semibold text-neutral-600">
-                  {profile.completedChallenges} retos completados · Racha de {profile.streak} días 🔥
+        <div className="scroll" style={{ flex: 1, padding: "4px 22px 90px" }}>
+          {/* Level ticket */}
+          <div className="stk" style={{ background: "var(--mint)", padding: 14, marginBottom: 14, position: "relative", overflow: "hidden", borderRadius: 18 }}>
+            <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.12 }}/>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative" }}>
+              <div style={{ width: 46, height: 46, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IBrush s={24}/>
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 800, fontSize: 14, lineHeight: 1 }}>{level.name}</p>
+                <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 4, color: "rgba(20,17,15,.6)" }}>
+                  {profile.completedChallenges} retos · racha {profile.streak} días
                 </p>
               </div>
+              <span className="serif" style={{ fontSize: 30, lineHeight: 1, color: "var(--ink)" }}>0{level.id}</span>
             </div>
-            {/* Progress to next level */}
-            {level.id < 5 && (
-              <div className="mt-3">
-                <div className="flex justify-between text-xs font-black mb-1">
-                  <span>Nivel {level.id}</span>
-                  <span>Nivel {level.id + 1}</span>
+            <div style={{ marginTop: 12, position: "relative" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700 }}>NIVEL 0{level.id}</span>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700 }}>NIVEL 0{Math.min(5, level.id + 1)}</span>
+              </div>
+              <div style={{ height: 8, borderRadius: 999, border: "1.5px solid var(--ink)", background: "rgba(255,255,255,.6)", overflow: "hidden", position: "relative" }}>
+                <div style={{ width: `${pct}%`, height: "100%", background: "var(--ink)" }}/>
+                <div style={{ position: "absolute", left: `${Math.max(0, pct - 2)}%`, top: -4, width: 14, height: 14, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)" }}/>
+              </div>
+            </div>
+          </div>
+
+          {/* Big CTA ticket */}
+          <button
+            onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
+            className="stk"
+            style={{ width: "100%", background: "var(--acid)", padding: 0, marginBottom: 14, borderRadius: 22, overflow: "hidden", position: "relative", boxShadow: "var(--shadow-lg)", cursor: "pointer", textAlign: "left" }}
+          >
+            <div className="stripes-y" style={{ position: "absolute", inset: 0 }}/>
+            <div style={{ position: "relative", padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO DEL DÍA</span>
+                  <h3 className="serif" style={{ fontSize: 36, lineHeight: 0.95, marginTop: 12, maxWidth: 220 }}>Genera tu reto de hoy</h3>
+                  <p className="mono" style={{ fontSize: 11, fontWeight: 600, marginTop: 8 }}>{state.rollsLeft} intentos · expira 23:59</p>
                 </div>
-                <div className="h-2 rounded-full border border-black bg-white/50">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (profile.completedChallenges / (level.id * 10)) * 100)}%` }}
-                    transition={{ delay: 0.4, duration: 0.8 }}
-                    className="h-full rounded-full bg-black"
-                  />
+                <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <IDice s={28} sw={2.4}/>
                 </div>
               </div>
-            )}
-          </motion.div>
-
-          {/* Main CTA */}
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="w-full rounded-3xl border-2 border-black bg-[#DFFF23] p-5 mb-4 sticker-shadow-lg relative overflow-hidden"
-          >
-            <div className="text-left">
-              <div className="text-3xl mb-2">🎰</div>
-              <h3 className="text-xl font-black leading-tight">¡Genera tu reto de hoy!</h3>
-              <p className="text-xs font-semibold text-neutral-600 mt-1">
-                Tienes {state.rollsLeft} intento{state.rollsLeft !== 1 ? "s" : ""} disponible{state.rollsLeft !== 1 ? "s" : ""}
-              </p>
+              <div className="perforated" style={{ margin: "16px 0 12px" }}/>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>RANDOMETRO 3000™</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13 }}>
+                  Empezar <IArrowR s={16}/>
+                </span>
+              </div>
             </div>
-            <div className="absolute bottom-0 right-0 text-8xl opacity-10 translate-x-4 translate-y-4">🎨</div>
-          </motion.button>
+          </button>
 
           {/* Stats row */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-3 gap-3 mb-4"
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 18 }}>
             {[
-              { icon: "❤️", label: "Likes", val: profile.totalLikes },
-              { icon: "✨", label: "Inspiras", val: profile.totalInspires },
-              { icon: "🔥", label: "Lo intentaré", val: profile.totalTries },
-            ].map(stat => (
-              <div key={stat.label} className="rounded-2xl border-2 border-black bg-white p-3 text-center sticker-shadow">
-                <div className="text-xl">{stat.icon}</div>
-                <div className="font-black text-lg">{stat.val}</div>
-                <div className="text-[10px] font-black text-neutral-400">{stat.label}</div>
+              { Ico: IHeart,   v: profile.totalLikes,    l: "Likes",       c: "var(--rose)" },
+              { Ico: IInspire, v: profile.totalInspires, l: "Inspiras",    c: "var(--lilac)" },
+              { Ico: IFlame,   v: profile.totalTries,    l: "Lo intentaré",c: "var(--butter)" },
+            ].map((s, i) => (
+              <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: 10, textAlign: "center" }}>
+                <div style={{ width: 30, height: 30, margin: "0 auto", borderRadius: 8, background: s.c, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <s.Ico s={16}/>
+                </div>
+                <div className="serif" style={{ fontSize: 22, lineHeight: 1, marginTop: 6 }}>{s.v}</div>
+                <div className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.l.toUpperCase()}</div>
               </div>
             ))}
-          </motion.div>
+          </div>
 
-          {/* Recent from feed */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-black">En la comunidad</h3>
-              <button
-                onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
-                className="text-xs font-black underline"
-              >
-                Ver todo
+          {/* Community strip */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+              <h3 className="serif" style={{ fontSize: 22 }}>En la comunidad</h3>
+              <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })} style={{ background: "transparent", border: "none", cursor: "pointer" }}>
+                <span className="mono" style={{ fontSize: 10, fontWeight: 700, textDecoration: "underline" }}>VER TODO →</span>
               </button>
             </div>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-              {SAMPLE_POSTS.slice(0, 3).map(post => (
-                <motion.div
-                  key={post.id}
-                  whileTap={{ scale: 0.97 }}
-                  className="min-w-[140px] rounded-2xl border-2 border-black overflow-hidden sticker-shadow shrink-0"
-                >
-                  <div className={`h-24 bg-gradient-to-br ${post.gradient} flex items-center justify-center text-4xl`}>
-                    {post.avatar}
-                  </div>
-                  <div className="bg-white p-2">
-                    <p className="text-xs font-black truncate">{post.username}</p>
-                    <p className="text-[10px] text-neutral-400 font-semibold">{post.technique}</p>
-                    <div className="flex gap-2 mt-1 text-[10px] font-black">
-                      <span>❤️ {post.likes}</span>
-                      <span>✨ {post.inspires}</span>
+            <div className="scroll" style={{ display: "flex", gap: 10, paddingBottom: 6 }}>
+              {SAMPLE_POSTS.slice(0, 4).map((post, k) => (
+                <div key={post.id} className="stk-sm" style={{ minWidth: 130, background: "var(--paper-2)", overflow: "hidden", padding: 0 }}>
+                  <div style={{ height: 88 }}><ArtTile kind={k} height={88}/></div>
+                  <div style={{ padding: "8px 10px" }}>
+                    <p style={{ fontWeight: 800, fontSize: 11 }}>{post.username}</p>
+                    <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{post.technique?.toUpperCase()}</p>
+                    <div style={{ display: "flex", gap: 6, marginTop: 4, fontSize: 10, fontWeight: 700, alignItems: "center" }}>
+                      <IHeart s={11}/> {post.likes}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
 
           {/* Season banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-3xl border-2 border-black bg-gradient-to-r from-[#D6FFE8] to-[#D6F5FF] p-4 sticker-shadow"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🌸</span>
-              <div>
-                <p className="font-black text-sm">Temporada {state.activeSeason}</p>
-                <p className="text-xs font-semibold text-neutral-600">
-                  Variables especiales de primavera activas. ¡Consigue combinaciones únicas!
-                </p>
-              </div>
+          <div className="stk" style={{ background: "var(--sky)", padding: 14, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: -10, right: -10, opacity: 0.3 }}>
+              <ISpark s={80} stroke="var(--ink-blue)"/>
             </div>
-          </motion.div>
+            <div style={{ position: "relative" }}>
+              <div className="stamp" style={{ background: "var(--paper-2)" }}>TEMP · {state.activeSeason || "primavera"}</div>
+              <p className="serif" style={{ fontSize: 18, marginTop: 8, lineHeight: 1.1 }}>Variables exclusivas activas. Combina para legendarios.</p>
+            </div>
+          </div>
         </div>
 
-        <BottomNav current="home" />
+        <BottomNav current="home"/>
       </div>
     </Phone>
   );

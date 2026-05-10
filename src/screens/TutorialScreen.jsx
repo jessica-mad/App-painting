@@ -1,131 +1,92 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Phone } from "../components/Phone";
+import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
+import { IDice, ITimer, IStar, IHeart, IBrush, IArrowR } from "../components/Icons";
 
 const SLIDES = [
-  {
-    emoji: "🎨",
-    bg: "from-[#DFFF23] to-[#FFD6E7]",
-    title: "Bienvenido a InkRush",
-    desc: "La app para artistas e ilustradores que quieren crear más. Cada día, un reto nuevo generado aleatoriamente para despertar tu creatividad.",
-    doodles: ["✦", "○", "△"],
-  },
-  {
-    emoji: "🎰",
-    bg: "from-[#EFE8FF] to-[#D6F5FF]",
-    title: "El Randometro",
-    desc: "Combina hasta 3 parámetros (emociones, personajes, lugares...) y genera una idea artística única. Tienes 3 intentos por día.",
-    doodles: ["★", "◇", "☆"],
-  },
-  {
-    emoji: "⏱️",
-    bg: "from-[#FFD6E7] to-[#FFF3D6]",
-    title: "Modo Pomodoro",
-    desc: "Elige tu tiempo de sesión: 10, 15, 30 minutos o tiempo libre. Trabaja con música ambiente y mantén tu racha creativa.",
-    doodles: ["▲", "●", "■"],
-  },
-  {
-    emoji: "✨",
-    bg: "from-[#D6FFE8] to-[#D6F5FF]",
-    title: "Rareza de Ideas",
-    desc: "Las variables tienen rareza: Común, Raro, Épico y Legendario. Las temporadas activan parámetros exclusivos. ¿Puedes conseguir una idea Legendaria?",
-    doodles: ["🌟", "💫", "⚡"],
-  },
-  {
-    emoji: "🌍",
-    bg: "from-[#FFF3D6] to-[#EFE8FF]",
-    title: "Comunidad de Artistas",
-    desc: "Sube tus dibujos, reacciona con ❤️ ✨ 🔥, inspira y sé inspirado. Sube de nivel completando retos y desbloquea funciones exclusivas.",
-    doodles: ["♡", "☁", "◆"],
-  },
+  { Icon: IBrush,  col: "var(--acid)",   title: "Bienvenido a InkRush",   desc: "La app para artistas e ilustradores. Cada día, un reto nuevo para despertar tu creatividad." },
+  { Icon: IDice,   col: "var(--lilac)",  title: "El Randometro",           desc: "Combina hasta 3 parámetros y genera una idea artística única. Tienes 3 intentos por día." },
+  { Icon: ITimer,  col: "var(--rose)",   title: "Modo Pomodoro",           desc: "Elige tu tiempo de sesión: 10, 15, 30 min o libre. Trabaja con música ambiente." },
+  { Icon: IStar,   col: "var(--butter)", title: "Rareza de Ideas",         desc: "Variables: Común, Raro, Épico y Legendario. Las temporadas activan parámetros exclusivos." },
+  { Icon: IHeart,  col: "var(--mint)",   title: "Comunidad de Artistas",   desc: "Sube tus dibujos, reacciona con ❤️ ✨ 🔥, inspira y sé inspirado. Sube de nivel creando." },
 ];
 
 export function TutorialScreen() {
   const [slide, setSlide] = useState(0);
   const { dispatch } = useApp();
   const current = SLIDES[slide];
+  const SlideIcon = current.Icon;
 
   const next = () => {
     if (slide < SLIDES.length - 1) setSlide(s => s + 1);
     else dispatch({ type: "SET_SCREEN", screen: "login" });
   };
 
-  const skip = () => dispatch({ type: "SET_SCREEN", screen: "login" });
-
   return (
     <Phone>
-      <div className="flex flex-col h-full">
-        {/* Skip */}
-        <div className="flex justify-end px-6 pt-2">
-          <button onClick={skip} className="text-xs font-black text-neutral-400 underline">
-            Saltar
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 24px" }}>
+        {/* Top */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Wordmark size={22}/>
+          <button
+            onClick={() => dispatch({ type: "SET_SCREEN", screen: "login" })}
+            style={{ background: "transparent", border: "none", fontSize: 11, fontWeight: 800, fontFamily: "JetBrains Mono", color: "rgba(20,17,15,.5)", cursor: "pointer", textDecoration: "underline" }}
+          >
+            SALTAR
           </button>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={slide}
-            initial={{ opacity: 0, x: 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -60 }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="flex flex-col flex-1"
-          >
-            {/* Hero area */}
-            <div className={`mx-6 mt-4 rounded-3xl border-2 border-black bg-gradient-to-br ${current.bg} p-8 relative overflow-hidden`}
-              style={{ minHeight: 260 }}>
-              {/* Floating doodles */}
-              {current.doodles.map((d, i) => (
-                <span
-                  key={i}
-                  className="absolute text-black/20 font-black text-4xl select-none"
-                  style={{
-                    top: `${15 + i * 25}%`,
-                    right: `${8 + i * 12}%`,
-                    animation: `float${(i % 2) + 1} ${4 + i}s ease-in-out infinite`,
-                  }}
-                >
-                  {d}
-                </span>
-              ))}
-              <div className="text-7xl mb-4 text-center wiggle inline-block w-full">
-                {current.emoji}
-              </div>
-              <div className="w-16 h-1 bg-black/20 rounded-full mx-auto" />
+        {/* Hero card */}
+        <div
+          className="stk-lg"
+          style={{ background: current.col, padding: "32px 20px", marginTop: 16, position: "relative", overflow: "hidden", textAlign: "center", flex: "0 0 auto" }}
+        >
+          <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.15 }}/>
+          <div className="stripes-y" style={{ position: "absolute", inset: 0, opacity: 0.3 }}/>
+          <div style={{ position: "relative" }}>
+            <div style={{ width: 80, height: 80, borderRadius: 20, border: "3px solid var(--ink)", background: "var(--paper-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0 var(--ink)" }}>
+              <SlideIcon s={40}/>
             </div>
+          </div>
+        </div>
 
-            {/* Text */}
-            <div className="px-6 pt-6 flex-1">
-              <h2 className="text-2xl font-black leading-tight mb-3">{current.title}</h2>
-              <p className="text-sm font-semibold text-neutral-600 leading-relaxed">
-                {current.desc}
-              </p>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+        {/* Text */}
+        <div style={{ flex: 1, paddingTop: 20 }}>
+          <h2 className="serif" style={{ fontSize: 32, lineHeight: 1.05 }}>{current.title}</h2>
+          <p style={{ fontSize: 14, fontWeight: 500, color: "rgba(20,17,15,.65)", lineHeight: 1.5, marginTop: 10 }}>
+            {current.desc}
+          </p>
+        </div>
 
         {/* Dots */}
-        <div className="flex justify-center gap-2 pb-4">
+        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 16 }}>
           {SLIDES.map((_, i) => (
             <button
               key={i}
               onClick={() => setSlide(i)}
-              className={`h-2 rounded-full border border-black transition-all ${i === slide ? "w-6 bg-black" : "w-2 bg-neutral-300"}`}
+              style={{
+                height: 6, width: i === slide ? 24 : 6,
+                borderRadius: 999, border: "1.5px solid var(--ink)",
+                background: i === slide ? "var(--ink)" : "transparent",
+                cursor: "pointer", transition: "width 0.2s",
+              }}
             />
           ))}
         </div>
 
         {/* CTA */}
-        <div className="px-6 pb-8">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={next}
-            className="w-full h-14 rounded-2xl border-2 border-black bg-[#DFFF23] font-black text-base sticker-shadow-md active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all"
-          >
-            {slide < SLIDES.length - 1 ? "Siguiente →" : "¡Empezar!"}
-          </motion.button>
-        </div>
+        <button
+          onClick={next}
+          className="stk"
+          style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
+        >
+          {slide < SLIDES.length - 1 ? (
+            <><IArrowR s={18}/> Siguiente</>
+          ) : (
+            <><IBrush s={18}/> ¡Empezar!</>
+          )}
+        </button>
       </div>
     </Phone>
   );

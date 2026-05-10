@@ -1,50 +1,10 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
+import { ArtTile } from "../components/ArtTile";
 import { useApp } from "../data/store";
 import { getUserLevel, LEVELS, TECHNIQUES } from "../data/parameters";
-
-function StatCard({ icon, label, value, color }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-black bg-white p-3 sticker-shadow">
-      <span className="text-xl">{icon}</span>
-      <span className="font-black text-lg leading-none">{value}</span>
-      <span className="text-[10px] font-black text-neutral-400">{label}</span>
-    </div>
-  );
-}
-
-function LevelRoadmap({ current }) {
-  return (
-    <div className="space-y-2">
-      {LEVELS.map(level => {
-        const isUnlocked = current.id >= level.id;
-        const isCurrent = current.id === level.id;
-        return (
-          <div
-            key={level.id}
-            className={`flex items-center gap-3 rounded-2xl border-2 border-black p-3 transition-all ${isCurrent ? "sticker-shadow" : ""}`}
-            style={{ backgroundColor: isUnlocked ? level.color : "#F0F0F0", opacity: isUnlocked ? 1 : 0.5 }}
-          >
-            <span className="text-2xl">{level.emoji}</span>
-            <div className="flex-1">
-              <p className={`font-black text-sm ${isCurrent ? "" : "text-neutral-400"}`}>{level.name}</p>
-              <p className="text-xs font-semibold text-neutral-500">{level.minChallenges}+ retos</p>
-            </div>
-            {isUnlocked ? (
-              <span className="text-xs font-black bg-black text-white px-2 py-0.5 rounded-full">
-                {isCurrent ? "Actual" : "✓"}
-              </span>
-            ) : (
-              <span className="text-xs font-black text-neutral-400">🔒</span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock } from "../components/Icons";
 
 const TABS = ["Perfil", "Logros", "Estadísticas"];
 
@@ -53,216 +13,185 @@ export function ProfileScreen() {
   const { profile } = state;
   const level = getUserLevel(profile.completedChallenges);
   const [tab, setTab] = useState("Perfil");
-  const [editingSocials, setEditingSocials] = useState(false);
-  const [socials, setSocials] = useState(profile.socials);
 
   const favTechs = TECHNIQUES.filter(t => state.favoriteTechniques.includes(t.id));
 
   return (
     <Phone>
-      <div className="flex flex-col h-full">
-        {/* Hero header */}
-        <div className="px-5 pt-4 pb-3 bg-gradient-to-b from-[#EFE8FF] to-[#FFFDF3] border-b-2 border-black shrink-0">
-          <div className="flex items-start gap-4">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full border-4 border-black bg-gradient-to-br from-cyan-200 to-pink-200 flex items-center justify-center text-4xl sticker-shadow-md">
-                {profile.avatar}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Hero */}
+        <div style={{ background: "var(--lilac)", borderBottom: "2px solid var(--ink)", padding: "12px 22px 14px", position: "relative", overflow: "hidden" }} className="grain-soft">
+          <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.1 }}/>
+          <div style={{ display: "flex", gap: 14, position: "relative" }}>
+            <div style={{ position: "relative" }}>
+              <div style={{ width: 76, height: 76, borderRadius: 999, border: "3px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0 var(--ink)" }}>
+                <IUser s={40}/>
               </div>
-              <div
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full border-2 border-black flex items-center justify-center text-sm font-black"
-                style={{ backgroundColor: level.color }}
-              >
-                {level.emoji}
+              <div style={{ position: "absolute", bottom: -4, right: -4, width: 28, height: 28, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IBrush s={14}/>
               </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-black text-xl leading-none">{profile.displayName}</h3>
-              <p className="text-xs font-semibold text-neutral-500">@{profile.username}</p>
-              <p className="text-xs font-semibold mt-1">{profile.bio}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs font-black bg-black text-[#DFFF23] px-2 py-0.5 rounded-full">
+            <div style={{ flex: 1 }}>
+              <p className="serif" style={{ fontSize: 24, lineHeight: 1 }}>{profile.displayName}</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 2 }}>@{profile.username}</p>
+              {profile.bio && <p style={{ fontSize: 11, fontWeight: 600, marginTop: 4, lineHeight: 1.3 }}>{profile.bio}</p>}
+              <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>
                   {level.name}
                 </span>
-                <span className="text-xs font-black text-neutral-400">
-                  🔥 {profile.streak} días
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.6)" }}>
+                  <IFlame s={12}/> {profile.streak} días
                 </span>
               </div>
             </div>
           </div>
 
           {/* Share link */}
-          <div className="flex items-center gap-2 mt-3 rounded-xl border-2 border-black bg-white px-3 py-2">
-            <span className="text-xs font-black text-neutral-400 flex-1 truncate">
-              🔗 {profile.shareLink}
+          <div className="stk-sm" style={{ marginTop: 12, background: "var(--paper-2)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+            <ILink s={14}/>
+            <span className="mono" style={{ fontSize: 10, fontWeight: 700, flex: 1, color: "rgba(20,17,15,.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {profile.shareLink}
             </span>
-            <button className="text-xs font-black bg-[#DFFF23] border border-black px-2 py-1 rounded-lg">
-              Copiar
+            <button style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <ICopy s={11}/> Copiar
             </button>
           </div>
 
-          {/* Social links */}
-          <div className="flex gap-2 mt-3">
+          {/* Stats */}
+          <div style={{ display: "flex", justifyContent: "space-around", marginTop: 14 }}>
             {[
-              { key: "instagram", icon: "📸", color: "#FFD6E7" },
-              { key: "tiktok", icon: "🎵", color: "#D6F5FF" },
-              { key: "pinterest", icon: "📌", color: "#FFE8D6" },
-            ].map(s => (
-              <button
-                key={s.key}
-                onClick={() => setEditingSocials(true)}
-                className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border-2 border-black font-black text-xs"
-                style={{ backgroundColor: socials[s.key] ? s.color : "white" }}
-              >
-                {s.icon} {socials[s.key] ? `@${socials[s.key].split(".")[0]}` : "+"}
-              </button>
-            ))}
-          </div>
-
-          {/* Follower stats */}
-          <div className="flex justify-around mt-3">
-            {[
-              { label: "Retos", val: profile.completedChallenges },
-              { label: "Seguidores", val: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers },
-              { label: "Siguiendo", val: profile.following },
-            ].map(s => (
-              <div key={s.label} className="text-center">
-                <p className="font-black text-lg leading-none">{s.val}</p>
-                <p className="text-xs font-semibold text-neutral-400">{s.label}</p>
+              { l: "Retos",      v: profile.completedChallenges },
+              { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers },
+              { l: "Siguiendo",  v: profile.following },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: "center" }}>
+                <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{s.v}</p>
+                <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 2 }}>{s.l.toUpperCase()}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b-2 border-black shrink-0">
-          {TABS.map(t => (
+        <div style={{ display: "flex", borderBottom: "2px solid var(--ink)", flexShrink: 0 }}>
+          {TABS.map((t, i) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-3 font-black text-xs border-r-2 border-black last:border-r-0 transition-colors ${tab === t ? "bg-[#DFFF23]" : "bg-white"}`}
-            >
-              {t}
-            </button>
+              style={{
+                flex: 1, padding: "10px 0", border: "none",
+                borderRight: i < TABS.length - 1 ? "2px solid var(--ink)" : "none",
+                background: tab === t ? "var(--acid)" : "var(--paper-2)",
+                fontWeight: 800, fontSize: 11, fontFamily: "JetBrains Mono",
+                textTransform: "uppercase", letterSpacing: "0.04em", cursor: "pointer",
+              }}
+            >{t}</button>
           ))}
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-4 pb-20">
-          <AnimatePresence mode="wait">
-            {tab === "Perfil" && (
-              <motion.div key="perfil" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                {/* Fav techniques */}
-                {favTechs.length > 0 && (
-                  <div>
-                    <p className="font-black mb-2">Mis técnicas</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {favTechs.map(t => (
-                        <span key={t.id} className="flex items-center gap-1 px-3 py-1.5 rounded-full border-2 border-black font-black text-xs" style={{ backgroundColor: t.color }}>
-                          {t.icon} {t.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Recent works placeholder */}
-                <div>
-                  <p className="font-black mb-2">Mis obras</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["from-purple-300 to-pink-300", "from-cyan-200 to-blue-300", "from-yellow-200 to-orange-300", "from-green-200 to-teal-300"].map((g, i) => (
-                      <div key={i} className={`h-28 rounded-2xl border-2 border-black bg-gradient-to-br ${g} flex items-center justify-center text-3xl sticker-shadow`}>
-                        {["🐦‍⬛", "🌙", "🦊", "🔮"][i]}
-                      </div>
+        <div className="scroll" style={{ flex: 1, padding: "12px 22px 90px" }}>
+          {tab === "Perfil" && (
+            <div>
+              {favTechs.length > 0 && (
+                <>
+                  <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Mis técnicas</p>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                    {favTechs.map(t => (
+                      <span key={t.id} style={{ display: "inline-flex", gap: 5, alignItems: "center", padding: "5px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: t.color || "var(--sky)", fontSize: 11, fontWeight: 700 }}>
+                        <IBrush s={13}/> {t.label}
+                      </span>
                     ))}
                   </div>
-                </div>
-              </motion.div>
-            )}
+                </>
+              )}
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Mis obras</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {[0, 1, 2, 3].map(k => <ArtTile key={k} kind={k + 2} height={130}/>)}
+              </div>
+            </div>
+          )}
 
-            {tab === "Logros" && (
-              <motion.div key="logros" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <p className="font-black mb-3">Tu camino de artista</p>
-                <LevelRoadmap current={level} />
-              </motion.div>
-            )}
+          {tab === "Logros" && (
+            <div>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 12 }}>Tu camino de artista</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {LEVELS.map(lv => {
+                  const unlocked = level.id >= lv.id;
+                  const current  = level.id === lv.id;
+                  return (
+                    <div key={lv.id} className={current ? "stk" : "stk-sm"} style={{
+                      background: unlocked ? (lv.color || "var(--mint)") : "var(--paper)",
+                      padding: 12, opacity: unlocked ? 1 : 0.5, display: "flex", alignItems: "center", gap: 10,
+                    }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <IBrush s={20}/>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: 800, fontSize: 13 }}>{lv.name}</p>
+                        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ RETOS</p>
+                      </div>
+                      {unlocked ? (
+                        <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>
+                          {current ? "Actual" : <ICheck s={12} stroke="var(--acid)"/>}
+                        </span>
+                      ) : (
+                        <ILock s={16} stroke="rgba(20,17,15,.4)"/>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-            {tab === "Estadísticas" && (
-              <motion.div key="stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <StatCard icon="❤️" label="Likes" value={profile.totalLikes} />
-                  <StatCard icon="✨" label="Inspiras" value={profile.totalInspires} />
-                  <StatCard icon="🔥" label="Lo intentaré" value={profile.totalTries} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <StatCard icon="⏱️" label="Pomodoros" value={profile.pomodorosCompleted} />
-                  <StatCard icon="🎯" label="Retos" value={profile.completedChallenges} />
-                </div>
-
-                <div className="mt-4 rounded-2xl border-2 border-black bg-[#DFFF23] p-4 sticker-shadow">
-                  <p className="font-black">Impacto en la comunidad</p>
-                  <p className="text-xs font-semibold text-neutral-600 mt-1">
-                    Has inspirado a {profile.totalInspires} artistas. ¡Sigue así!
-                  </p>
-                  <div className="mt-2 h-2 rounded-full border border-black bg-white/50">
-                    <div className="h-full rounded-full bg-black" style={{ width: "65%" }} />
+          {tab === "Estadísticas" && (
+            <div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 12 }}>
+                {[
+                  { Ico: IHeart,   l: "Likes",       v: profile.totalLikes,    c: "var(--rose)" },
+                  { Ico: IInspire, l: "Inspiras",     v: profile.totalInspires, c: "var(--lilac)" },
+                  { Ico: IFlame,   l: "Lo intentaré", v: profile.totalTries,    c: "var(--butter)" },
+                ].map((s, i) => (
+                  <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: 10, textAlign: "center" }}>
+                    <div style={{ width: 30, height: 30, margin: "0 auto", borderRadius: 8, background: s.c, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <s.Ico s={16}/>
+                    </div>
+                    <div className="serif" style={{ fontSize: 20, lineHeight: 1, marginTop: 6 }}>{s.v}</div>
+                    <div className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.l.toUpperCase()}</div>
                   </div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                {[
+                  { Ico: ITimer, l: "Pomodoros",  v: profile.pomodorosCompleted, c: "var(--sky)" },
+                  { Ico: IDice,  l: "Retos",       v: profile.completedChallenges, c: "var(--mint)" },
+                ].map((s, i) => (
+                  <div key={i} className="stk-sm" style={{ background: s.c, padding: 14 }}>
+                    <s.Ico s={22}/>
+                    <div className="serif" style={{ fontSize: 28, lineHeight: 1, marginTop: 8 }}>{s.v}</div>
+                    <div className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.6)", marginTop: 4 }}>{s.l.toUpperCase()}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="stk" style={{ background: "var(--acid)", padding: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <IStar s={18}/>
+                  <p style={{ fontWeight: 800, fontSize: 13 }}>Impacto en la comunidad</p>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.65)", marginTop: 6 }}>
+                  Has inspirado a {profile.totalInspires} artistas. ¡Sigue así!
+                </p>
+                <div style={{ marginTop: 10, height: 8, borderRadius: 999, border: "1.5px solid var(--ink)", background: "rgba(255,255,255,.5)", overflow: "hidden" }}>
+                  <div style={{ width: "65%", height: "100%", background: "var(--ink)" }}/>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <BottomNav current="profile" />
+        <BottomNav current="profile"/>
       </div>
-
-      {/* Edit socials modal */}
-      <AnimatePresence>
-        {editingSocials && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 z-50 flex items-end"
-          >
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="w-full bg-[#FFFDF3] rounded-t-3xl border-t-4 border-black p-6"
-            >
-              <h3 className="font-black text-lg mb-4">Mis redes sociales</h3>
-              {[
-                { key: "instagram", icon: "📸", label: "Instagram" },
-                { key: "tiktok", icon: "🎵", label: "TikTok" },
-                { key: "pinterest", icon: "📌", label: "Pinterest" },
-              ].map(s => (
-                <div key={s.key} className="mb-3">
-                  <label className="text-xs font-black mb-1 block">{s.icon} {s.label}</label>
-                  <input
-                    type="text"
-                    value={socials[s.key]}
-                    onChange={e => setSocials(prev => ({ ...prev, [s.key]: e.target.value }))}
-                    placeholder={`usuario.${s.key.toLowerCase()}`}
-                    className="w-full h-12 rounded-xl border-2 border-black bg-white px-4 font-semibold text-sm outline-none"
-                  />
-                </div>
-              ))}
-              <div className="flex gap-3 mt-4">
-                <button onClick={() => setEditingSocials(false)} className="flex-1 h-12 rounded-xl border-2 border-black bg-white font-black">
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => { dispatch({ type: "UPDATE_PROFILE", data: { socials } }); setEditingSocials(false); }}
-                  className="flex-1 h-12 rounded-xl border-2 border-black bg-[#DFFF23] font-black sticker-shadow"
-                >
-                  Guardar
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </Phone>
   );
 }

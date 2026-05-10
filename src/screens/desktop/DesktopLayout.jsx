@@ -1,0 +1,595 @@
+import { useState } from "react";
+import { Wordmark } from "../../components/Wordmark";
+import { ArtTile } from "../../components/ArtTile";
+import { RarityBadge } from "../../components/RarityBadge";
+import { useApp } from "../../data/store";
+import {
+  IHome, IFeed, IBookmark, ISpark, IUser, IDice, IFlame, IHeart, IInspire,
+  IBrush, ITimer, IStar, IDiamond, IMusic, IPause, IPlay, IReload, ICheck,
+  IArrowR, ILock, ICam, IShare, IPlus, IBolt, ICircle, IArrowL,
+} from "../../components/Icons";
+import { getUserLevel, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY, SEASONS } from "../../data/parameters";
+
+/* ─── Sidebar ─── */
+function DeskSidebar({ current }) {
+  const { state, dispatch } = useApp();
+  const { profile } = state;
+  const level = getUserLevel(profile.completedChallenges);
+
+  const items = [
+    { id: "home",    Icon: IHome,     label: "Inicio" },
+    { id: "random",  Icon: IDice,     label: "Randómetro" },
+    { id: "feed",    Icon: IFeed,     label: "Feed" },
+    { id: "saved",   Icon: IBookmark, label: "Guardados" },
+    { id: "profile", Icon: IUser,     label: "Mi perfil" },
+  ];
+
+  return (
+    <aside style={{
+      width: 240, padding: "20px 14px", borderRight: "2px solid var(--ink)",
+      background: "var(--paper-2)", display: "flex", flexDirection: "column", gap: 10,
+      flexShrink: 0,
+    }} className="grain-soft">
+      <div style={{ padding: "0 6px 14px", borderBottom: "2px dashed rgba(20,17,15,.18)" }}>
+        <Wordmark size={28}/>
+        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 4 }}>// PARA ARTISTAS</p>
+      </div>
+
+      <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {items.map(({ id, Icon, label }) => {
+          const active = current === id;
+          return (
+            <button key={id} onClick={() => dispatch({ type: "SET_SCREEN", screen: id })} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "10px 12px", borderRadius: 12,
+              border: active ? "2px solid var(--ink)" : "2px solid transparent",
+              background: active ? "var(--acid)" : "transparent",
+              boxShadow: active ? "3px 3px 0 var(--ink)" : "none",
+              fontWeight: active ? 800 : 600, fontSize: 13, fontFamily: "Space Grotesk",
+              color: "var(--ink)", textAlign: "left", cursor: "pointer", width: "100%",
+            }}>
+              <Icon s={18} sw={active ? 2.2 : 1.8}/>
+              <span style={{ flex: 1 }}>{label}</span>
+              {active && <span>→</span>}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* CTA card */}
+      <div className="stk" style={{
+        marginTop: 8, background: "var(--ink)", color: "#fff", borderRadius: 14, padding: 14,
+        position: "relative", overflow: "hidden",
+      }}>
+        <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.15 }}/>
+        <div style={{ position: "relative" }}>
+          <span style={{ background: "var(--acid)", color: "var(--ink)", padding: "2px 6px", borderRadius: 4, fontFamily: "JetBrains Mono", fontSize: 9, fontWeight: 800 }}>RETO HOY</span>
+          <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginTop: 10, color: "#fff" }}>Genera tu reto</p>
+          <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.6)", marginTop: 4 }}>
+            {state.rollsLeft}/3 INTENTOS
+          </p>
+          <button className="stk" onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })} style={{
+            marginTop: 10, width: "100%", padding: "8px 0", background: "var(--acid)",
+            border: "2px solid var(--acid)", boxShadow: "3px 3px 0 var(--paper-2)",
+            borderRadius: 10, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer",
+          }}>
+            <IDice s={14}/> Randomizar
+          </button>
+        </div>
+      </div>
+
+      {/* User card */}
+      <div style={{ marginTop: "auto" }}>
+        <div style={{ display: "flex", gap: 10, padding: "10px 8px", borderRadius: 12, background: "var(--rose)", border: "2px solid var(--ink)", boxShadow: "3px 3px 0 var(--ink)", alignItems: "center" }}>
+          <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <IUser s={18}/>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 800, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.displayName}</p>
+            <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{level.name.toUpperCase()}</p>
+          </div>
+          <ISpark s={16}/>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+/* ─── Topbar ─── */
+function DeskTopbar({ title, sub }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", padding: "18px 28px",
+      borderBottom: "2px solid var(--ink)", gap: 18, background: "var(--paper-2)",
+      flexShrink: 0,
+    }} className="grain-soft">
+      <div style={{ flex: 1 }}>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>// {sub}</p>
+        <h1 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 4 }}>{title}</h1>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", border: "2px solid var(--ink)", borderRadius: 12, background: "var(--paper)", width: 260 }}>
+        <ISpark s={16}/>
+        <span className="mono" style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.5)", flex: 1 }}>Buscar artista, técnica…</span>
+        <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, fontWeight: 700, padding: "1px 5px", border: "1.5px solid var(--ink)", borderRadius: 4 }}>⌘K</span>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="stk-sm" style={{ width: 38, height: 38, borderRadius: 10, background: "var(--paper-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)", cursor: "pointer" }}>
+          <IHeart s={18}/>
+        </button>
+        <button className="stk-sm" style={{ width: 38, height: 38, borderRadius: 10, background: "var(--butter)", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)", cursor: "pointer", position: "relative" }}>
+          <IBookmark s={18}/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Desktop Home ─── */
+export function DeskHome() {
+  const { state, dispatch } = useApp();
+  const { profile } = state;
+  const level = getUserLevel(profile.completedChallenges);
+  const pct = Math.round(((profile.completedChallenges - level.minChallenges) / 10) * 100);
+
+  const stats = [
+    { Icon: IFlame,   v: `${profile.streak}d`,  l: "Racha activa",    c: "var(--butter)" },
+    { Icon: IBrush,   v: profile.completedChallenges, l: "Retos hechos", c: "var(--mint)" },
+    { Icon: IHeart,   v: profile.totalLikes,     l: "Likes recibidos", c: "var(--rose)" },
+    { Icon: IInspire, v: profile.totalInspires,  l: "Inspiras",        c: "var(--lilac)" },
+  ];
+
+  return (
+    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <DeskSidebar current="home"/>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <DeskTopbar
+          sub={`DÍA ${profile.streak} DE RACHA · ${level.name.toUpperCase()}`}
+          title={`Hola, ${profile.displayName.split(" ")[0]} 🪶`}
+        />
+        <div className="scroll" style={{ flex: 1, padding: 28, display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 22 }}>
+          {/* Left column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+            {/* Randómetro CTA */}
+            <div className="stk-lg" style={{ background: "var(--acid)", padding: 0, position: "relative", overflow: "hidden", borderRadius: 22, boxShadow: "var(--shadow-lg)" }}>
+              <div className="stripes-y" style={{ position: "absolute", inset: 0 }}/>
+              <div style={{ position: "relative", padding: 28, display: "grid", gridTemplateColumns: "1.4fr 0.9fr", gap: 24, alignItems: "center" }}>
+                <div>
+                  <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO HOY · {state.rollsLeft}/3 INTENTOS</span>
+                  <h2 className="serif" style={{ fontSize: 56, lineHeight: 0.95, marginTop: 14 }}>Genera el reto<br/>de hoy</h2>
+                  <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                    <button className="stk" onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })} style={{ background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, padding: "12px 18px", fontWeight: 800, fontSize: 13, display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <IDice s={16} stroke="var(--acid)"/> ¡Randomizar!
+                    </button>
+                    <button className="stk-sm" onClick={() => dispatch({ type: "SET_SCREEN", screen: "saved" })} style={{ background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, padding: "12px 16px", fontWeight: 800, fontSize: 13, display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <IBookmark s={16}/> Ideas guardadas
+                    </button>
+                  </div>
+                </div>
+                <div style={{ position: "relative", aspectRatio: "1 / 1" }}>
+                  <div style={{ position: "absolute", inset: 16, border: "3px solid var(--ink)", borderRadius: 24, background: "var(--paper-2)", boxShadow: "6px 6px 0 var(--ink)", transform: "rotate(-6deg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <IDice s={80} sw={2.2}/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+              {stats.map((s, i) => (
+                <div key={i} className="stk-sm" style={{ background: s.c, padding: 14, borderRadius: 16 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <s.Icon s={18}/>
+                  </div>
+                  <p className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>{s.v}</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.65)", marginTop: 4 }}>{s.l.toUpperCase()}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent works */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                <h3 className="serif" style={{ fontSize: 28 }}>Tus últimas obras</h3>
+                <span className="mono" style={{ fontSize: 10, fontWeight: 700, textDecoration: "underline", cursor: "pointer" }} onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}>VER TODO →</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gridTemplateRows: "180px 180px", gap: 10 }}>
+                <div style={{ gridRow: "1 / span 2", position: "relative" }}>
+                  <ArtTile kind={0} height={370}/>
+                </div>
+                {[2, 3, 4, 5].map(k => (
+                  <div key={k} style={{ position: "relative" }}><ArtTile kind={k} height={180}/></div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {/* Level card */}
+            <div className="stk" style={{ background: "var(--mint)", padding: 18, position: "relative", overflow: "hidden", borderRadius: 18 }}>
+              <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.12 }}/>
+              <div style={{ position: "relative" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 50, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <IBrush s={24}/>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>NIVEL {String(level.id).padStart(2, "0")}</p>
+                    <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{level.name}</p>
+                  </div>
+                  <span className="serif" style={{ fontSize: 38, lineHeight: 1 }}>{pct}%</span>
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ height: 10, borderRadius: 999, border: "2px solid var(--ink)", background: "rgba(255,255,255,.5)", overflow: "hidden", position: "relative" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: "var(--ink)" }}/>
+                    <div style={{ position: "absolute", left: `${Math.max(0, pct - 2)}%`, top: -4, width: 16, height: 16, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)" }}/>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                    <span className="mono" style={{ fontSize: 9, fontWeight: 700 }}>{profile.completedChallenges} RETOS</span>
+                    <span className="mono" style={{ fontSize: 9, fontWeight: 700 }}>SIGUIENTE NIVEL EN {10 - ((profile.completedChallenges - level.minChallenges) % 10)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Streak grid */}
+            <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 16, borderRadius: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <p style={{ fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}><IFlame s={14}/> Racha actual</p>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>{profile.streak} DÍAS</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(16, 1fr)", gap: 4, marginTop: 12 }}>
+                {Array.from({ length: 31 }).map((_, i) => {
+                  const filled = i < profile.streak % 31;
+                  const lvl = filled ? (i % 4) + 1 : 0;
+                  const colors = ["var(--paper)", "rgba(20,17,15,.15)", "var(--mint)", "var(--acid)", "var(--coral)"];
+                  return <div key={i} style={{ aspectRatio: "1/1", borderRadius: 4, border: "1.5px solid var(--ink)", background: colors[lvl] }}/>;
+                })}
+              </div>
+            </div>
+
+            {/* Feed preview */}
+            <div style={{ borderRadius: 16, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: 16, boxShadow: "3px 3px 0 var(--ink)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                <p style={{ fontWeight: 800, fontSize: 13 }}>En la comunidad ahora</p>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "var(--coral)" }}>● 1.2K ONLINE</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { u: "@duendeart", a: "publicó",            c: "var(--lilac)", r: "Épico" },
+                  { u: "@karu_san",  a: "completó reto épico", c: "var(--sky)",   r: "Raro" },
+                  { u: "@noir.line", a: "subió de nivel",      c: "var(--rose)" },
+                ].map((p, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", paddingBottom: i < 2 ? 10 : 0, borderBottom: i < 2 ? "1px dashed rgba(20,17,15,.18)" : "none" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: p.c, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <IUser s={16}/>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12 }}><b>{p.u}</b> {p.a}</p>
+                      <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>HACE {2 + i * 4} MIN</p>
+                    </div>
+                    {p.r && <RarityBadge rarity={p.r}/>}
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })} className="stk-sm" style={{ width: "100%", height: 38, marginTop: 12, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 10, fontWeight: 800, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                Ver todo el feed <IArrowR s={14}/>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ─── Desktop Feed ─── */
+const FEED_FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana", "Acuarela", "Tinta"];
+const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
+
+export function DeskFeed() {
+  const { dispatch } = useApp();
+  const [filter, setFilter] = useState("Para ti");
+
+  const posts = [
+    { u: "@malva.ink",  t: "Acuarela",    r: "Legendario", k: 0, prompt: "melancolía + cuervo + carnaval", likes: 312, ins: 89 },
+    { u: "@duendeart",  t: "Tinta",        r: "Épico",      k: 4, prompt: "nostalgia + zorro + biblioteca",  likes: 142, ins: 36 },
+    { u: "@karu_san",   t: "Lápiz",        r: "Raro",       k: 2, prompt: "calma + ciervo + bosque mágico",  likes: 98,  ins: 22 },
+    { u: "@noir.line",  t: "Pastel",       r: "Épico",      k: 3, prompt: "asombro + ballena + tormenta",    likes: 211, ins: 54 },
+    { u: "@papel_roto", t: "Tinta china",  r: "Legendario", k: 1, prompt: "soledad + lobo + ciudad muerta",  likes: 489, ins: 127 },
+    { u: "@tinta.azul", t: "Acuarela",     r: "Raro",       k: 5, prompt: "alegría + colibrí + jardín",      likes: 76,  ins: 18 },
+  ];
+
+  return (
+    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <DeskSidebar current="feed"/>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <DeskTopbar sub="LO MEJOR DE LA COMUNIDAD HOY" title="Feed"/>
+        {/* Filters bar */}
+        <div style={{ padding: "12px 28px", borderBottom: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          {FEED_FILTERS.map(f => {
+            const active = f === filter;
+            return (
+              <button key={f} onClick={() => setFilter(f)} style={{
+                padding: "6px 14px", borderRadius: 999, border: "2px solid var(--ink)",
+                background: active ? "var(--ink)" : "var(--paper-2)",
+                color: active ? "var(--acid)" : "var(--ink)",
+                fontWeight: 700, fontSize: 12, boxShadow: active ? "3px 3px 0 var(--ink)" : "none",
+                cursor: "pointer",
+              }}>{f}</button>
+            );
+          })}
+          <button className="stk-sm" style={{ marginLeft: "auto", height: 36, padding: "0 12px", borderRadius: 10, background: "var(--paper-2)", border: "2px solid var(--ink)", fontWeight: 800, fontSize: 11, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+            <ISpark s={14}/> Más relevantes
+          </button>
+        </div>
+
+        <div className="scroll" style={{ flex: 1, padding: 22, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, alignContent: "start" }}>
+          {posts.map((p, i) => (
+            <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", borderRadius: 16, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px" }}>
+                <div style={{ width: 34, height: 34, borderRadius: 999, border: "2px solid var(--ink)", background: COL_CYCLE[i % COL_CYCLE.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <IUser s={16}/>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 800, fontSize: 12 }}>{p.u}</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{p.t.toUpperCase()}</p>
+                </div>
+                <RarityBadge rarity={p.r}/>
+              </div>
+              <div style={{ position: "relative" }}>
+                <ArtTile kind={p.k} height={200}/>
+                <div style={{ position: "absolute", left: 10, right: 10, bottom: 10, background: "rgba(20,17,15,.85)", color: "#fff", borderRadius: 8, padding: "6px 10px", border: "1.5px solid var(--ink)" }}>
+                  <p className="serif" style={{ fontSize: 13, lineHeight: 1.2 }}>{p.prompt}</p>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, padding: 12 }}>
+                <button style={{ flex: 1, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 800, fontSize: 11, cursor: "pointer" }}>
+                  <IHeart s={13}/> {p.likes}
+                </button>
+                <button style={{ flex: 1, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 800, fontSize: 11, cursor: "pointer" }}>
+                  <IInspire s={13}/> {p.ins}
+                </button>
+                <button style={{ width: 32, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <IBookmark s={14}/>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ─── Desktop Profile ─── */
+const PROFILE_TABS = ["Obras", "Logros", "Estadísticas"];
+
+export function DeskProfile() {
+  const { state, dispatch } = useApp();
+  const { profile } = state;
+  const level = getUserLevel(profile.completedChallenges);
+  const [tab, setTab] = useState("Obras");
+
+  return (
+    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <DeskSidebar current="profile"/>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Hero */}
+        <div style={{ background: "var(--lilac)", borderBottom: "2px solid var(--ink)", padding: "28px 32px", position: "relative", overflow: "hidden", flexShrink: 0 }} className="grain-soft">
+          <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.12 }}/>
+          <div style={{ position: "relative", display: "flex", gap: 22, alignItems: "flex-end" }}>
+            <div style={{ position: "relative" }}>
+              <div style={{ width: 100, height: 100, borderRadius: 999, border: "3px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "6px 6px 0 var(--ink)" }}>
+                <IUser s={52}/>
+              </div>
+              <div style={{ position: "absolute", bottom: -4, right: -4, width: 32, height: 32, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IBrush s={16}/>
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>@{profile.username.toUpperCase()}</p>
+              <h1 className="serif" style={{ fontSize: 48, lineHeight: 1, marginTop: 4 }}>{profile.displayName}</h1>
+              {profile.bio && <p style={{ fontSize: 13, fontWeight: 600, marginTop: 6, maxWidth: 460 }}>{profile.bio}</p>}
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800 }}>{level.name}</span>
+                <span style={{ display: "inline-flex", gap: 6, alignItems: "center", padding: "4px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: "var(--butter)", fontSize: 11, fontWeight: 800 }}><IFlame s={13}/> {profile.streak} días</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 24, padding: "0 16px" }}>
+              {[
+                { l: "Retos",      v: profile.completedChallenges },
+                { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers },
+                { l: "Siguiendo",  v: profile.following },
+                { l: "Likes",      v: profile.totalLikes > 999 ? `${(profile.totalLikes / 1000).toFixed(1)}K` : profile.totalLikes },
+              ].map((s, i) => (
+                <div key={i} style={{ textAlign: "center" }}>
+                  <p className="serif" style={{ fontSize: 32, lineHeight: 1 }}>{s.v}</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{s.l.toUpperCase()}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", borderBottom: "2px solid var(--ink)", background: "var(--paper-2)", flexShrink: 0 }}>
+          {PROFILE_TABS.map((t, i) => (
+            <button key={t} onClick={() => setTab(t)} style={{
+              padding: "12px 24px", border: "none",
+              borderRight: "2px solid var(--ink)",
+              background: tab === t ? "var(--acid)" : "transparent",
+              fontWeight: 800, fontSize: 12, fontFamily: "JetBrains Mono",
+              textTransform: "uppercase", letterSpacing: "0.04em", cursor: "pointer",
+            }}>{t}</button>
+          ))}
+        </div>
+
+        <div className="scroll" style={{ flex: 1, padding: 24, display: "grid", gridTemplateColumns: "1fr 300px", gap: 20 }}>
+          {tab === "Obras" && (
+            <>
+              <div>
+                <h3 className="serif" style={{ fontSize: 24, marginBottom: 12 }}>Obras recientes · {profile.completedChallenges}</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map(k => (
+                    <div key={k} style={{ position: "relative" }}>
+                      <ArtTile kind={k % 6} height={150}/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div className="stk-sm" style={{ background: "var(--mint)", padding: 14, borderRadius: 14 }}>
+                  <p style={{ fontWeight: 800, fontSize: 13 }}>Próximo nivel</p>
+                  <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginTop: 6 }}>{LEVELS.find(l => l.id === level.id + 1)?.name ?? "¡Maestro!"}</p>
+                  <div style={{ height: 8, borderRadius: 999, border: "2px solid var(--ink)", background: "rgba(255,255,255,.6)", overflow: "hidden", marginTop: 10 }}>
+                    <div style={{ width: `${Math.round(((profile.completedChallenges - level.minChallenges) / 10) * 100)}%`, height: "100%", background: "var(--ink)" }}/>
+                  </div>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 6 }}>
+                    {10 - ((profile.completedChallenges - level.minChallenges) % 10)} RETOS RESTANTES
+                  </p>
+                </div>
+                <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 14, borderRadius: 14 }}>
+                  <p style={{ fontWeight: 800, fontSize: 13, marginBottom: 10 }}>Heatmap de actividad</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(14, 1fr)", gap: 3 }}>
+                    {Array.from({ length: 56 }).map((_, i) => {
+                      const lvl = i < profile.streak ? (i % 4) + 1 : 0;
+                      return <div key={i} style={{ aspectRatio: "1/1", borderRadius: 2, border: "1px solid var(--ink)", background: ["rgba(20,17,15,.08)", "var(--mint)", "var(--acid)", "var(--coral)", "var(--lilac)"][lvl] }}/>;
+                    })}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === "Logros" && (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {LEVELS.map(lv => {
+                  const unlocked = level.id >= lv.id;
+                  const current = level.id === lv.id;
+                  return (
+                    <div key={lv.id} className={current ? "stk" : "stk-sm"} style={{
+                      background: unlocked ? (lv.color || "var(--mint)") : "var(--paper)",
+                      padding: 14, opacity: unlocked ? 1 : 0.5, display: "flex", alignItems: "center", gap: 14, borderRadius: 14,
+                    }}>
+                      <div style={{ width: 46, height: 46, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <IBrush s={22}/>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: 800, fontSize: 15 }}>{lv.name}</p>
+                        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ RETOS</p>
+                      </div>
+                      {unlocked ? (
+                        <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 12px", borderRadius: 999, fontSize: 11, fontWeight: 800 }}>
+                          {current ? "Actual" : "✓"}
+                        </span>
+                      ) : (
+                        <ILock s={18} stroke="rgba(20,17,15,.4)"/>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {tab === "Estadísticas" && (
+            <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+              {[
+                { Icon: IHeart,   l: "Likes",       v: profile.totalLikes,    c: "var(--rose)" },
+                { Icon: IInspire, l: "Inspiras",     v: profile.totalInspires, c: "var(--lilac)" },
+                { Icon: IFlame,   l: "Lo intentaré", v: profile.totalTries,    c: "var(--butter)" },
+                { Icon: ITimer,   l: "Pomodoros",    v: profile.pomodorosCompleted, c: "var(--sky)" },
+                { Icon: IDice,    l: "Retos",        v: profile.completedChallenges, c: "var(--mint)" },
+                { Icon: IStar,    l: "Streak máx",   v: profile.streak,        c: "var(--acid)" },
+              ].map((s, i) => (
+                <div key={i} className="stk-sm" style={{ background: s.c, padding: 20, borderRadius: 16 }}>
+                  <s.Icon s={24}/>
+                  <p className="serif" style={{ fontSize: 42, lineHeight: 1, marginTop: 10 }}>{s.v}</p>
+                  <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.65)", marginTop: 6 }}>{s.l.toUpperCase()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ─── Desktop Login ─── */
+export function DeskLogin() {
+  const { dispatch } = useApp();
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100vh", background: "var(--paper)", overflow: "hidden" }}>
+      {/* Left — marketing */}
+      <div style={{ background: "var(--acid)", padding: 48, position: "relative", overflow: "hidden" }} className="grain-soft">
+        <div className="stripes-y" style={{ position: "absolute", inset: 0 }}/>
+        <div style={{ position: "absolute", top: 30, right: 40, color: "rgba(20,17,15,.18)" }}><ISpark s={48}/></div>
+        <div style={{ position: "absolute", bottom: 40, left: 40, color: "rgba(20,17,15,.15)" }}><IStar s={36}/></div>
+        <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
+          <Wordmark size={42}/>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <span className="stamp" style={{ background: "var(--coral)", color: "#fff", borderColor: "#fff", alignSelf: "flex-start" }}>★ riso reload</span>
+            <h1 className="serif" style={{ fontSize: 80, lineHeight: 0.95, marginTop: 18, maxWidth: 540 }}>Retos creativos para artistas reales.</h1>
+            <p style={{ fontSize: 16, fontWeight: 600, marginTop: 18, maxWidth: 460, lineHeight: 1.4 }}>Combina variables aleatorias, traza tu reto en tiempo real y comparte con una comunidad que dibuja, no scrollea.</p>
+            <div style={{ display: "flex", gap: 8, marginTop: 26, flexWrap: "wrap" }}>
+              {[
+                { Icon: IDice, l: "Randómetro 3000" },
+                { Icon: ITimer, l: "Pomodoro lo-fi" },
+                { Icon: ILock, l: "Anti-bots" },
+              ].map(({ Icon, l }, i) => (
+                <span key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: "6px 12px", borderRadius: 999, border: "2px solid var(--ink)", fontSize: 12, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Icon s={14}/> {l}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+            <div>
+              <p className="serif" style={{ fontSize: 36, lineHeight: 1 }}>12K+</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>ARTISTAS ACTIVOS</p>
+            </div>
+            <div style={{ width: 2, height: 36, background: "var(--ink)", opacity: 0.4 }}/>
+            <div>
+              <p className="serif" style={{ fontSize: 36, lineHeight: 1 }}>347</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>RETOS LEGENDARIOS HOY</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right — form */}
+      <div style={{ padding: 48, display: "flex", flexDirection: "column", justifyContent: "center", background: "var(--paper-2)" }}>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// VERIFICACIÓN ANTI-BOT · BIENVENIDA</p>
+        <h2 className="serif" style={{ fontSize: 48, lineHeight: 1, marginTop: 8 }}>Inicia sesión</h2>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(20,17,15,.65)", marginTop: 8, maxWidth: 380 }}>Solo artistas reales. Verificamos por SMS o Google para que la comunidad siga limpia.</p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28, maxWidth: 420 }}>
+          <button className="stk" onClick={() => dispatch({ type: "SET_SCREEN", screen: "onboarding" })} style={{ height: 56, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, cursor: "pointer" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Continuar con Google
+          </button>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
+            <span className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>O VERIFICA POR SMS</span>
+            <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
+          </div>
+          <button className="stk" onClick={() => dispatch({ type: "SET_SCREEN", screen: "onboarding" })} style={{ height: 56, background: "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}>
+            <ILock s={18}/> Enviar código por SMS
+          </button>
+          <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "home" })} style={{ height: 44, background: "rgba(223,255,35,.5)", border: "2px dashed var(--ink)", borderRadius: 12, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}>
+            <IBolt s={14}/> Entrar en modo demo
+          </button>
+        </div>
+
+        <div className="stk-sm" style={{ background: "var(--butter)", padding: 14, marginTop: 32, maxWidth: 420, borderRadius: 14 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+            <ILock s={14}/> Verificación SMS protege a la comunidad de bots.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
