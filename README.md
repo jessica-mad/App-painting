@@ -1,6 +1,31 @@
-# React + Vite
+# InkRush — Plugin WordPress
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Instalación vía GitHub Deployer
+
+El repositorio raíz **ES** el plugin de WordPress. Configura tu deployer así:
+
+| Ajuste | Valor |
+|--------|-------|
+| Repositorio | `jessica-mad/App-painting` |
+| Rama | `claude/inkrush-app-prototype-bV1Bx` |
+| Carpeta destino | `/wp-content/plugins/inkrush-app/` |
+
+Una vez desplegado, ve a **WordPress → Plugins** y activa **InkRush App**.
+
+## Shortcode
+
+```
+[inkrush_app]
+```
+
+## Panel admin: WordPress → InkRush 🎨
+
+- **Configuración** — temporada activa, intentos diarios
+- **Variables** — CRUD con rareza (Común/Raro/Épico/Legendario) y temporada
+- **Usuarios** — progresión de niveles configurable
+
+---
+<!-- Información de desarrollo React + Vite -->
 
 Currently, two official plugins are available:
 
