@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import { ACTIVE_SEASON } from "./parameters";
+import { WP_ROLLS, WP_ROLLS_USED } from "../utils/api";
 
 export const AppContext = createContext(null);
 export function useApp() { return useContext(AppContext); }
@@ -51,7 +52,9 @@ export const initialState = {
   selectedParams:   ["Emociones", "Animales", "Eventos"],
   /* idea = { variables: [...], params: [...] } — guarda los params usados */
   currentIdea:      null,
-  rollsLeft:        parseInt(localStorage.getItem("inkrush_rolls_" + new Date().toDateString()) || "3"),
+  rollsLeft:        wpConfig.userId
+    ? Math.max(0, WP_ROLLS - WP_ROLLS_USED)
+    : parseInt(localStorage.getItem("inkrush_rolls_" + new Date().toDateString()) || String(WP_ROLLS)),
   timerConfig:      null,
   activeSeason:     wpConfig.activeSeason ?? ACTIVE_SEASON,
   profile:          initialProfile,
@@ -85,7 +88,10 @@ export function reducer(state, action) {
     }
 
     case "RESET_ROLLS":
-      return { ...state, rollsLeft: 3 };
+      return { ...state, rollsLeft: WP_ROLLS };
+
+    case "LOGOUT":
+      return { ...state, user: null, screen: "login" };
 
     case "SET_TIMER_CONFIG":
       return { ...state, timerConfig: action.config };

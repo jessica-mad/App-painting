@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
-import { ArtTile } from "../components/ArtTile";
 import { useApp } from "../data/store";
 import { getUserLevel, LEVELS, TECHNIQUES } from "../data/parameters";
+import { updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN } from "../utils/api";
 import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock } from "../components/Icons";
 
-const TABS = ["Perfil", "Logros", "Estadísticas"];
+const TABS = ["Perfil", "Editar", "Logros", "Estadísticas"];
 
 export function ProfileScreen() {
   const { state, dispatch } = useApp();
@@ -14,13 +14,42 @@ export function ProfileScreen() {
   const level = getUserLevel(profile.completedChallenges);
   const [tab, setTab] = useState("Perfil");
 
+  const [editName, setEditName] = useState(profile.displayName);
+  const [editBio,  setEditBio]  = useState(profile.bio);
+  const [saving,   setSaving]   = useState(false);
+  const [saved,    setSaved]    = useState(false);
+
   const favTechs = TECHNIQUES.filter(t => state.favoriteTechniques.includes(t.id));
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      if (IS_LOGGED_IN) {
+        await updateProfile({ displayName: editName, bio: editBio });
+      }
+      dispatch({ type: "UPDATE_PROFILE", data: { displayName: editName, bio: editBio } });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      /* ignore */
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (IS_LOGGED_IN) {
+      window.location.href = WP_LOGOUT_URL;
+    } else {
+      dispatch({ type: "LOGOUT" });
+    }
+  };
 
   return (
     <Phone>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Hero */}
-        <div style={{ background: "var(--lilac)", borderBottom: "2px solid var(--ink)", padding: "12px 22px 14px", position: "relative", overflow: "hidden" }} className="grain-soft">
+        <div style={{ background: "var(--lilac)", borderBottom: "2px solid var(--ink)", padding: "12px 22px 14px", position: "relative", overflow: "hidden", flexShrink: 0 }} className="grain-soft">
           <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.1 }}/>
           <div style={{ display: "flex", gap: 14, position: "relative" }}>
             <div style={{ position: "relative" }}>
@@ -47,15 +76,20 @@ export function ProfileScreen() {
           </div>
 
           {/* Share link */}
-          <div className="stk-sm" style={{ marginTop: 12, background: "var(--paper-2)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-            <ILink s={14}/>
-            <span className="mono" style={{ fontSize: 10, fontWeight: 700, flex: 1, color: "rgba(20,17,15,.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {profile.shareLink}
-            </span>
-            <button style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <ICopy s={11}/> Copiar
-            </button>
-          </div>
+          {profile.shareLink ? (
+            <div className="stk-sm" style={{ marginTop: 12, background: "var(--paper-2)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+              <ILink s={14}/>
+              <span className="mono" style={{ fontSize: 10, fontWeight: 700, flex: 1, color: "rgba(20,17,15,.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {profile.shareLink}
+              </span>
+              <button
+                onClick={() => navigator.clipboard?.writeText(profile.shareLink).catch(() => {})}
+                style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
+              >
+                <ICopy s={11}/> Copiar
+              </button>
+            </div>
+          ) : null}
 
           {/* Stats */}
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: 14 }}>
@@ -82,15 +116,15 @@ export function ProfileScreen() {
                 flex: 1, padding: "10px 0", border: "none",
                 borderRight: i < TABS.length - 1 ? "2px solid var(--ink)" : "none",
                 background: tab === t ? "var(--acid)" : "var(--paper-2)",
-                fontWeight: 800, fontSize: 11, fontFamily: "JetBrains Mono",
-                textTransform: "uppercase", letterSpacing: "0.04em", cursor: "pointer",
+                fontWeight: 800, fontSize: 10, fontFamily: "JetBrains Mono",
+                textTransform: "uppercase", letterSpacing: "0.03em", cursor: "pointer",
               }}
             >{t}</button>
           ))}
         </div>
 
         {/* Tab content */}
-        <div className="scroll" style={{ flex: 1, padding: "12px 22px 90px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 22px 90px" }}>
           {tab === "Perfil" && (
             <div>
               {favTechs.length > 0 && (
@@ -106,8 +140,47 @@ export function ProfileScreen() {
                 </>
               )}
               <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Mis obras</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {[0, 1, 2, 3].map(k => <ArtTile key={k} kind={k + 2} height={130}/>)}
+              <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)", marginBottom: 12 }}>// TUS PUBLICACIONES APARECERÁN AQUÍ</p>
+            </div>
+          )}
+
+          {tab === "Editar" && (
+            <div>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 16 }}>Editar perfil</p>
+
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", marginBottom: 14 }}
+              />
+
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Biografía</label>
+              <textarea
+                value={editBio}
+                onChange={e => setEditBio(e.target.value)}
+                placeholder="Cuéntanos sobre ti..."
+                style={{ width: "100%", height: 90, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", marginBottom: 16 }}
+              />
+
+              <button
+                onClick={handleSaveProfile}
+                disabled={saving}
+                className="stk"
+                style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginBottom: 24 }}
+              >
+                {saved ? "✓ Guardado" : saving ? "Guardando..." : "Guardar cambios"}
+              </button>
+
+              <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 20 }}>
+                <button
+                  onClick={handleLogout}
+                  className="stk-sm"
+                  style={{ width: "100%", height: 48, background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}
+                >
+                  Cerrar sesión
+                </button>
               </div>
             </div>
           )}

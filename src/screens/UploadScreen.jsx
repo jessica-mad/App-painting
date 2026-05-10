@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { TECHNIQUES, getUserLevel } from "../data/parameters";
 import { createArtwork, IS_LOGGED_IN } from "../utils/api";
-import { IArrowL, IBrush, ICam, ILock, IShare, IArrowR } from "../components/Icons";
+import { compressImages } from "../utils/imageUtils";
+import { IArrowL, IArrowR, IBrush, ICam, ILock, IShare } from "../components/Icons";
 
 const TECH_COLORS = {
   acuarela: "var(--sky)", tinta: "var(--paper-2)", lapiz: "var(--paper-2)",
@@ -11,18 +12,92 @@ const TECH_COLORS = {
   digital: "var(--butter)", gouache: "var(--coral)", marcador: "var(--paper-2)",
 };
 
+const MAX_PHOTOS = 5;
+
+function PhotoCarousel({ images, onRemove }) {
+  const [idx, setIdx] = useState(0);
+  const cur = Math.min(idx, images.length - 1);
+
+  return (
+    <div style={{ position: "relative", width: "100%", aspectRatio: "3/4", borderRadius: 18, border: "2px solid var(--ink)", overflow: "hidden", background: "var(--ink)" }}>
+      {/* Image */}
+      <img
+        src={images[cur]}
+        alt=""
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+
+      {/* Counter badge */}
+      <div style={{ position: "absolute", top: 10, left: 10, background: "var(--ink)", color: "var(--acid)", borderRadius: 999, padding: "3px 8px", fontSize: 11, fontWeight: 800 }}>
+        {cur + 1}/{images.length}
+      </div>
+
+      {/* Remove button */}
+      <button
+        onClick={() => { onRemove(cur); setIdx(Math.max(0, cur - 1)); }}
+        style={{ position: "absolute", top: 10, right: 10, width: 28, height: 28, borderRadius: 999, background: "var(--rose)", border: "2px solid var(--ink)", fontWeight: 900, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+      >×</button>
+
+      {/* Arrows */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={() => setIdx(i => Math.max(0, i - 1))}
+            disabled={cur === 0}
+            style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === 0 ? 0.3 : 1 }}
+          ><IArrowL s={16}/></button>
+          <button
+            onClick={() => setIdx(i => Math.min(images.length - 1, i + 1))}
+            disabled={cur === images.length - 1}
+            style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === images.length - 1 ? 0.3 : 1 }}
+          ><IArrowR s={16}/></button>
+        </>
+      )}
+
+      {/* Dots */}
+      {images.length > 1 && (
+        <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 5 }}>
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIdx(i)}
+              style={{ width: i === cur ? 16 : 6, height: 6, borderRadius: 999, border: "1.5px solid var(--ink)", background: i === cur ? "var(--acid)" : "rgba(255,255,255,.6)", cursor: "pointer", padding: 0, transition: "width .15s" }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function UploadScreen() {
   const { state, dispatch } = useApp();
   const { profile, currentIdea } = state;
   const [technique, setTechnique] = useState(TECHNIQUES[0].id);
   const [description, setDescription] = useState("");
-  const [hasPhoto, setHasPhoto] = useState(false);
+  const [images, setImages] = useState([]);
+  const [compressing, setCompressing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const fileRef = useRef(null);
 
   const level       = getUserLevel(profile.completedChallenges);
   const canVideo    = profile.completedChallenges >= 10;
   const videoNeeded = Math.max(0, 10 - profile.completedChallenges);
+
+  const handleFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setCompressing(true);
+    const remaining = MAX_PHOTOS - images.length;
+    const toProcess = files.slice(0, remaining);
+    const compressed = await compressImages(toProcess);
+    setImages(prev => [...prev, ...compressed]);
+    setCompressing(false);
+    e.target.value = "";
+  };
+
+  const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
 
   const publish = async () => {
     setSaving(true);
@@ -35,6 +110,7 @@ export function UploadScreen() {
           rarity:      currentIdea.variables[0]?.rarity ?? "Común",
           technique:   TECHNIQUES.find(t => t.id === technique)?.label ?? technique,
           description,
+          images,
         });
       }
       setDone(true);
@@ -67,6 +143,14 @@ export function UploadScreen() {
 
   return (
     <Phone>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: "none" }}
+        onChange={handleFiles}
+      />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -86,25 +170,42 @@ export function UploadScreen() {
 
         <div className="scroll" style={{ flex: 1, marginTop: 14 }}>
           {/* Photo zone */}
-          <button
-            onClick={() => setHasPhoto(h => !h)}
-            className="stk"
-            style={{
-              width: "100%", height: 180,
-              border: hasPhoto ? "2px solid var(--ink)" : "3px dashed var(--ink)",
-              background: hasPhoto ? "var(--mint)" : "var(--rose)",
-              borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", overflow: "hidden", cursor: "pointer",
-            }}
-          >
-            <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.2 }}/>
-            <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-              <ICam s={28}/>
+          {images.length > 0 ? (
+            <div>
+              <PhotoCarousel images={images} onRemove={removeImage}/>
+              {images.length < MAX_PHOTOS && (
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={compressing}
+                  className="stk-sm"
+                  style={{ width: "100%", height: 44, marginTop: 10, border: "2px dashed var(--ink)", background: "var(--paper-2)", borderRadius: 12, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+                >
+                  <ICam s={16}/> {compressing ? "Procesando..." : `Añadir foto (${images.length}/${MAX_PHOTOS})`}
+                </button>
+              )}
             </div>
-            <p style={{ fontWeight: 800, fontSize: 13, position: "relative" }}>
-              {hasPhoto ? "Foto lista · toca para cambiar" : "Toca para añadir foto"}
-            </p>
-            <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>JPG · PNG · 4:5 RECOMENDADO</p>
-          </button>
+          ) : (
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={compressing}
+              className="stk"
+              style={{
+                width: "100%", aspectRatio: "3/4",
+                border: "3px dashed var(--ink)",
+                background: "var(--rose)",
+                borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", overflow: "hidden", cursor: "pointer",
+              }}
+            >
+              <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.2 }}/>
+              <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                <ICam s={28}/>
+              </div>
+              <p style={{ fontWeight: 800, fontSize: 13, position: "relative" }}>
+                {compressing ? "Procesando..." : "Toca para añadir foto"}
+              </p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>JPG · PNG · MÁXIMO 5 FOTOS</p>
+            </button>
+          )}
 
           {/* Prompt tags */}
           {currentIdea && (
@@ -179,9 +280,9 @@ export function UploadScreen() {
 
         <button
           onClick={publish}
-          disabled={saving}
+          disabled={saving || compressing}
           className="stk"
-          style={{ marginTop: 14, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: saving ? 0.6 : 1 }}
+          style={{ marginTop: 14, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: (saving || compressing) ? 0.6 : 1 }}
         >
           <IShare s={18}/> {saving ? "Publicando..." : "Publicar en la comunidad"}
         </button>

@@ -1,9 +1,8 @@
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { Wordmark } from "../components/Wordmark";
-import { ArtTile } from "../components/ArtTile";
 import { useApp } from "../data/store";
-import { getUserLevel, SAMPLE_POSTS } from "../data/parameters";
+import { getUserLevel } from "../data/parameters";
 import { IUser, IBrush, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR } from "../components/Icons";
 
 export function HomeScreen() {
@@ -112,30 +111,6 @@ export function HomeScreen() {
                 <div className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.l.toUpperCase()}</div>
               </div>
             ))}
-          </div>
-
-          {/* Community strip */}
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-              <h3 className="serif" style={{ fontSize: 22 }}>En la comunidad</h3>
-              <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })} style={{ background: "transparent", border: "none", cursor: "pointer" }}>
-                <span className="mono" style={{ fontSize: 10, fontWeight: 700, textDecoration: "underline" }}>VER TODO →</span>
-              </button>
-            </div>
-            <div className="scroll" style={{ display: "flex", gap: 10, paddingBottom: 6 }}>
-              {SAMPLE_POSTS.slice(0, 4).map((post, k) => (
-                <div key={post.id} className="stk-sm" style={{ minWidth: 130, background: "var(--paper-2)", overflow: "hidden", padding: 0 }}>
-                  <div style={{ height: 88 }}><ArtTile kind={k} height={88}/></div>
-                  <div style={{ padding: "8px 10px" }}>
-                    <p style={{ fontWeight: 800, fontSize: 11 }}>{post.username}</p>
-                    <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{post.technique?.toUpperCase()}</p>
-                    <div style={{ display: "flex", gap: 6, marginTop: 4, fontSize: 10, fontWeight: 700, alignItems: "center" }}>
-                      <IHeart s={11}/> {post.likes}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Season banner */}

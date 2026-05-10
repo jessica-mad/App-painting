@@ -111,6 +111,10 @@ add_shortcode( 'inkrush_app', function() {
         'totalInspires'=> $user_id ? (int) get_user_meta( $user_id, 'inkrush_inspires_received', true ) : 0,
         'shareLink'    => $user_id ? home_url( '/inkrush-app/?perfil=' . $user_id ) : '',
         'levelConfig'  => inkrush_get_level_config(),
+        'logoutUrl'        => wp_logout_url( get_permalink() ?: home_url('/inkrush-app/') ),
+        'registerUrl'      => wp_registration_url(),
+        'isAdmin'          => current_user_can('manage_options'),
+        'rollsUsedToday'   => $user_id ? (int) get_user_meta( $user_id, 'inkrush_daily_rolls_' . date('Y-m-d'), true ) : 0,
     ] );
 
     return '<div id="inkrush-root" style="min-height:100vh;background:#FFFDF3;"></div>';

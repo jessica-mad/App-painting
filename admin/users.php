@@ -54,7 +54,17 @@ function inkrush_update_user_level( $user_id ) {
 ────────────────────────────────────────────────────────────── */
 
 function inkrush_page_users() {
-    $message    = '';
+    /* Reset intentos diarios de un usuario */
+    if ( isset( $_POST['inkrush_reset_rolls'] ) ) {
+        $uid = (int) $_POST['reset_rolls_uid'];
+        if ( check_admin_referer( 'inkrush_reset_rolls_' . $uid ) ) {
+            $key = 'inkrush_daily_rolls_' . date('Y-m-d');
+            delete_user_meta( $uid, $key );
+            $message = '🎲 Intentos diarios reseteados para el usuario #' . $uid . '.';
+        }
+    }
+
+    $message    = isset( $message ) ? $message : '';
     $level_config = inkrush_get_level_config();
 
     /* Guardar configuración de niveles */
@@ -211,6 +221,15 @@ function inkrush_page_users() {
                     <td>
                         <a href="<?php echo esc_url( admin_url( 'admin.php?page=inkrush-users&edit_user=' . $user->ID ) ); ?>"
                             class="button button-small">✏️ Editar</a>
+                        <form method="post" style="display:inline;margin-left:4px;">
+                            <?php wp_nonce_field( 'inkrush_reset_rolls_' . $user->ID ); ?>
+                            <input type="hidden" name="reset_rolls_uid" value="<?php echo $user->ID; ?>">
+                            <button type="submit" name="inkrush_reset_rolls" class="button button-small"
+                                style="background:#DFFF23;border-color:#111;font-weight:900;"
+                                onclick="return confirm('¿Resetear intentos diarios de <?php echo esc_js($user->display_name); ?>?');">
+                                🎲 Reset intentos
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 <?php if ( $is_editing ) : ?>

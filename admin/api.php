@@ -40,6 +40,33 @@ function inkrush_register_routes() {
         'methods' => 'POST', 'callback' => 'inkrush_api_complete_challenge',
         'permission_callback' => 'is_user_logged_in',
     ] );
+
+    /* ── Registro de usuario ── */
+    register_rest_route( 'inkrush/v1', '/register', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_register',
+        'permission_callback' => '__return_true',
+    ] );
+
+    /* ── Perfil del usuario actual ── */
+    register_rest_route( 'inkrush/v1', '/users/me', [
+        [ 'methods' => 'GET',   'callback' => 'inkrush_api_get_me',    'permission_callback' => 'is_user_logged_in' ],
+        [ 'methods' => 'POST',  'callback' => 'inkrush_api_update_me', 'permission_callback' => 'is_user_logged_in' ],
+    ] );
+
+    /* ── Reset intentos diarios (admin) ── */
+    register_rest_route( 'inkrush/v1', '/rolls/reset', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_reset_rolls',
+        'permission_callback' => fn() => current_user_can('manage_options'),
+    ] );
+
+    /* ── Track roll use ── */
+    register_rest_route( 'inkrush/v1', '/rolls/use', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_use_roll',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -128,7 +155,11 @@ function inkrush_api_list_artworks( WP_REST_Request $req ) {
             'likes'     => (int) get_post_meta( $post->ID, 'inkrush_likes', true ),
             'inspires'  => (int) get_post_meta( $post->ID, 'inkrush_inspires', true ),
             'tries'     => (int) get_post_meta( $post->ID, 'inkrush_tries', true ),
-            'image'     => get_the_post_thumbnail_url( $post->ID, 'medium' ) ?: '',
+            'image'     => get_the_post_thumbnail_url( $post->ID, 'large' ) ?: '',
+            'images'    => array_values( array_filter( array_map(
+                fn($id) => wp_get_attachment_image_url( $id, 'large' ) ?: '',
+                json_decode( get_post_meta( $post->ID, 'inkrush_image_ids', true ) ?: '[]', true )
+            ) ) ),
             'date'      => $post->post_date,
         ];
     }
@@ -167,6 +198,20 @@ function inkrush_api_create_artwork( WP_REST_Request $req ) {
     update_post_meta( $post_id, 'inkrush_likes',     0 );
     update_post_meta( $post_id, 'inkrush_inspires',  0 );
     update_post_meta( $post_id, 'inkrush_tries',     0 );
+
+    /* Guardar imágenes (array de base64) */
+    $images_b64 = $req->get_param('images') ?? [];
+    $image_ids  = [];
+    foreach ( (array) $images_b64 as $b64 ) {
+        if ( $b64 && strlen($b64) > 100 ) {
+            $aid = inkrush_save_base64_image( $b64, $post_id );
+            if ( $aid ) $image_ids[] = $aid;
+        }
+    }
+    if ( ! empty( $image_ids ) ) {
+        set_post_thumbnail( $post_id, $image_ids[0] );
+        update_post_meta( $post_id, 'inkrush_image_ids', wp_json_encode( $image_ids ) );
+    }
 
     // Incrementar contador del usuario y recalcular nivel
     $current = (int) get_user_meta( $uid, 'inkrush_challenges_completed', true );
@@ -221,4 +266,127 @@ function inkrush_api_complete_challenge() {
     $streak = (int) get_user_meta( $uid, 'inkrush_streak', true );
     update_user_meta( $uid, 'inkrush_streak', $streak + 1 );
     return rest_ensure_response( ['success'=>true,'challenges'=>$challenges+1,'level'=>$level,'streak'=>$streak+1] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   REGISTRO
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_register( WP_REST_Request $req ) {
+    $email    = sanitize_email( $req->get_param('email') ?? '' );
+    $password = $req->get_param('password') ?? '';
+    $name     = sanitize_text_field( $req->get_param('displayName') ?? 'Artista' );
+
+    if ( ! is_email( $email ) )
+        return new WP_Error('invalid_email', 'Email inválido.', ['status'=>400]);
+    if ( strlen( $password ) < 6 )
+        return new WP_Error('weak_password', 'Contraseña mínimo 6 caracteres.', ['status'=>400]);
+    if ( email_exists( $email ) )
+        return new WP_Error('email_exists', 'Este email ya está registrado.', ['status'=>409]);
+
+    $username = sanitize_user( explode('@', $email)[0] . '_' . wp_rand(100,999) );
+    $user_id  = wp_create_user( $username, $password, $email );
+    if ( is_wp_error( $user_id ) ) return $user_id;
+
+    wp_update_user( ['ID' => $user_id, 'display_name' => $name] );
+    ( new WP_User( $user_id ) )->set_role( 'ilustrador' );
+    update_user_meta( $user_id, 'inkrush_bio', '' );
+
+    /* Login automático */
+    wp_set_auth_cookie( $user_id, false );
+
+    return rest_ensure_response( [
+        'success'     => true,
+        'userId'      => $user_id,
+        'displayName' => $name,
+        'username'    => $username,
+    ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PERFIL PROPIO
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_get_me() {
+    $uid  = get_current_user_id();
+    $user = get_userdata( $uid );
+    return rest_ensure_response( [
+        'userId'      => $uid,
+        'username'    => $user->user_login,
+        'displayName' => $user->display_name,
+        'email'       => $user->user_email,
+        'bio'         => get_user_meta( $uid, 'inkrush_bio', true ) ?: '',
+        'avatar'      => get_avatar_url( $uid, ['size'=>96] ),
+    ] );
+}
+
+function inkrush_api_update_me( WP_REST_Request $req ) {
+    $uid  = get_current_user_id();
+    $data = [ 'ID' => $uid ];
+
+    if ( $req->get_param('displayName') )
+        $data['display_name'] = sanitize_text_field( $req->get_param('displayName') );
+    if ( $req->get_param('email') && is_email( $req->get_param('email') ) )
+        $data['user_email'] = sanitize_email( $req->get_param('email') );
+
+    wp_update_user( $data );
+
+    if ( $req->get_param('bio') !== null )
+        update_user_meta( $uid, 'inkrush_bio', sanitize_textarea_field( $req->get_param('bio') ) );
+
+    return rest_ensure_response( ['success' => true] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   INTENTOS DIARIOS
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_use_roll() {
+    $uid     = get_current_user_id();
+    $key     = 'inkrush_daily_rolls_' . date('Y-m-d');
+    $current = (int) get_user_meta( $uid, $key, true );
+    update_user_meta( $uid, $key, $current + 1 );
+    return rest_ensure_response( ['success'=>true, 'used'=> $current + 1] );
+}
+
+function inkrush_api_reset_rolls( WP_REST_Request $req ) {
+    $uid = (int) $req->get_param('userId');
+    if ( ! $uid ) $uid = get_current_user_id();
+
+    $key = 'inkrush_daily_rolls_' . date('Y-m-d');
+    delete_user_meta( $uid, $key );
+
+    return rest_ensure_response( ['success'=>true, 'userId'=>$uid] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   IMÁGENES (base64 → WP Media)
+────────────────────────────────────────────────────────────── */
+
+function inkrush_save_base64_image( $base64, $post_id ) {
+    if ( ! function_exists('wp_handle_upload') ) {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+    }
+
+    $data = preg_replace('#^data:image/\w+;base64,#i', '', $base64);
+    $data = base64_decode( $data );
+    if ( ! $data ) return null;
+
+    $upload_dir  = wp_upload_dir();
+    $filename    = 'inkrush-' . $post_id . '-' . uniqid() . '.jpg';
+    $file_path   = $upload_dir['path'] . '/' . $filename;
+    file_put_contents( $file_path, $data );
+
+    $attachment  = [
+        'post_mime_type' => 'image/jpeg',
+        'post_title'     => $filename,
+        'post_status'    => 'inherit',
+    ];
+    $attach_id   = wp_insert_attachment( $attachment, $file_path, $post_id );
+    $attach_data = wp_generate_attachment_metadata( $attach_id, $file_path );
+    wp_update_attachment_metadata( $attach_id, $attach_data );
+
+    return $attach_id;
 }

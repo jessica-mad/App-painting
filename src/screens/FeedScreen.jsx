@@ -2,13 +2,53 @@ import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
-import { ArtTile } from "../components/ArtTile";
 import { fetchArtworks, addReaction } from "../utils/api";
-import { SAMPLE_POSTS } from "../data/parameters";
-import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser } from "../components/Icons";
+import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser, IArrowL, IArrowR } from "../components/Icons";
 
 const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Temporada"];
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
+
+function PostImages({ images }) {
+  const [idx, setIdx] = useState(0);
+  if (!images?.length) return null;
+  const cur = Math.min(idx, images.length - 1);
+
+  return (
+    <div style={{ position: "relative", width: "100%", aspectRatio: "3/4", background: "var(--ink)", overflow: "hidden" }}>
+      <img
+        src={images[cur]}
+        alt=""
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={() => setIdx(i => Math.max(0, i - 1))}
+            disabled={cur === 0}
+            style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === 0 ? 0.3 : 1 }}
+          ><IArrowL s={13}/></button>
+          <button
+            onClick={() => setIdx(i => Math.min(images.length - 1, i + 1))}
+            disabled={cur === images.length - 1}
+            style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === images.length - 1 ? 0.3 : 1 }}
+          ><IArrowR s={13}/></button>
+          <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 4 }}>
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                style={{ width: i === cur ? 14 : 5, height: 5, borderRadius: 999, border: "1.5px solid var(--ink)", background: i === cur ? "var(--acid)" : "rgba(255,255,255,.6)", cursor: "pointer", padding: 0, transition: "width .15s" }}
+              />
+            ))}
+          </div>
+          <div style={{ position: "absolute", top: 8, right: 8, background: "var(--ink)", color: "var(--acid)", borderRadius: 999, padding: "2px 7px", fontSize: 10, fontWeight: 800 }}>
+            {cur + 1}/{images.length}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function ArtCard({ post, idx }) {
   const [likes,    setLikes]    = useState(post.likes    ?? 0);
@@ -31,6 +71,7 @@ function ArtCard({ post, idx }) {
   const rarity = post.rarity ?? "Común";
   const prompt = post.prompt ?? tags.join(" + ");
   const col    = COL_CYCLE[idx % COL_CYCLE.length];
+  const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
 
   const reactions = [
     { Ico: IHeart,   count: likes,    type: "like",    col: "var(--rose)",   active: reacted.like },
@@ -42,12 +83,12 @@ function ArtCard({ post, idx }) {
     <div className="stk" style={{ background: "var(--paper-2)", padding: 0, marginBottom: 14, borderRadius: 18, overflow: "hidden", boxShadow: "var(--shadow-lg)" }}>
       {/* Author row */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px" }}>
-        <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: col, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: col, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <IUser s={18}/>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontWeight: 800, fontSize: 13 }}>{user}</p>
-          <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{tech.toUpperCase()} · 32 MIN</p>
+          <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{tech.toUpperCase()}</p>
         </div>
         <RarityBadge rarity={rarity}/>
       </div>
@@ -63,15 +104,16 @@ function ArtCard({ post, idx }) {
         </div>
       )}
 
-      {/* Artwork */}
-      <div style={{ position: "relative" }}>
-        <ArtTile kind={idx} height={260}/>
-        {prompt && (
-          <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, background: "rgba(20,17,15,.85)", color: "#fff", borderRadius: 10, padding: "8px 10px", border: "1.5px solid var(--ink)" }}>
-            <p className="serif" style={{ fontSize: 14, lineHeight: 1.2 }}>{prompt}</p>
-          </div>
-        )}
-      </div>
+      {/* Artwork — real photos at 3:4 or placeholder */}
+      {images.length > 0 ? (
+        <PostImages images={images}/>
+      ) : (
+        <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {prompt && (
+            <p className="serif" style={{ fontSize: 16, padding: "12px 16px", textAlign: "center", lineHeight: 1.3 }}>{prompt}</p>
+          )}
+        </div>
+      )}
 
       {/* Reactions */}
       <div style={{ display: "flex", gap: 8, padding: 12 }}>
@@ -98,19 +140,21 @@ function ArtCard({ post, idx }) {
 
 export function FeedScreen() {
   const [filter, setFilter] = useState("Para ti");
-  const [posts, setPosts]   = useState(SAMPLE_POSTS);
+  const [posts, setPosts]   = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchArtworks()
-      .then(data => { if (data?.artworks?.length) setPosts(data.artworks); })
-      .catch(() => {});
+      .then(data => { if (data?.artworks) setPosts(data.artworks); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   return (
     <Phone>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header */}
-        <div style={{ padding: "8px 22px 6px" }}>
+        <div style={{ padding: "8px 22px 6px", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>Feed</h2>
             <div style={{ display: "flex", gap: 8 }}>
@@ -144,7 +188,16 @@ export function FeedScreen() {
           </div>
         </div>
 
-        <div className="scroll" style={{ flex: 1, padding: "8px 18px 90px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "8px 18px 90px" }}>
+          {loading && (
+            <p className="mono" style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)", padding: "40px 0" }}>// CARGANDO...</p>
+          )}
+          {!loading && posts.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 24px" }}>
+              <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>Sin obras aún</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 8 }}>Completa tu primer reto y sube tu obra.</p>
+            </div>
+          )}
           {posts.map((post, i) => (
             <ArtCard key={post.id ?? i} post={post} idx={i}/>
           ))}
