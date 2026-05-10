@@ -1,12 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { getUserLevel, LEVELS, TECHNIQUES } from "../data/parameters";
-import { updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN } from "../utils/api";
+import { updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
+import { compressImage } from "../utils/imageUtils";
 import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock } from "../components/Icons";
 
-const TABS = ["Perfil", "Editar", "Logros", "Estadísticas"];
+function copyToClipboard(text, onDone) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(onDone).catch(() => legacyCopy(text, onDone));
+  } else {
+    legacyCopy(text, onDone);
+  }
+}
+function legacyCopy(text, onDone) {
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.style.cssText = "position:fixed;opacity:0;top:0;left:0";
+  document.body.appendChild(el);
+  el.focus(); el.select();
+  try { document.execCommand("copy"); onDone?.(); } catch {}
+  document.body.removeChild(el);
+}
+
+const TABS_OWNER  = ["Perfil", "Editar", "Logros", "Estadísticas"];
+const TABS_GUEST  = ["Perfil", "Logros", "Estadísticas"];
 
 export function ProfileScreen() {
   const { state, dispatch } = useApp();
@@ -14,29 +33,72 @@ export function ProfileScreen() {
   const level = getUserLevel(profile.completedChallenges);
   const [tab, setTab] = useState("Perfil");
 
+  /* edit state */
   const [editName,    setEditName]    = useState(profile.displayName);
   const [editBio,     setEditBio]     = useState(profile.bio ?? "");
   const [editEmail,   setEditEmail]   = useState(profile.email ?? "");
   const [editSocials, setEditSocials] = useState(profile.socials ?? { instagram: "", tiktok: "", pinterest: "" });
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarB64,   setAvatarB64]   = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
+  const [copied,      setCopied]      = useState(false);
+  const avatarRef = useRef(null);
+
+  /* artworks */
+  const [artworks, setArtworks] = useState([]);
+  const [loadingArt, setLoadingArt] = useState(false);
 
   const favTechs = TECHNIQUES.filter(t => state.favoriteTechniques.includes(t.id));
+  const TABS = IS_LOGGED_IN ? TABS_OWNER : TABS_GUEST;
+
+  /* share link — use WP-provided URL (username-based) or build from window */
+  const shareLink = profile.shareLink ||
+    `${window.location.origin}${window.location.pathname.replace(/\/$/, "")}?u=${profile.username}`;
+
+  useEffect(() => {
+    if (tab !== "Perfil") return;
+    if (!IS_LOGGED_IN) return;
+    setLoadingArt(true);
+    fetchUserArtworks(WP_USER_ID)
+      .then(data => setArtworks(data?.artworks ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingArt(false));
+  }, [tab]);
+
+  const handleAvatarFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const b64 = await compressImage(file, { maxPx: 400, quality: 0.75 });
+    setAvatarPreview(b64);
+    setAvatarB64(b64);
+    e.target.value = "";
+  };
 
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
       if (IS_LOGGED_IN) {
-        await updateProfile({ displayName: editName, bio: editBio, email: editEmail, socials: editSocials });
+        await updateProfile({
+          displayName: editName,
+          bio: editBio,
+          email: editEmail,
+          socials: editSocials,
+          ...(avatarB64 ? { avatar: avatarB64 } : {}),
+        });
       }
-      dispatch({ type: "UPDATE_PROFILE", data: { displayName: editName, bio: editBio, email: editEmail, socials: editSocials } });
+      dispatch({ type: "UPDATE_PROFILE", data: {
+        displayName: editName,
+        bio: editBio,
+        email: editEmail,
+        socials: editSocials,
+        ...(avatarPreview ? { avatarUrl: avatarPreview } : {}),
+      }});
+      setAvatarB64(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      /* ignore */
-    } finally {
-      setSaving(false);
-    }
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
   };
 
   const handleLogout = () => {
@@ -47,20 +109,31 @@ export function ProfileScreen() {
     }
   };
 
+  const avatarSrc = avatarPreview || profile.avatarUrl || null;
+
   return (
     <Phone>
+      <input ref={avatarRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarFile}/>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Hero */}
         <div style={{ background: "var(--lilac)", borderBottom: "2px solid var(--ink)", padding: "12px 22px 14px", position: "relative", overflow: "hidden", flexShrink: 0 }} className="grain-soft">
           <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.1 }}/>
           <div style={{ display: "flex", gap: 14, position: "relative" }}>
             <div style={{ position: "relative" }}>
-              <div style={{ width: 76, height: 76, borderRadius: 999, border: "3px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0 var(--ink)" }}>
-                <IUser s={40}/>
+              <div style={{ width: 76, height: 76, borderRadius: 999, border: "3px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0 var(--ink)", overflow: "hidden" }}>
+                {avatarSrc
+                  ? <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+                  : <IUser s={40}/>
+                }
               </div>
-              <div style={{ position: "absolute", bottom: -4, right: -4, width: 28, height: 28, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <IBrush s={14}/>
-              </div>
+              {IS_LOGGED_IN && (
+                <button
+                  onClick={() => { setTab("Editar"); avatarRef.current?.click(); }}
+                  style={{ position: "absolute", bottom: -4, right: -4, width: 28, height: 28, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                >
+                  <IBrush s={14}/>
+                </button>
+              )}
             </div>
             <div style={{ flex: 1 }}>
               <p className="serif" style={{ fontSize: 24, lineHeight: 1 }}>{profile.displayName}</p>
@@ -78,20 +151,18 @@ export function ProfileScreen() {
           </div>
 
           {/* Share link */}
-          {profile.shareLink ? (
-            <div className="stk-sm" style={{ marginTop: 12, background: "var(--paper-2)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-              <ILink s={14}/>
-              <span className="mono" style={{ fontSize: 10, fontWeight: 700, flex: 1, color: "rgba(20,17,15,.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {profile.shareLink}
-              </span>
-              <button
-                onClick={() => navigator.clipboard?.writeText(profile.shareLink).catch(() => {})}
-                style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
-              >
-                <ICopy s={11}/> Copiar
-              </button>
-            </div>
-          ) : null}
+          <div className="stk-sm" style={{ marginTop: 12, background: "var(--paper-2)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+            <ILink s={14}/>
+            <span className="mono" style={{ fontSize: 10, fontWeight: 700, flex: 1, color: "rgba(20,17,15,.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {shareLink.replace(/^https?:\/\//, "")}
+            </span>
+            <button
+              onClick={() => copyToClipboard(shareLink, () => { setCopied(true); setTimeout(() => setCopied(false), 1800); })}
+              style={{ background: copied ? "var(--mint)" : "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", transition: "background .2s", flexShrink: 0 }}
+            >
+              {copied ? <ICheck s={11}/> : <ICopy s={11}/>} {copied ? "Copiado" : "Copiar"}
+            </button>
+          </div>
 
           {/* Stats */}
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: 14 }}>
@@ -111,22 +182,19 @@ export function ProfileScreen() {
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "2px solid var(--ink)", flexShrink: 0 }}>
           {TABS.map((t, i) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                flex: 1, padding: "10px 0", border: "none",
-                borderRight: i < TABS.length - 1 ? "2px solid var(--ink)" : "none",
-                background: tab === t ? "var(--acid)" : "var(--paper-2)",
-                fontWeight: 800, fontSize: 10, fontFamily: "JetBrains Mono",
-                textTransform: "uppercase", letterSpacing: "0.03em", cursor: "pointer",
-              }}
-            >{t}</button>
+            <button key={t} onClick={() => setTab(t)} style={{
+              flex: 1, padding: "10px 0", border: "none",
+              borderRight: i < TABS.length - 1 ? "2px solid var(--ink)" : "none",
+              background: tab === t ? "var(--acid)" : "var(--paper-2)",
+              fontWeight: 800, fontSize: 10, fontFamily: "JetBrains Mono",
+              textTransform: "uppercase", letterSpacing: "0.03em", cursor: "pointer",
+            }}>{t}</button>
           ))}
         </div>
 
         {/* Tab content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 22px 90px" }}>
+
           {tab === "Perfil" && (
             <div>
               {favTechs.length > 0 && (
@@ -141,8 +209,41 @@ export function ProfileScreen() {
                   </div>
                 </>
               )}
-              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Mis obras</p>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)", marginBottom: 12 }}>// TUS PUBLICACIONES APARECERÁN AQUÍ</p>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10 }}>Mis obras</p>
+              {loadingArt && (
+                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// CARGANDO...</p>
+              )}
+              {!loadingArt && artworks.length === 0 && (
+                <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>
+                  // TUS PUBLICACIONES APARECERÁN AQUÍ
+                </p>
+              )}
+              {artworks.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {artworks.map((aw, i) => {
+                    const img = aw.images?.[0] || aw.image;
+                    return (
+                      <div key={aw.id ?? i} className="stk-sm" style={{ borderRadius: 12, overflow: "hidden", background: "var(--paper-2)" }}>
+                        <div style={{ aspectRatio: "3/4", background: "var(--lilac)", overflow: "hidden" }}>
+                          {img
+                            ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
+                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <p className="serif" style={{ fontSize: 11, padding: "8px", textAlign: "center", lineHeight: 1.3 }}>{aw.prompt}</p>
+                              </div>
+                          }
+                        </div>
+                        <div style={{ padding: "6px 8px" }}>
+                          <p className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>{aw.technique?.toUpperCase()}</p>
+                          <div style={{ display: "flex", gap: 8, marginTop: 4, fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.6)" }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><IHeart s={10}/> {aw.likes ?? 0}</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><IInspire s={10}/> {aw.inspires ?? 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -150,18 +251,37 @@ export function ProfileScreen() {
             <div>
               <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 16 }}>Editar perfil</p>
 
-              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre</label>
+              {/* Avatar */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+                <div style={{ width: 64, height: 64, borderRadius: 999, border: "3px solid var(--ink)", background: "var(--rose)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {avatarSrc
+                    ? <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+                    : <IUser s={32}/>
+                  }
+                </div>
+                <div>
+                  <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>Foto de perfil</p>
+                  <button
+                    onClick={() => avatarRef.current?.click()}
+                    className="stk-sm"
+                    style={{ height: 36, padding: "0 14px", border: "2px solid var(--ink)", borderRadius: 10, background: "var(--paper-2)", fontWeight: 800, fontSize: 11, cursor: "pointer" }}
+                  >
+                    Cambiar foto
+                  </button>
+                </div>
+              </div>
+
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre artístico</label>
               <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
-                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
+                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", marginBottom: 14 }}/>
 
               <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Biografía</label>
-              <textarea value={editBio} onChange={e => setEditBio(e.target.value)}
-                placeholder="Cuéntanos sobre ti..."
-                style={{ width: "100%", height: 80, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
+              <textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Cuéntanos sobre ti..."
+                style={{ width: "100%", height: 80, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", marginBottom: 14 }}/>
 
               <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Email</label>
               <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
-                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 13, outline: "none", background: "var(--paper-2)", marginBottom: 14 }} />
+                style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 13, outline: "none", background: "var(--paper-2)", marginBottom: 16 }}/>
 
               <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Redes sociales</p>
               {[
@@ -173,7 +293,7 @@ export function ProfileScreen() {
                   <label style={{ fontWeight: 700, fontSize: 11, display: "block", marginBottom: 4, color: "rgba(20,17,15,.6)" }}>{label}</label>
                   <input type="text" value={editSocials[key] ?? ""} onChange={e => setEditSocials(s => ({ ...s, [key]: e.target.value }))}
                     placeholder={placeholder}
-                    style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 10, padding: "8px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, outline: "none", background: "var(--paper-2)" }} />
+                    style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 10, padding: "8px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, outline: "none", background: "var(--paper-2)" }}/>
                 </div>
               ))}
 
@@ -210,13 +330,10 @@ export function ProfileScreen() {
                         <p style={{ fontWeight: 800, fontSize: 13 }}>{lv.name}</p>
                         <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ RETOS</p>
                       </div>
-                      {unlocked ? (
-                        <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>
-                          {current ? "Actual" : <ICheck s={12} stroke="var(--acid)"/>}
-                        </span>
-                      ) : (
-                        <ILock s={16} stroke="rgba(20,17,15,.4)"/>
-                      )}
+                      {unlocked
+                        ? <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>{current ? "Actual" : <ICheck s={12} stroke="var(--acid)"/>}</span>
+                        : <ILock s={16} stroke="rgba(20,17,15,.4)"/>
+                      }
                     </div>
                   );
                 })}
@@ -261,9 +378,6 @@ export function ProfileScreen() {
                 <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.65)", marginTop: 6 }}>
                   Has inspirado a {profile.totalInspires} artistas. ¡Sigue así!
                 </p>
-                <div style={{ marginTop: 10, height: 8, borderRadius: 999, border: "1.5px solid var(--ink)", background: "rgba(255,255,255,.5)", overflow: "hidden" }}>
-                  <div style={{ width: "65%", height: "100%", background: "var(--ink)" }}/>
-                </div>
               </div>
             </div>
           )}

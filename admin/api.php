@@ -54,6 +54,18 @@ function inkrush_register_routes() {
         [ 'methods' => 'POST',  'callback' => 'inkrush_api_update_me', 'permission_callback' => 'is_user_logged_in' ],
     ] );
 
+    /* ── Perfil público de cualquier usuario ── */
+    register_rest_route( 'inkrush/v1', '/users/(?P<id>\d+)', [
+        'methods' => 'GET', 'permission_callback' => '__return_true',
+        'callback' => 'inkrush_api_get_user',
+    ] );
+
+    /* ── Seguir / dejar de seguir ── */
+    register_rest_route( 'inkrush/v1', '/users/(?P<id>\d+)/follow', [
+        'methods' => 'POST', 'callback' => 'inkrush_api_follow_user',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
+
     /* ── Reset intentos diarios (admin) ── */
     register_rest_route( 'inkrush/v1', '/rolls/reset', [
         'methods'             => 'POST',
@@ -125,6 +137,8 @@ function inkrush_api_list_artworks( WP_REST_Request $req ) {
     $technique = sanitize_text_field( $req->get_param('technique') ?? '' );
     $rarity    = sanitize_text_field( $req->get_param('rarity') ?? '' );
 
+    $author = (int) $req->get_param('author');
+
     $args = [
         'post_type'      => 'inkrush_artwork',
         'post_status'    => 'publish',
@@ -135,6 +149,7 @@ function inkrush_api_list_artworks( WP_REST_Request $req ) {
         'meta_query'     => [],
     ];
 
+    if ( $author )    $args['author']        = $author;
     if ( $technique ) $args['meta_query'][] = [ 'key'=>'inkrush_technique', 'value'=>$technique ];
     if ( $rarity )    $args['meta_query'][] = [ 'key'=>'inkrush_rarity',    'value'=>$rarity    ];
 
@@ -316,7 +331,10 @@ function inkrush_api_get_me() {
         'displayName' => $user->display_name,
         'email'       => $user->user_email,
         'bio'         => get_user_meta( $uid, 'inkrush_bio', true ) ?: '',
-        'avatar'      => get_avatar_url( $uid, ['size'=>96] ),
+        'avatarUrl'   => get_user_meta( $uid, 'inkrush_avatar_url', true ) ?: get_avatar_url( $uid, ['size'=>96] ),
+        'socials'     => get_user_meta( $uid, 'inkrush_socials', true ) ?: [ 'instagram'=>'', 'tiktok'=>'', 'pinterest'=>'' ],
+        'followers'   => (int) get_user_meta( $uid, 'inkrush_followers_count', true ),
+        'following'   => (int) get_user_meta( $uid, 'inkrush_following_count', true ),
     ] );
 }
 
@@ -334,7 +352,78 @@ function inkrush_api_update_me( WP_REST_Request $req ) {
     if ( $req->get_param('bio') !== null )
         update_user_meta( $uid, 'inkrush_bio', sanitize_textarea_field( $req->get_param('bio') ) );
 
+    if ( $req->get_param('socials') ) {
+        $s = $req->get_param('socials');
+        update_user_meta( $uid, 'inkrush_socials', [
+            'instagram' => sanitize_text_field( $s['instagram'] ?? '' ),
+            'tiktok'    => sanitize_text_field( $s['tiktok']    ?? '' ),
+            'pinterest' => sanitize_text_field( $s['pinterest'] ?? '' ),
+        ] );
+    }
+
+    $avatar_b64 = $req->get_param('avatar');
+    if ( $avatar_b64 && strlen( $avatar_b64 ) > 100 ) {
+        $aid = inkrush_save_base64_image( $avatar_b64, 0 );
+        if ( $aid ) {
+            update_user_meta( $uid, 'inkrush_avatar_url', wp_get_attachment_url( $aid ) );
+        }
+    }
+
     return rest_ensure_response( ['success' => true] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PERFIL PÚBLICO & SEGUIMIENTO
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_get_user( WP_REST_Request $req ) {
+    $uid  = (int) $req->get_param('id');
+    $user = get_userdata( $uid );
+    if ( ! $user ) return new WP_Error( 'not_found', 'Usuario no encontrado.', ['status'=>404] );
+
+    $me          = get_current_user_id();
+    $is_following = $me ? (bool) get_user_meta( $me, "inkrush_following_{$uid}", true ) : false;
+
+    return rest_ensure_response( [
+        'userId'      => $uid,
+        'username'    => $user->user_login,
+        'displayName' => $user->display_name,
+        'bio'         => get_user_meta( $uid, 'inkrush_bio', true ) ?: '',
+        'avatarUrl'   => get_user_meta( $uid, 'inkrush_avatar_url', true ) ?: get_avatar_url( $uid, ['size'=>96] ),
+        'level'       => (int) get_user_meta( $uid, 'inkrush_level', true ) ?: 1,
+        'challenges'  => (int) get_user_meta( $uid, 'inkrush_challenges_completed', true ),
+        'streak'      => (int) get_user_meta( $uid, 'inkrush_streak', true ),
+        'followers'   => (int) get_user_meta( $uid, 'inkrush_followers_count', true ),
+        'following'   => (int) get_user_meta( $uid, 'inkrush_following_count', true ),
+        'isFollowing' => $is_following,
+    ] );
+}
+
+function inkrush_api_follow_user( WP_REST_Request $req ) {
+    $target = (int) $req->get_param('id');
+    $me     = get_current_user_id();
+
+    if ( $me === $target )
+        return new WP_Error( 'self_follow', 'No puedes seguirte a ti mismo.', ['status'=>400] );
+    if ( ! get_userdata( $target ) )
+        return new WP_Error( 'not_found', 'Usuario no encontrado.', ['status'=>404] );
+
+    $already = (bool) get_user_meta( $me, "inkrush_following_{$target}", true );
+
+    if ( $already ) {
+        delete_user_meta( $me, "inkrush_following_{$target}" );
+        $followers = max( 0, (int) get_user_meta( $target, 'inkrush_followers_count', true ) - 1 );
+        $my_following = max( 0, (int) get_user_meta( $me, 'inkrush_following_count', true ) - 1 );
+    } else {
+        update_user_meta( $me, "inkrush_following_{$target}", true );
+        $followers    = (int) get_user_meta( $target, 'inkrush_followers_count', true ) + 1;
+        $my_following = (int) get_user_meta( $me, 'inkrush_following_count', true ) + 1;
+    }
+
+    update_user_meta( $target, 'inkrush_followers_count', $followers );
+    update_user_meta( $me, 'inkrush_following_count', $my_following );
+
+    return rest_ensure_response( [ 'success'=>true, 'following'=>!$already, 'followers'=>$followers ] );
 }
 
 /* ──────────────────────────────────────────────────────────────

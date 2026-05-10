@@ -17,6 +17,12 @@ const VAR_COLORS = {
 export function IdeaScreen() {
   const { state, dispatch } = useApp();
   const { currentIdea, rollsLeft } = state;
+  const [saved, setSaved] = useState(false);
+  const saveIdea = () => {
+    dispatch({ type: "SAVE_IDEA", idea: currentIdea });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  };
 
   if (!currentIdea) {
     dispatch({ type: "SET_SCREEN", screen: "random" });
@@ -112,10 +118,10 @@ export function IdeaScreen() {
               <IDice s={16}/> {rollsLeft > 0 ? "Otra idea" : "Sin intentos"}
             </button>
             <button
-              onClick={() => dispatch({ type: "SAVE_IDEA", idea: currentIdea })}
+              onClick={saveIdea}
               className="stk"
-              style={{ background: "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-              title="Guardar idea"
+              style={{ background: saved ? "var(--acid)" : "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background .2s" }}
+              title={saved ? "¡Guardado!" : "Guardar idea"}
             >
               <IBookmark s={20}/>
             </button>

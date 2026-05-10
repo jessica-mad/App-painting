@@ -81,6 +81,18 @@ export async function resetRollsAdmin(userId) {
   });
 }
 
+export async function fetchUserArtworks(userId, page = 1) {
+  return apiFetch(`/artworks?author=${userId}&page=${page}`);
+}
+
+export async function fetchUserProfile(userId) {
+  return apiFetch(`/users/${userId}`);
+}
+
+export async function followUser(userId) {
+  return apiFetch(`/users/${userId}/follow`, { method: "POST" });
+}
+
 /* ── Config de WP ── */
 export const WP_USER_ID      = cfg.userId      ?? 0;
 export const IS_LOGGED_IN    = WP_USER_ID > 0;

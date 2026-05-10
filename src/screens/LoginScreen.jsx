@@ -26,11 +26,6 @@ export function LoginScreen() {
     window.location.href = `${WP_LOGIN_URL}?redirect_to=${encodeURIComponent(window.location.href)}`;
   };
 
-  const loginDemo = () => {
-    setLoading(true);
-    setTimeout(() => dispatch({ type: "LOGIN", user: { name: "Artista Demo", provider: "demo" } }), 600);
-  };
-
   /* ── Registro con email ── */
   const handleRegister = async () => {
     if (!name.trim())              { setError("Escribe tu nombre."); return; }
@@ -261,10 +256,6 @@ export function LoginScreen() {
             <IBolt s={16}/> Verificar con teléfono (SMS)
           </button>
 
-          <button onClick={loginDemo} disabled={loading}
-            style={{ height: 44, background: "rgba(223,255,35,.5)", border: "2px dashed var(--ink)", borderRadius: 12, fontWeight: 800, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}>
-            {loading ? "Entrando…" : "Entrar en modo demo"}
-          </button>
         </div>
 
         <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.45)", textAlign: "center", marginTop: "auto", paddingTop: 16 }}>AL REGISTRARTE ACEPTAS TÉRMINOS Y PRIVACIDAD</p>

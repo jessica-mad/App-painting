@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Wordmark } from "../../components/Wordmark";
 import { RarityBadge } from "../../components/RarityBadge";
 import { useApp } from "../../data/store";
@@ -8,7 +8,25 @@ import {
   IArrowR, ILock, ICam, IShare, IPlus, IBolt, ICircle, IArrowL,
 } from "../../components/Icons";
 import { getUserLevel, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY, SEASONS } from "../../data/parameters";
-import { fetchArtworks, addReaction, updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN } from "../../utils/api";
+import { fetchArtworks, addReaction, updateProfile, fetchUserArtworks, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID } from "../../utils/api";
+import { compressImage } from "../../utils/imageUtils";
+
+function copyToClipboard(text, onDone) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(onDone).catch(() => legacyCopy(text, onDone));
+  } else {
+    legacyCopy(text, onDone);
+  }
+}
+function legacyCopy(text, onDone) {
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.style.cssText = "position:fixed;opacity:0;top:0;left:0";
+  document.body.appendChild(el);
+  el.focus(); el.select();
+  try { document.execCommand("copy"); onDone?.(); } catch {}
+  document.body.removeChild(el);
+}
 
 /* ─── Sidebar ─── */
 function DeskSidebar({ current }) {
@@ -380,13 +398,22 @@ export function DeskFeed() {
 }
 
 /* ─── Desktop Profile ─── */
-const PROFILE_TABS = ["Obras", "Editar", "Logros", "Estadísticas"];
+const TABS_OWNER = ["Obras", "Editar", "Logros", "Estadísticas"];
+const TABS_GUEST = ["Obras", "Logros", "Estadísticas"];
 
 export function DeskProfile() {
   const { state, dispatch } = useApp();
   const { profile } = state;
   const level = getUserLevel(profile.completedChallenges);
+  const PROFILE_TABS = IS_LOGGED_IN ? TABS_OWNER : TABS_GUEST;
   const [tab, setTab] = useState("Obras");
+
+  const [artworks, setArtworks]       = useState([]);
+  const [loadingArt, setLoadingArt]   = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarB64, setAvatarB64]     = useState(null);
+  const avatarInputRef                = useRef(null);
+  const [copied, setCopied]           = useState(false);
 
   const [editName,    setEditName]    = useState(profile.displayName);
   const [editBio,     setEditBio]     = useState(profile.bio ?? "");
@@ -395,13 +422,32 @@ export function DeskProfile() {
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
 
+  useEffect(() => {
+    if (tab === "Obras" && IS_LOGGED_IN) {
+      setLoadingArt(true);
+      fetchUserArtworks(WP_USER_ID)
+        .then(data => setArtworks(data?.artworks ?? []))
+        .catch(() => {})
+        .finally(() => setLoadingArt(false));
+    }
+  }, [tab]);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const b64 = await compressImage(file, { maxPx: 400, quality: 0.75 });
+    setAvatarPreview(b64);
+    setAvatarB64(b64);
+  };
+
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      if (IS_LOGGED_IN) {
-        await updateProfile({ displayName: editName, bio: editBio, email: editEmail, socials: editSocials });
-      }
-      dispatch({ type: "UPDATE_PROFILE", data: { displayName: editName, bio: editBio, email: editEmail, socials: editSocials } });
+      const payload = { displayName: editName, bio: editBio, email: editEmail, socials: editSocials };
+      if (avatarB64) payload.avatar = avatarB64;
+      if (IS_LOGGED_IN) await updateProfile(payload);
+      dispatch({ type: "UPDATE_PROFILE", data: { displayName: editName, bio: editBio, email: editEmail, socials: editSocials, ...(avatarPreview ? { avatarUrl: avatarPreview } : {}) } });
+      setAvatarB64(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch { /* ignore */ }
@@ -409,12 +455,12 @@ export function DeskProfile() {
   };
 
   const handleLogout = () => {
-    if (IS_LOGGED_IN) {
-      window.location.href = WP_LOGOUT_URL;
-    } else {
-      dispatch({ type: "LOGOUT" });
-    }
+    if (IS_LOGGED_IN) { window.location.href = WP_LOGOUT_URL; }
+    else { dispatch({ type: "LOGOUT" }); }
   };
+
+  const shareLink = profile.shareLink || (window.location.origin + window.location.pathname + "?u=" + profile.username);
+  const avatarSrc = avatarPreview || profile.avatarUrl || null;
 
   return (
     <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -425,20 +471,39 @@ export function DeskProfile() {
           <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.12 }}/>
           <div style={{ position: "relative", display: "flex", gap: 22, alignItems: "flex-end" }}>
             <div style={{ position: "relative" }}>
-              <div style={{ width: 100, height: 100, borderRadius: 999, border: "3px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "6px 6px 0 var(--ink)" }}>
-                <IUser s={52}/>
+              <div
+                onClick={() => IS_LOGGED_IN && avatarInputRef.current?.click()}
+                style={{ width: 100, height: 100, borderRadius: 999, border: "3px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "6px 6px 0 var(--ink)", overflow: "hidden", cursor: IS_LOGGED_IN ? "pointer" : "default" }}
+              >
+                {avatarSrc
+                  ? <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+                  : <IUser s={52}/>
+                }
               </div>
-              <div style={{ position: "absolute", bottom: -4, right: -4, width: 32, height: 32, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <IBrush s={16}/>
-              </div>
+              {IS_LOGGED_IN && (
+                <div
+                  onClick={() => avatarInputRef.current?.click()}
+                  style={{ position: "absolute", bottom: -4, right: -4, width: 32, height: 32, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                >
+                  <ICam s={16}/>
+                </div>
+              )}
+              <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange}/>
             </div>
             <div style={{ flex: 1 }}>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>@{profile.username.toUpperCase()}</p>
               <h1 className="serif" style={{ fontSize: 48, lineHeight: 1, marginTop: 4 }}>{profile.displayName}</h1>
               {profile.bio && <p style={{ fontSize: 13, fontWeight: 600, marginTop: 6, maxWidth: 460 }}>{profile.bio}</p>}
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800 }}>{level.name}</span>
                 <span style={{ display: "inline-flex", gap: 6, alignItems: "center", padding: "4px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: "var(--butter)", fontSize: 11, fontWeight: 800 }}><IFlame s={13}/> {profile.streak} días</span>
+                <button
+                  onClick={() => copyToClipboard(shareLink, () => { setCopied(true); setTimeout(() => setCopied(false), 1800); })}
+                  className="stk-sm"
+                  style={{ display: "inline-flex", gap: 6, alignItems: "center", padding: "4px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: copied ? "var(--acid)" : "var(--paper-2)", fontSize: 11, fontWeight: 800, cursor: "pointer" }}
+                >
+                  <IShare s={12}/> {copied ? "¡Copiado!" : "Copiar enlace"}
+                </button>
               </div>
             </div>
             <div style={{ display: "flex", gap: 24, padding: "0 16px" }}>
@@ -459,7 +524,7 @@ export function DeskProfile() {
 
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "2px solid var(--ink)", background: "var(--paper-2)", flexShrink: 0 }}>
-          {PROFILE_TABS.map((t, i) => (
+          {PROFILE_TABS.map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               padding: "12px 24px", border: "none",
               borderRight: "2px solid var(--ink)",
@@ -470,22 +535,51 @@ export function DeskProfile() {
           ))}
         </div>
 
-        <div className="scroll" style={{ flex: 1, padding: 24, display: "grid", gridTemplateColumns: "1fr 300px", gap: 20 }}>
+        <div className="scroll" style={{ flex: 1, padding: 24, display: "grid", gridTemplateColumns: "1fr 300px", gap: 20, alignContent: "start" }}>
           {tab === "Obras" && (
             <>
               <div>
-                <h3 className="serif" style={{ fontSize: 24, marginBottom: 12 }}>Obras recientes · {profile.completedChallenges}</h3>
-                <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 20, borderRadius: 16, textAlign: "center" }}>
-                  <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Aquí aparecerán tus obras</p>
-                  <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>// COMPLETA TU PRIMER RETO Y PUBLÍCALO</p>
-                  <button
-                    onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
-                    className="stk-sm"
-                    style={{ marginTop: 14, height: 38, padding: "0 16px", borderRadius: 10, background: "var(--acid)", border: "2px solid var(--ink)", fontWeight: 800, fontSize: 12, cursor: "pointer" }}
-                  >
-                    Ver el feed de la comunidad →
-                  </button>
-                </div>
+                <h3 className="serif" style={{ fontSize: 24, marginBottom: 12 }}>Obras publicadas</h3>
+                {loadingArt && (
+                  <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// CARGANDO...</p>
+                )}
+                {!loadingArt && artworks.length === 0 && (
+                  <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 20, borderRadius: 16, textAlign: "center" }}>
+                    <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Aún no has publicado obras</p>
+                    <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>// COMPLETA TU PRIMER RETO Y PUBLÍCALO</p>
+                    <button
+                      onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
+                      className="stk-sm"
+                      style={{ marginTop: 14, height: 38, padding: "0 16px", borderRadius: 10, background: "var(--acid)", border: "2px solid var(--ink)", fontWeight: 800, fontSize: 12, cursor: "pointer" }}
+                    >
+                      Generar primer reto →
+                    </button>
+                  </div>
+                )}
+                {artworks.length > 0 && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                    {artworks.map((aw, i) => {
+                      const img = aw.images?.[0] ?? aw.image ?? null;
+                      return (
+                        <div key={aw.id ?? i} className="stk-sm" style={{ borderRadius: 14, overflow: "hidden", background: "var(--paper-2)" }}>
+                          {img
+                            ? <img src={img} alt="" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }}/>
+                            : <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <p className="serif" style={{ fontSize: 13, padding: 12, textAlign: "center" }}>{aw.prompt}</p>
+                              </div>
+                          }
+                          <div style={{ padding: "8px 10px" }}>
+                            <p style={{ fontWeight: 800, fontSize: 11 }}>{aw.technique}</p>
+                            <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}><IHeart s={10}/> {aw.likes ?? 0}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}><IInspire s={10}/> {aw.inspires ?? 0}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div className="stk-sm" style={{ background: "var(--mint)", padding: 14, borderRadius: 14 }}>
@@ -511,9 +605,29 @@ export function DeskProfile() {
             </>
           )}
 
-          {tab === "Editar" && (
+          {tab === "Editar" && IS_LOGGED_IN && (
             <div style={{ gridColumn: "1 / -1", maxWidth: 560 }}>
               <p style={{ fontWeight: 800, fontSize: 14, marginBottom: 20 }}>Editar perfil</p>
+
+              {/* Avatar upload in edit tab */}
+              <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 20 }}>
+                <div
+                  onClick={() => avatarInputRef.current?.click()}
+                  style={{ width: 72, height: 72, borderRadius: 999, border: "2px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0 }}
+                >
+                  {avatarSrc
+                    ? <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+                    : <IUser s={32}/>
+                  }
+                </div>
+                <div>
+                  <button onClick={() => avatarInputRef.current?.click()} className="stk-sm"
+                    style={{ height: 36, padding: "0 14px", border: "2px solid var(--ink)", borderRadius: 10, background: "var(--paper-2)", fontWeight: 800, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                    <ICam s={14}/> Cambiar foto
+                  </button>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 4 }}>JPG, PNG · máx 400px</p>
+                </div>
+              </div>
 
               <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre</label>
               <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
@@ -670,11 +784,8 @@ export function DeskLogin() {
             <span className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>O VERIFICA POR SMS</span>
             <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
           </div>
-          <button className="stk" onClick={() => dispatch({ type: "SET_SCREEN", screen: "onboarding" })} style={{ height: 56, background: "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}>
+          <button className="stk" style={{ height: 56, background: "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}>
             <ILock s={18}/> Enviar código por SMS
-          </button>
-          <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "home" })} style={{ height: 44, background: "rgba(223,255,35,.5)", border: "2px dashed var(--ink)", borderRadius: 12, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}>
-            <IBolt s={14}/> Entrar en modo demo
           </button>
         </div>
 

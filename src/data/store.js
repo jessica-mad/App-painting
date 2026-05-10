@@ -24,8 +24,10 @@ function startScreen() {
 const initialProfile = wpConfig.userId ? {
   username:            wpConfig.userName ?? "artista",
   displayName:         wpConfig.displayName ?? "Artista",
-  avatar:              wpConfig.userAvatar ?? "👩‍🎨",
-  bio:                 wpConfig.userBio ?? "Ilustrando ideas 🎨",
+  avatar:              wpConfig.userAvatar ?? "",
+  avatarUrl:           wpConfig.avatarUrl ?? "",
+  bio:                 wpConfig.userBio ?? "",
+  email:               wpConfig.userEmail ?? "",
   completedChallenges: wpConfig.challenges ?? 0,
   streak:              wpConfig.streak ?? 0,
   followers:           wpConfig.followers ?? 0,
