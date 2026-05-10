@@ -299,11 +299,11 @@ function DeskFeedCard({ post, index }) {
         </div>
       )}
       {images.length > 0 ? (
-        <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden" }}>
+        <div style={{ width: "100%", height: 260, overflow: "hidden" }}>
           <img src={images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
         </div>
       ) : (
-        <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: "100%", height: 260, background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {post.prompt && <p className="serif" style={{ fontSize: 14, padding: "12px 16px", textAlign: "center", lineHeight: 1.3 }}>{post.prompt}</p>}
         </div>
       )}

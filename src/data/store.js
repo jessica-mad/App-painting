@@ -16,7 +16,7 @@ const wpUser   = wpConfig.userId ? {
 
 /* Si hay usuario WP, saltamos tutorial/login */
 function startScreen() {
-  if (!wpUser) return "tutorial";
+  if (!wpUser) return "login";
   const techniques = JSON.parse(localStorage.getItem("inkrush_techniques") || "[]");
   return techniques.length >= 1 ? "home" : "onboarding";
 }

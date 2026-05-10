@@ -19,7 +19,7 @@ function PhotoCarousel({ images, onRemove }) {
   const cur = Math.min(idx, images.length - 1);
 
   return (
-    <div style={{ position: "relative", width: "100%", aspectRatio: "3/4", borderRadius: 18, border: "2px solid var(--ink)", overflow: "hidden", background: "var(--ink)" }}>
+    <div style={{ position: "relative", width: "100%", maxHeight: 260, aspectRatio: "3/4", borderRadius: 18, border: "2px solid var(--ink)", overflow: "hidden", background: "var(--ink)" }}>
       {/* Image */}
       <img
         src={images[cur]}
@@ -151,7 +151,7 @@ export function UploadScreen() {
         style={{ display: "none" }}
         onChange={handleFiles}
       />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "8px 22px 22px" }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <button
