@@ -1,42 +1,43 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
-import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { PARAM_CATEGORIES, pickVariables, getOverallRarity, generatePrompt } from "../data/parameters";
+import { PARAM_CATEGORIES, pickVariables } from "../data/parameters";
 
-function SlotColumn({ value, rolling }) {
+/* Columna del slot machine */
+function SlotColumn({ label, icon, value, rolling, color }) {
   return (
-    <div className="flex-1 h-20 rounded-2xl border-2 border-black bg-white overflow-hidden relative flex items-center justify-center">
-      <AnimatePresence mode="wait">
-        {rolling ? (
-          <motion.div
-            key="rolling"
-            className="text-center"
-            animate={{ y: [0, -40, 40, -20, 0] }}
-            transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="text-2xl">🎲</div>
-            <div className="text-xs font-black text-neutral-400">...</div>
-          </motion.div>
-        ) : value ? (
-          <motion.div
-            key={value.value}
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -40, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="text-center px-2"
-          >
-            <div className="text-sm font-black leading-tight">{value.value}</div>
-          </motion.div>
-        ) : (
-          <motion.div key="empty" className="text-center text-neutral-300">
-            <div className="text-2xl">?</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="flex-1 flex flex-col gap-1">
+      <div
+        className="h-20 rounded-2xl border-2 border-black overflow-hidden relative flex flex-col items-center justify-center"
+        style={{ backgroundColor: color + "40" }}
+      >
+        <AnimatePresence mode="wait">
+          {rolling ? (
+            <motion.div key="rolling"
+              animate={{ y: [0, -30, 30, -15, 0] }}
+              transition={{ duration: 0.4, repeat: Infinity, ease: "easeInOut" }}
+              className="text-2xl"
+            >🎲</motion.div>
+          ) : value ? (
+            <motion.div key={value.value}
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -30, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 450, damping: 28 }}
+              className="px-2 text-center"
+            >
+              <p className="text-[11px] font-black leading-tight capitalize">{value.value}</p>
+            </motion.div>
+          ) : (
+            <motion.p key="empty" className="text-2xl text-black/20">?</motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+      <p className="text-[10px] font-black text-center text-black/50 truncate">
+        {icon} {label}
+      </p>
     </div>
   );
 }
@@ -48,13 +49,19 @@ export function RandomScreen() {
   const [slots, setSlots] = useState([null, null, null]);
   const [shaking, setShaking] = useState(false);
 
+  /* Toggle con FIFO: si ya hay 3 y tocas uno nuevo, reemplaza el primero */
   const toggle = (paramId) => {
     if (selectedParams.includes(paramId)) {
+      // Deseleccionar (mínimo 1)
       if (selectedParams.length > 1) {
         dispatch({ type: "SET_PARAMS", params: selectedParams.filter(p => p !== paramId) });
       }
-    } else if (selectedParams.length < 3) {
-      dispatch({ type: "SET_PARAMS", params: [...selectedParams, paramId] });
+    } else {
+      // Añadir: si ya hay 3, quitar el primero (FIFO)
+      const next = selectedParams.length >= 3
+        ? [...selectedParams.slice(1), paramId]
+        : [...selectedParams, paramId];
+      dispatch({ type: "SET_PARAMS", params: next });
     }
   };
 
@@ -63,150 +70,138 @@ export function RandomScreen() {
     setRolling(true);
     setShaking(true);
 
-    // Progressive reveal
     const results = pickVariables(selectedParams, activeSeason);
-    const timing = [300, 500, 700];
 
-    timing.slice(0, selectedParams.length).forEach((t, i) => {
+    // Revelar progresivamente
+    [300, 500, 700].slice(0, selectedParams.length).forEach((t, i) => {
       setTimeout(() => {
-        setSlots(prev => {
-          const next = [...prev];
-          next[i] = results[i];
-          return next;
-        });
+        setSlots(prev => { const n = [...prev]; n[i] = results[i]; return n; });
       }, t);
     });
 
     setTimeout(() => {
       setRolling(false);
       setShaking(false);
-      dispatch({ type: "SET_IDEA", idea: results });
+      // Guardar idea CON los params usados (evita desfase en IdeaScreen)
+      dispatch({ type: "SET_IDEA", idea: results, params: [...selectedParams] });
       dispatch({ type: "SET_SCREEN", screen: "idea" });
-    }, 900);
+    }, 950);
   };
 
   return (
     <Phone>
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="px-5 pt-3 pb-2 shrink-0">
+        <div className="px-5 pt-4 pb-3 shrink-0">
           <h2 className="text-2xl font-black leading-tight">
-            🎰 El{" "}
-            <span className="bg-black text-[#DFFF23] px-2 rounded-xl">Randometro</span>
+            🎰 El <span className="bg-black text-[#DFFF23] px-2 rounded-xl">Randometro</span>
           </h2>
           <p className="text-xs font-semibold text-neutral-500 mt-1">
-            Selecciona hasta 3 parámetros para mezclar
+            Toca para activar · Toca otro para intercambiar
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5 pb-20">
-          {/* Parameter chips */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            {PARAM_CATEGORIES.map(cat => {
+        <div className="flex-1 overflow-y-auto no-scrollbar px-5 pb-20 space-y-4">
+          {/* Chips de parámetros */}
+          <div className="flex flex-wrap gap-2">
+            {PARAM_CATEGORIES.map((cat, idx) => {
               const isSelected = selectedParams.includes(cat.id);
-              const isDisabled = !isSelected && selectedParams.length >= 3;
+              const slot = selectedParams.indexOf(cat.id); // posición (0,1,2)
               return (
                 <motion.button
                   key={cat.id}
-                  whileTap={{ scale: 0.92 }}
+                  whileTap={{ scale: 0.90 }}
                   onClick={() => toggle(cat.id)}
-                  disabled={isDisabled}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full border-2 border-black font-black text-xs transition-all
-                    ${isSelected ? "sticker-shadow" : ""}
-                    ${isDisabled ? "opacity-30" : ""}
-                  `}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full border-2 border-black font-black text-xs transition-all ${isSelected ? "sticker-shadow" : ""}`}
                   style={{ backgroundColor: isSelected ? cat.color : "white" }}
                 >
                   {cat.icon} {cat.label}
-                  {isSelected && <span className="w-4 h-4 rounded-full bg-black text-white text-[9px] flex items-center justify-center">✓</span>}
+                  {isSelected && (
+                    <span className="w-4 h-4 rounded-full bg-black text-white text-[9px] flex items-center justify-center">
+                      {slot + 1}
+                    </span>
+                  )}
                 </motion.button>
               );
             })}
           </div>
 
-          {/* Machine */}
+          {/* Hint de slots */}
+          <p className="text-[10px] font-black text-neutral-400">
+            {selectedParams.length < 3
+              ? `Puedes añadir ${3 - selectedParams.length} más`
+              : "Toca uno nuevo para intercambiar el primero seleccionado"}
+          </p>
+
+          {/* Máquina */}
           <motion.div
-            animate={shaking ? {
-              x: [-3, 3, -3, 3, -2, 2, 0],
-              y: [0, -2, 2, -2, 2, 0],
-            } : {}}
+            animate={shaking ? { x: [-4,4,-4,4,-2,2,0], y: [0,-2,2,-2,2,0] } : {}}
             transition={{ duration: 0.4 }}
-            className="rounded-3xl border-4 border-black bg-gradient-to-br from-pink-200 via-[#DFFF23] to-cyan-200 p-5 mb-4 sticker-shadow-xl"
+            className="rounded-3xl border-4 border-black bg-gradient-to-br from-pink-200 via-[#DFFF23] to-cyan-200 p-4 sticker-shadow-xl"
           >
-            {/* Machine header */}
+            {/* Barra de título */}
             <div className="flex items-center justify-between mb-3">
-              <div className="flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-400 border border-black" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400 border border-black" />
-                <div className="w-3 h-3 rounded-full bg-green-400 border border-black" />
+              <div className="flex gap-1.5">
+                {["bg-red-400","bg-yellow-400","bg-green-400"].map(c => (
+                  <div key={c} className={`w-2.5 h-2.5 rounded-full ${c} border border-black`} />
+                ))}
               </div>
-              <span className="text-xs font-black bg-black text-[#DFFF23] px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-black bg-black text-[#DFFF23] px-2 py-0.5 rounded-full tracking-widest">
                 RANDOMETRO 3000
               </span>
             </div>
 
             {/* Slots */}
             <div className="flex gap-2 mb-3">
-              {[0, 1, 2].map(i => (
-                <SlotColumn
-                  key={i}
-                  value={selectedParams[i] ? slots[i] : null}
-                  rolling={rolling && !!selectedParams[i]}
-                />
-              ))}
+              {[0,1,2].map(i => {
+                const cat = PARAM_CATEGORIES.find(c => c.id === selectedParams[i]);
+                return (
+                  <SlotColumn
+                    key={i}
+                    label={cat?.label ?? "—"}
+                    icon={cat?.icon ?? ""}
+                    color={cat?.color ?? "#E8E8E8"}
+                    value={selectedParams[i] ? slots[i] : null}
+                    rolling={rolling && !!selectedParams[i]}
+                  />
+                );
+              })}
             </div>
 
-            {/* Labels */}
-            <div className="flex gap-2 mb-3">
-              {[0, 1, 2].map(i => (
-                <div key={i} className="flex-1 text-center">
-                  {selectedParams[i] ? (
-                    <span className="text-[10px] font-black text-black/60">
-                      {PARAM_CATEGORIES.find(c => c.id === selectedParams[i])?.icon} {selectedParams[i]}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-black text-black/30">—</span>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Roll button */}
+            {/* Botón randomizar */}
             <motion.button
-              whileTap={{ scale: 0.94 }}
+              whileTap={{ scale: 0.96 }}
               onClick={doRoll}
               disabled={rolling || rollsLeft <= 0}
-              className="w-full h-14 rounded-2xl border-2 border-black bg-black text-[#DFFF23] font-black text-lg sticker-shadow disabled:opacity-50"
+              className="w-full h-14 rounded-2xl border-2 border-black bg-black text-[#DFFF23] font-black text-base sticker-shadow disabled:opacity-50"
             >
               {rolling ? "🎲 Mezclando..." : rollsLeft > 0 ? "🎲 ¡RANDOMIZAR!" : "Sin intentos hoy"}
             </motion.button>
           </motion.div>
 
-          {/* Rolls counter */}
-          <div className="flex items-center justify-between rounded-2xl border-2 border-black bg-white p-4 mb-4">
+          {/* Contador de intentos */}
+          <div className="flex items-center justify-between rounded-2xl border-2 border-black bg-white px-4 py-3">
             <div>
-              <p className="font-black">Intentos restantes</p>
+              <p className="font-black text-sm">Intentos restantes</p>
               <p className="text-xs font-semibold text-neutral-400">
-                {rollsLeft > 0 ? "Úsalos con sabiduría ✨" : "Vuelve mañana por más ideas"}
+                {rollsLeft > 0 ? "Úsalos con sabiduría ✨" : "Vuelve mañana"}
               </p>
             </div>
-            <div className="flex gap-1">
-              {[0, 1, 2].map(i => (
-                <div
-                  key={i}
-                  className={`w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-sm ${i < rollsLeft ? "bg-[#DFFF23]" : "bg-neutral-100"}`}
+            <div className="flex gap-1.5">
+              {[0,1,2].map(i => (
+                <div key={i}
+                  className={`w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-sm ${i < rollsLeft ? "bg-[#DFFF23]" : "bg-neutral-100 text-neutral-300"}`}
                 >
-                  {i < rollsLeft ? "🎲" : "✗"}
+                  {i < rollsLeft ? "🎲" : "×"}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Tips */}
-          <div className="rounded-2xl border-2 border-black bg-[#EFE8FF] p-4">
-            <p className="font-black text-sm mb-1">💡 Tip</p>
-            <p className="text-xs font-semibold text-neutral-600">
-              Las variables Épicas y Legendarias son más raras. ¡Mezcla parámetros creativos para mejores combinaciones!
+          {/* Tip */}
+          <div className="rounded-2xl border-2 border-black bg-[#EFE8FF] px-4 py-3">
+            <p className="font-black text-xs">
+              💡 Las variables Épicas y Legendarias tienen menor probabilidad. ¡Mezcla bien!
             </p>
           </div>
         </div>

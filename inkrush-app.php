@@ -3,7 +3,7 @@
  * Plugin Name: InkRush App
  * Plugin URI:  https://inkrush.app
  * Description: App de retos creativos para ilustradores. Shortcode: [inkrush_app]
- * Version:     1.1.0
+ * Version:     1.2.0
  * Author:      InkRush
  * License:     GPL-2.0+
  * Text Domain: inkrush-app
@@ -12,7 +12,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'INKRUSH_VERSION', '1.1.0' );
+define( 'INKRUSH_VERSION', '1.2.0' );
 define( 'INKRUSH_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'INKRUSH_URL',     plugin_dir_url( __FILE__ ) );
 
@@ -22,30 +22,54 @@ require_once INKRUSH_DIR . 'admin/settings.php';
 require_once INKRUSH_DIR . 'admin/api.php';
 
 /* ──────────────────────────────────────────────────────────────
-   1. ACTIVACIÓN / DESACTIVACIÓN
+   1. ACTIVACIÓN
 ────────────────────────────────────────────────────────────── */
 
 register_activation_hook( __FILE__, 'inkrush_activate' );
 function inkrush_activate() {
     inkrush_register_roles();
+    inkrush_register_cpt();
     inkrush_create_page();
     inkrush_seed_default_variables();
     flush_rewrite_rules();
 }
 
-register_deactivation_hook( __FILE__, 'inkrush_deactivate' );
-function inkrush_deactivate() {
+register_deactivation_hook( __FILE__, function() {
     remove_role( 'ilustrador' );
     flush_rewrite_rules();
+} );
+
+/* ──────────────────────────────────────────────────────────────
+   2. CUSTOM POST TYPE — inkrush_artwork
+────────────────────────────────────────────────────────────── */
+
+add_action( 'init', 'inkrush_register_cpt' );
+function inkrush_register_cpt() {
+    register_post_type( 'inkrush_artwork', [
+        'labels' => [
+            'name'          => 'Obras InkRush',
+            'singular_name' => 'Obra',
+            'add_new_item'  => 'Añadir obra',
+            'edit_item'     => 'Editar obra',
+        ],
+        'public'        => false,
+        'show_ui'       => true,
+        'show_in_menu'  => 'inkrush',
+        'show_in_rest'  => false,   // usamos nuestra propia REST API
+        'supports'      => [ 'title', 'thumbnail', 'author', 'custom-fields' ],
+        'menu_icon'     => 'dashicons-art',
+        'capability_type' => 'post',
+        'map_meta_cap'  => true,
+    ] );
 }
 
 /* ──────────────────────────────────────────────────────────────
-   2. ROLES
+   3. ROLES
 ────────────────────────────────────────────────────────────── */
 
 function inkrush_register_roles() {
     if ( get_role( 'ilustrador' ) ) return;
-    $sub = get_role( 'subscriber' );
+    $sub  = get_role( 'subscriber' );
     $caps = $sub ? $sub->capabilities : [ 'read' => true ];
     add_role( 'ilustrador', 'Ilustrador', array_merge( $caps, [
         'inkrush_generate_challenge' => true,
@@ -54,33 +78,46 @@ function inkrush_register_roles() {
     ] ) );
 }
 
-/* Asignar rol al registrarse */
 add_action( 'user_register', function( $uid ) {
     ( new WP_User( $uid ) )->set_role( 'ilustrador' );
 } );
 
 /* ──────────────────────────────────────────────────────────────
-   3. SHORTCODE [inkrush_app]
+   4. SHORTCODE [inkrush_app]
 ────────────────────────────────────────────────────────────── */
 
 add_shortcode( 'inkrush_app', function() {
     wp_enqueue_style(  'inkrush-app', INKRUSH_URL . 'plugin-assets/app.css', [], INKRUSH_VERSION );
     wp_enqueue_script( 'inkrush-app', INKRUSH_URL . 'plugin-assets/app.js',  [], INKRUSH_VERSION, true );
 
-    /* Pasamos la configuración de WP a la app React */
+    $user_id = get_current_user_id();
+    $user    = $user_id ? get_userdata( $user_id ) : null;
+
     wp_localize_script( 'inkrush-app', 'InkRushConfig', [
-        'apiUrl'        => esc_url( rest_url( 'inkrush/v1' ) ),
-        'nonce'         => wp_create_nonce( 'wp_rest' ),
-        'activeSeason'  => get_option( 'inkrush_active_season', '' ),
-        'userId'        => get_current_user_id(),
-        'levelConfig'   => inkrush_get_level_config(),
+        'apiUrl'       => esc_url( rest_url( 'inkrush/v1' ) ),
+        'nonce'        => wp_create_nonce( 'wp_rest' ),
+        'loginUrl'     => wp_login_url(),
+        'activeSeason' => get_option( 'inkrush_active_season', '' ),
+        'rolls'        => (int) get_option( 'inkrush_rolls_per_day', 3 ),
+
+        // Datos del usuario actual
+        'userId'       => $user_id,
+        'userName'     => $user ? $user->user_login : '',
+        'displayName'  => $user ? $user->display_name : '',
+        'userAvatar'   => $user_id ? get_avatar_url( $user_id, [ 'size' => 96 ] ) : '',
+        'challenges'   => $user_id ? (int) get_user_meta( $user_id, 'inkrush_challenges_completed', true ) : 0,
+        'streak'       => $user_id ? (int) get_user_meta( $user_id, 'inkrush_streak', true ) : 0,
+        'totalLikes'   => $user_id ? (int) get_user_meta( $user_id, 'inkrush_total_likes', true ) : 0,
+        'totalInspires'=> $user_id ? (int) get_user_meta( $user_id, 'inkrush_inspires_received', true ) : 0,
+        'shareLink'    => $user_id ? home_url( '/inkrush-app/?perfil=' . $user_id ) : '',
+        'levelConfig'  => inkrush_get_level_config(),
     ] );
 
-    return '<div id="inkrush-root" style="min-height:100vh;background:#DFFF23;"></div>';
+    return '<div id="inkrush-root" style="min-height:100vh;background:#FFFDF3;"></div>';
 } );
 
 /* ──────────────────────────────────────────────────────────────
-   4. PÁGINA AUTOMÁTICA AL ACTIVAR
+   5. PÁGINA AUTOMÁTICA
 ────────────────────────────────────────────────────────────── */
 
 function inkrush_create_page() {
@@ -98,7 +135,6 @@ function inkrush_create_page() {
     }
 }
 
-/* Template fullscreen */
 add_filter( 'template_include', function( $tpl ) {
     if ( ! is_page() ) return $tpl;
     if ( get_post_meta( get_the_ID(), '_wp_page_template', true ) !== 'inkrush-fullscreen' ) return $tpl;
@@ -107,14 +143,58 @@ add_filter( 'template_include', function( $tpl ) {
 } );
 
 /* ──────────────────────────────────────────────────────────────
-   5. MENÚ ADMIN
+   6. MENÚ ADMIN
 ────────────────────────────────────────────────────────────── */
 
 add_action( 'admin_menu', function() {
-    add_menu_page( 'InkRush', 'InkRush 🎨', 'manage_options',
-        'inkrush', 'inkrush_page_settings', 'dashicons-art', 30 );
+    add_menu_page(
+        'InkRush', 'InkRush 🎨', 'manage_options',
+        'inkrush', 'inkrush_page_settings', 'dashicons-art', 30
+    );
+    add_submenu_page( 'inkrush', 'Configuración', 'Configuración', 'manage_options', 'inkrush',           'inkrush_page_settings' );
+    add_submenu_page( 'inkrush', 'Variables',     'Variables',     'manage_options', 'inkrush-variables', 'inkrush_page_variables' );
+    add_submenu_page( 'inkrush', 'Usuarios',      'Usuarios',      'manage_options', 'inkrush-users',     'inkrush_page_users' );
+} );
 
-    add_submenu_page( 'inkrush', 'Configuración',  'Configuración',  'manage_options', 'inkrush',            'inkrush_page_settings' );
-    add_submenu_page( 'inkrush', 'Variables',       'Variables',      'manage_options', 'inkrush-variables',  'inkrush_page_variables' );
-    add_submenu_page( 'inkrush', 'Usuarios',        'Usuarios',       'manage_options', 'inkrush-users',      'inkrush_page_users' );
+/* ──────────────────────────────────────────────────────────────
+   7. METABOX para obras en el admin de WP
+────────────────────────────────────────────────────────────── */
+
+add_action( 'add_meta_boxes', function() {
+    add_meta_box(
+        'inkrush_artwork_meta', 'Datos de la obra', 'inkrush_artwork_metabox',
+        'inkrush_artwork', 'normal', 'default'
+    );
+} );
+
+function inkrush_artwork_metabox( $post ) {
+    $fields = [
+        'inkrush_technique'   => 'Técnica',
+        'inkrush_variables'   => 'Variables (JSON)',
+        'inkrush_params'      => 'Parámetros (JSON)',
+        'inkrush_rarity'      => 'Rareza',
+        'inkrush_likes'       => 'Likes',
+        'inkrush_inspires'    => 'Inspiraciones',
+        'inkrush_tries'       => 'Lo intentaré',
+    ];
+    foreach ( $fields as $key => $label ) {
+        $val = get_post_meta( $post->ID, $key, true );
+        echo '<p><strong>' . esc_html( $label ) . ':</strong> ';
+        echo '<input name="' . esc_attr( $key ) . '" value="' . esc_attr( $val ) . '" style="width:60%;border:1px solid #ccc;padding:4px 8px;border-radius:4px;">';
+        echo '</p>';
+    }
+    wp_nonce_field( 'inkrush_artwork_meta', 'inkrush_meta_nonce' );
+}
+
+add_action( 'save_post_inkrush_artwork', function( $post_id ) {
+    if ( ! isset( $_POST['inkrush_meta_nonce'] ) ) return;
+    if ( ! wp_verify_nonce( $_POST['inkrush_meta_nonce'], 'inkrush_artwork_meta' ) ) return;
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+
+    $fields = [ 'inkrush_technique','inkrush_variables','inkrush_params','inkrush_rarity','inkrush_likes','inkrush_inspires','inkrush_tries' ];
+    foreach ( $fields as $f ) {
+        if ( isset( $_POST[ $f ] ) ) {
+            update_post_meta( $post_id, $f, sanitize_text_field( $_POST[ $f ] ) );
+        }
+    }
 } );

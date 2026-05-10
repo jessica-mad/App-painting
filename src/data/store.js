@@ -1,79 +1,110 @@
-import { createContext, useContext, useReducer } from "react";
+import { createContext, useContext } from "react";
 import { ACTIVE_SEASON } from "./parameters";
 
 export const AppContext = createContext(null);
+export function useApp() { return useContext(AppContext); }
 
-export function useApp() {
-  return useContext(AppContext);
+/* Lee config inyectada por WordPress (wp_localize_script) */
+const wpConfig = window.InkRushConfig ?? {};
+const wpUser   = wpConfig.userId ? {
+  id:       wpConfig.userId,
+  name:     wpConfig.userName ?? "Artista",
+  avatar:   wpConfig.userAvatar ?? "👩‍🎨",
+  provider: "wordpress",
+} : null;
+
+/* Si hay usuario WP, saltamos tutorial/login */
+function startScreen() {
+  if (!wpUser) return "tutorial";
+  const techniques = JSON.parse(localStorage.getItem("inkrush_techniques") || "[]");
+  return techniques.length >= 1 ? "home" : "onboarding";
 }
 
-const initialState = {
-  screen: "tutorial",
-  user: null,
-  favoriteTechniques: [],
-  selectedParams: ["Emociones", "Animales", "Eventos"],
-  currentIdea: null,
-  rollsLeft: 3,
-  timerConfig: null,
-  activeSeason: ACTIVE_SEASON,
-  adminMode: false,
-  profile: {
-    username: "jesska_art",
-    displayName: "Jesska",
-    avatar: "👩‍🎨",
-    bio: "Ilustrando ideas raras ✨",
-    completedChallenges: 7,
-    streak: 4,
-    followers: 1240,
-    following: 89,
-    totalLikes: 239,
-    totalInspires: 158,
-    totalTries: 73,
-    pomodorosCompleted: 12,
-    socials: { instagram: "jesska.art", tiktok: "jesska_art", pinterest: "" },
-    shareLink: "inkrush.app/u/jesska_art",
-  },
+const initialProfile = wpConfig.userId ? {
+  username:            wpConfig.userName ?? "artista",
+  displayName:         wpConfig.displayName ?? "Artista",
+  avatar:              wpConfig.userAvatar ?? "👩‍🎨",
+  bio:                 wpConfig.userBio ?? "Ilustrando ideas 🎨",
+  completedChallenges: wpConfig.challenges ?? 0,
+  streak:              wpConfig.streak ?? 0,
+  followers:           wpConfig.followers ?? 0,
+  following:           wpConfig.following ?? 0,
+  totalLikes:          wpConfig.totalLikes ?? 0,
+  totalInspires:       wpConfig.totalInspires ?? 0,
+  totalTries:          wpConfig.totalTries ?? 0,
+  pomodorosCompleted:  wpConfig.pomodoros ?? 0,
+  socials:             wpConfig.socials ?? { instagram:"", tiktok:"", pinterest:"" },
+  shareLink:           wpConfig.shareLink ?? "",
+} : {
+  username: "jesska_art", displayName: "Jesska", avatar: "👩‍🎨",
+  bio: "Ilustrando ideas raras ✨",
+  completedChallenges: 7, streak: 4, followers: 1240, following: 89,
+  totalLikes: 239, totalInspires: 158, totalTries: 73, pomodorosCompleted: 12,
+  socials: { instagram: "jesska.art", tiktok: "jesska_art", pinterest: "" },
+  shareLink: "inkrush.app/u/jesska_art",
 };
 
-function reducer(state, action) {
+export const initialState = {
+  screen:           startScreen(),
+  user:             wpUser,
+  favoriteTechniques: JSON.parse(localStorage.getItem("inkrush_techniques") || "[]"),
+  selectedParams:   ["Emociones", "Animales", "Eventos"],
+  /* idea = { variables: [...], params: [...] } — guarda los params usados */
+  currentIdea:      null,
+  rollsLeft:        parseInt(localStorage.getItem("inkrush_rolls_" + new Date().toDateString()) || "3"),
+  timerConfig:      null,
+  activeSeason:     wpConfig.activeSeason ?? ACTIVE_SEASON,
+  profile:          initialProfile,
+};
+
+export function reducer(state, action) {
   switch (action.type) {
     case "SET_SCREEN":
       return { ...state, screen: action.screen };
+
     case "LOGIN":
-      return {
-        ...state,
-        user: action.user,
-        screen: state.favoriteTechniques.length >= 3 ? "home" : "onboarding",
-      };
-    case "SET_TECHNIQUES":
-      return {
-        ...state,
-        favoriteTechniques: action.techniques,
-        screen: "home",
-      };
+      return { ...state, user: action.user,
+        screen: state.favoriteTechniques.length >= 1 ? "home" : "onboarding" };
+
+    case "SET_TECHNIQUES": {
+      localStorage.setItem("inkrush_techniques", JSON.stringify(action.techniques));
+      return { ...state, favoriteTechniques: action.techniques, screen: "home" };
+    }
+
     case "SET_PARAMS":
       return { ...state, selectedParams: action.params };
-    case "SET_IDEA":
-      return { ...state, currentIdea: action.idea, rollsLeft: Math.max(0, state.rollsLeft - 1) };
+
+    case "SET_IDEA": {
+      const left = Math.max(0, state.rollsLeft - 1);
+      localStorage.setItem("inkrush_rolls_" + new Date().toDateString(), left);
+      return {
+        ...state,
+        currentIdea: { variables: action.idea, params: action.params },
+        rollsLeft: left,
+      };
+    }
+
     case "RESET_ROLLS":
       return { ...state, rollsLeft: 3 };
+
     case "SET_TIMER_CONFIG":
       return { ...state, timerConfig: action.config };
+
     case "COMPLETE_CHALLENGE":
       return {
         ...state,
+        screen: "upload",
         profile: {
           ...state.profile,
           completedChallenges: state.profile.completedChallenges + 1,
-          pomodorosCompleted: state.profile.pomodorosCompleted + 1,
+          pomodorosCompleted:  state.profile.pomodorosCompleted + 1,
         },
-        screen: "upload",
       };
+
     case "UPDATE_PROFILE":
       return { ...state, profile: { ...state.profile, ...action.data } };
+
     default:
       return state;
   }
 }
-
-export { initialState, reducer };
