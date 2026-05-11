@@ -66,6 +66,7 @@ export const initialState = {
   profile:          initialProfile,
   viewingUserId:    null,
   followListUserId: null,
+  followListType:   "following",
 };
 
 export function reducer(state, action) {
@@ -137,10 +138,10 @@ export function reducer(state, action) {
       return { ...state, viewingUserId: null, screen: action.returnScreen ?? "feed" };
 
     case "VIEW_FOLLOW_LIST":
-      return { ...state, followListUserId: action.userId, screen: "followList" };
+      return { ...state, followListUserId: action.userId, followListType: action.listType ?? "following", screen: "followList" };
 
     case "CLEAR_FOLLOW_LIST":
-      return { ...state, followListUserId: null, screen: action.returnScreen ?? "profile" };
+      return { ...state, followListUserId: null, followListType: "following", screen: action.returnScreen ?? "profile" };
 
     default:
       return state;

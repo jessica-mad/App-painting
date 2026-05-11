@@ -222,8 +222,8 @@ export function PublicProfileScreen() {
                 <div style={{ display: "flex", gap: 0, marginTop: 14, borderTop: "2px solid var(--ink)", paddingTop: 12 }}>
                   {[
                     { l: "Retos",      v: profile.completedChallenges ?? 0, click: null },
-                    { l: "Seguidores", v: profile.followers ?? 0,           click: null },
-                    { l: "Siguiendo",  v: profile.following ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId }) },
+                    { l: "Seguidores", v: profile.followers ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "followers" }) },
+                    { l: "Siguiendo",  v: profile.following ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "following" }) },
                   ].map((s, i) => (
                     <div
                       key={i}
@@ -259,43 +259,39 @@ export function PublicProfileScreen() {
               </div>
             </div>
 
-            {/* Artworks grid */}
-            <div style={{ padding: "16px 14px 0" }}>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginBottom: 10 }}>
-                // OBRAS · {artworks.length}
-              </p>
+            {/* Artworks grid — Instagram 3-col */}
+            <div style={{ marginTop: 2 }}>
+              <div style={{ padding: "10px 14px 6px" }}>
+                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>
+                  // OBRAS · {artworks.length}
+                </p>
+              </div>
 
               {artworks.length === 0 ? (
-                <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 20, borderRadius: 16, textAlign: "center" }}>
-                  <p className="serif" style={{ fontSize: 20, lineHeight: 1 }}>Sin obras publicadas</p>
-                  <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 6 }}>
-                    // AÚN NO HA SUBIDO NADA
-                  </p>
+                <div style={{ padding: "0 14px" }}>
+                  <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 20, borderRadius: 16, textAlign: "center" }}>
+                    <p className="serif" style={{ fontSize: 20, lineHeight: 1 }}>Sin obras publicadas</p>
+                    <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 6 }}>
+                      // AÚN NO HA SUBIDO NADA
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2 }}>
                   {artworks.map((aw, i) => {
                     const img = aw.images?.[0] ?? aw.image ?? null;
                     return (
                       <div
                         key={aw.id ?? i}
                         onClick={() => setActiveArt(aw)}
-                        className="stk-sm"
-                        style={{ borderRadius: 14, overflow: "hidden", background: "var(--paper-2)", cursor: "pointer" }}
+                        style={{ aspectRatio: "3/4", overflow: "hidden", background: COL_CYCLE[i % COL_CYCLE.length], cursor: "pointer", position: "relative" }}
                       >
                         {img
-                          ? <img src={img} alt="" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }}/>
-                          : <div style={{ width: "100%", aspectRatio: "3/4", background: COL_CYCLE[i % COL_CYCLE.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <p className="serif" style={{ fontSize: 12, padding: 10, textAlign: "center" }}>{aw.prompt}</p>
+                          ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
+                          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <p className="serif" style={{ fontSize: 9, padding: 6, textAlign: "center", lineHeight: 1.2 }}>{aw.prompt}</p>
                             </div>
                         }
-                        <div style={{ padding: "6px 8px" }}>
-                          <p style={{ fontWeight: 800, fontSize: 10 }}>{aw.technique}</p>
-                          <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
-                            <span style={{ fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", gap: 2 }}><IHeart s={9}/> {aw.likes ?? 0}</span>
-                            <span style={{ fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", gap: 2 }}><IInspire s={9}/> {aw.inspires ?? 0}</span>
-                          </div>
-                        </div>
                       </div>
                     );
                   })}

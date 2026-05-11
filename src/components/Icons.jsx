@@ -40,6 +40,9 @@ export const ITriangle = (p) => <Icon {...p} d={<><path d="M12 4l9 16H3z"/></>}/
 export const ICross    = (p) => <Icon {...p} d={<><path d="M12 4v16M4 12h16"/></>}/>;
 export const IInspire  = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="3"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></>}/>;
 export const ITrash    = (p) => <Icon {...p} d={<><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></>}/>;
+export const IDotsV    = (p) => <Icon {...p} d={<><circle cx="12" cy="5"  r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></>}/>;
+export const IEyeOff   = (p) => <Icon {...p} d={<><path d="M17.9 17.9A10 10 0 0 1 12 20C7 20 3 16 2 12a10 10 0 0 1 4.1-5.9M9.9 5.2A10 10 0 0 1 12 5c5 0 9 4 10 9a10 10 0 0 1-2 4.3M3 3l18 18"/></>}/>;
+export const IFlag     = (p) => <Icon {...p} d={<><path d="M5 3v18M5 3h12l-2 5h2l-2 5H5"/></>}/>;
 export const ICopy     = (p) => <Icon {...p} d={<><rect x="8" y="3" width="13" height="13" rx="2"/><path d="M16 16v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h3"/></>}/>;
 export const ILink     = (p) => <Icon {...p} d={<><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></>}/>;
 

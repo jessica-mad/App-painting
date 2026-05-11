@@ -97,6 +97,33 @@ export async function fetchUserFollowing(userId) {
   return apiFetch(`/users/${userId}/following`);
 }
 
+export async function fetchUserFollowers(userId) {
+  return apiFetch(`/users/${userId}/followers`);
+}
+
+export async function deleteArtwork(id) {
+  return apiFetch(`/artworks/${id}`, { method: "DELETE" });
+}
+
+export async function hideArtwork(id) {
+  return apiFetch(`/artworks/${id}/hide`, { method: "POST" });
+}
+
+export async function reportArtwork(id, reason = "") {
+  return apiFetch(`/artworks/${id}/report`, {
+    method: "POST",
+    body:   JSON.stringify({ reason }),
+  });
+}
+
+export async function fetchReports() {
+  return apiFetch("/reports");
+}
+
+export async function republishArtwork(id) {
+  return apiFetch(`/artworks/${id}/republish`, { method: "POST" });
+}
+
 /* ── Config de WP ── */
 export const WP_USER_ID      = cfg.userId      ?? 0;
 export const IS_LOGGED_IN    = WP_USER_ID > 0;

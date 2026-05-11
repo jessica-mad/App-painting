@@ -168,8 +168,8 @@ export function ProfileScreen() {
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: 14 }}>
             {[
               { l: "Retos",      v: profile.completedChallenges, onClick: null },
-              { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers, onClick: null },
-              { l: "Siguiendo",  v: profile.following, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: state.user?.id ?? 0 }) : null },
+              { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: state.user?.id ?? 0, listType: "followers" }) : null },
+              { l: "Siguiendo",  v: profile.following, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: state.user?.id ?? 0, listType: "following" }) : null },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: "center", cursor: s.onClick ? "pointer" : "default" }} onClick={s.onClick ?? undefined}>
                 <p className="serif" style={{ fontSize: 22, lineHeight: 1, textDecoration: s.onClick ? "underline" : "none" }}>{s.v}</p>
@@ -219,26 +219,22 @@ export function ProfileScreen() {
                 </p>
               )}
               {artworks.length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, margin: "0 -22px" }}>
                   {artworks.map((aw, i) => {
                     const img = aw.images?.[0] || aw.image;
                     return (
-                      <div key={aw.id ?? i} className="stk-sm" style={{ borderRadius: 12, overflow: "hidden", background: "var(--paper-2)" }}>
-                        <div style={{ aspectRatio: "3/4", background: "var(--lilac)", overflow: "hidden" }}>
-                          {img
-                            ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
-                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <p className="serif" style={{ fontSize: 11, padding: "8px", textAlign: "center", lineHeight: 1.3 }}>{aw.prompt}</p>
-                              </div>
-                          }
-                        </div>
-                        <div style={{ padding: "6px 8px" }}>
-                          <p className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>{aw.technique?.toUpperCase()}</p>
-                          <div style={{ display: "flex", gap: 8, marginTop: 4, fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.6)" }}>
-                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><IHeart s={10}/> {aw.likes ?? 0}</span>
-                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><IInspire s={10}/> {aw.inspires ?? 0}</span>
+                      <div key={aw.id ?? i} style={{ aspectRatio: "3/4", background: "var(--lilac)", overflow: "hidden", position: "relative" }}>
+                        {img
+                          ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
+                          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: `var(--${["rose","lilac","sky","mint","butter","acid"][i%6]})` }}>
+                              <p className="serif" style={{ fontSize: 9, padding: "6px", textAlign: "center", lineHeight: 1.2 }}>{aw.prompt}</p>
+                            </div>
+                        }
+                        {aw.hidden && (
+                          <div style={{ position: "absolute", inset: 0, background: "rgba(20,17,15,.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <p className="mono" style={{ fontSize: 8, color: "white", fontWeight: 800 }}>OCULTA</p>
                           </div>
-                        </div>
+                        )}
                       </div>
                     );
                   })}

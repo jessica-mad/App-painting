@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
-import { fetchUserFollowing } from "../utils/api";
+import { fetchUserFollowing, fetchUserFollowers } from "../utils/api";
 import { getUserLevel } from "../data/parameters";
 import { IUser, IArrowL, IBrush } from "../components/Icons";
 
@@ -9,7 +9,8 @@ const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "
 
 export function FollowListScreen() {
   const { state, dispatch } = useApp();
-  const userId = state.followListUserId;
+  const userId      = state.followListUserId;
+  const listType    = state.followListType ?? "following";
   const returnScreen = state.viewingUserId ? "publicProfile" : "profile";
 
   const [users,   setUsers]   = useState([]);
@@ -18,14 +19,17 @@ export function FollowListScreen() {
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    fetchUserFollowing(userId)
+    const fetcher = listType === "followers" ? fetchUserFollowers : fetchUserFollowing;
+    fetcher(userId)
       .then(data => setUsers(data?.users ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, listType]);
 
-  const goBack = () => dispatch({ type: "CLEAR_FOLLOW_LIST", returnScreen });
+  const goBack  = () => dispatch({ type: "CLEAR_FOLLOW_LIST", returnScreen });
   const viewUser = (id) => dispatch({ type: "VIEW_USER", userId: id });
+
+  const title = listType === "followers" ? "Seguidores" : "Siguiendo";
 
   return (
     <Phone>
@@ -39,7 +43,7 @@ export function FollowListScreen() {
             <IArrowL s={16}/>
           </button>
           <div>
-            <h2 className="serif" style={{ fontSize: 26, lineHeight: 1 }}>Siguiendo</h2>
+            <h2 className="serif" style={{ fontSize: 26, lineHeight: 1 }}>{title}</h2>
             {!loading && (
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>
                 // {users.length} CUENTA{users.length !== 1 ? "S" : ""}
@@ -55,7 +59,9 @@ export function FollowListScreen() {
 
           {!loading && users.length === 0 && (
             <div style={{ textAlign: "center", padding: "52px 24px" }}>
-              <p className="serif" style={{ fontSize: 24, lineHeight: 1 }}>Sin cuentas seguidas</p>
+              <p className="serif" style={{ fontSize: 24, lineHeight: 1 }}>
+                {listType === "followers" ? "Sin seguidores aún" : "Sin cuentas seguidas"}
+              </p>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
                 // EXPLORE EL FEED PARA DESCUBRIR ARTISTAS
               </p>
