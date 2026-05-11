@@ -6,10 +6,23 @@ import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, pickVariables } from "../data/parameters";
 import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
 
-const CAT_ICONS = { emo: IHeart, ani: IFlame, lug: IDiamond, obj: IBolt, evt: IStar, col: IBrush };
+const CAT_ICONS = {
+  Emociones:  IHeart,
+  Animales:   IFlame,
+  Lugares:    IDiamond,
+  Objetos:    IBolt,
+  Eventos:    IStar,
+  Acciones:   ISpark,
+  Personajes: IBrush,
+};
 const CAT_COLORS = {
-  emo: "var(--rose)", ani: "var(--butter)", lug: "var(--sky)",
-  obj: "var(--mint)", evt: "var(--lilac)", col: "var(--acid)",
+  Emociones:  "var(--rose)",
+  Animales:   "var(--butter)",
+  Lugares:    "var(--sky)",
+  Objetos:    "var(--mint)",
+  Eventos:    "var(--lilac)",
+  Acciones:   "var(--acid)",
+  Personajes: "var(--paper-2)",
 };
 
 export function RandomScreen() {

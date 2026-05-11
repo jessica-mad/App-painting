@@ -42,6 +42,7 @@ export function ProfileScreen() {
   const [avatarB64,   setAvatarB64]   = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
+  const [saveError,   setSaveError]   = useState(null);
   const [copied,      setCopied]      = useState(false);
   const avatarRef = useRef(null);
 
@@ -77,6 +78,7 @@ export function ProfileScreen() {
 
   const handleSaveProfile = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       if (IS_LOGGED_IN) {
         await updateProfile({
@@ -97,8 +99,9 @@ export function ProfileScreen() {
       setAvatarB64(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch { /* ignore */ }
-    finally { setSaving(false); }
+    } catch (err) {
+      setSaveError(err?.message || "No se pudieron guardar los cambios. Revisa tu conexión.");
+    } finally { setSaving(false); }
   };
 
   const handleLogout = () => {
@@ -293,8 +296,13 @@ export function ProfileScreen() {
                 </div>
               ))}
 
+              {saveError && (
+                <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "var(--ink)", lineHeight: 1.4 }}>
+                  ⚠ {saveError}
+                </div>
+              )}
               <button onClick={handleSaveProfile} disabled={saving} className="stk"
-                style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginTop: 16, marginBottom: 24 }}>
+                style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginTop: 10, marginBottom: 24 }}>
                 {saved ? "✓ Guardado" : saving ? "Guardando..." : "Guardar cambios"}
               </button>
 

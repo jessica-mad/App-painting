@@ -125,10 +125,10 @@ function DeskTopbar({ title, sub }) {
         <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>// {sub}</p>
         <h1 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 4 }}>{title}</h1>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", border: "2px solid var(--ink)", borderRadius: 12, background: "var(--paper)", width: 260 }}>
+      <div title="Búsqueda disponible próximamente" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", border: "2px solid rgba(20,17,15,.2)", borderRadius: 12, background: "var(--paper)", width: 260, opacity: 0.5, cursor: "not-allowed" }}>
         <ISpark s={16}/>
         <span className="mono" style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.5)", flex: 1 }}>Buscar artista, técnica…</span>
-        <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, fontWeight: 700, padding: "1px 5px", border: "1.5px solid var(--ink)", borderRadius: 4 }}>⌘K</span>
+        <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, fontWeight: 700, padding: "1px 5px", border: "1.5px solid rgba(20,17,15,.3)", borderRadius: 4, color: "rgba(20,17,15,.4)" }}>PRÓX</span>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button className="stk-sm" style={{ width: 38, height: 38, borderRadius: 10, background: "var(--paper-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--ink)", cursor: "pointer" }}>
@@ -430,6 +430,7 @@ export function DeskProfile() {
   const [editSocials, setEditSocials] = useState(profile.socials ?? { instagram: "", tiktok: "", pinterest: "" });
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
+  const [saveError,   setSaveError]   = useState(null);
 
   useEffect(() => {
     if (tab === "Obras" && IS_LOGGED_IN) {
@@ -451,6 +452,7 @@ export function DeskProfile() {
 
   const handleSaveProfile = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       const payload = { displayName: editName, bio: editBio, email: editEmail, socials: editSocials };
       if (avatarB64) payload.avatar = avatarB64;
@@ -459,8 +461,9 @@ export function DeskProfile() {
       setAvatarB64(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch { /* ignore */ }
-    finally { setSaving(false); }
+    } catch (err) {
+      setSaveError(err?.message || "No se pudieron guardar los cambios. Revisa tu conexión.");
+    } finally { setSaving(false); }
   };
 
   const handleLogout = () => {
@@ -665,8 +668,13 @@ export function DeskProfile() {
                 </div>
               ))}
 
+              {saveError && (
+                <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "var(--ink)", lineHeight: 1.4 }}>
+                  ⚠ {saveError}
+                </div>
+              )}
               <button onClick={handleSaveProfile} disabled={saving} className="stk"
-                style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginTop: 16, marginBottom: 24 }}>
+                style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginTop: 10, marginBottom: 24 }}>
                 {saved ? "✓ Guardado" : saving ? "Guardando..." : "Guardar cambios"}
               </button>
 
