@@ -197,6 +197,30 @@ export function LoginScreen() {
             style={{ height: 52, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
             <ILock s={16}/> Iniciar sesión con email
           </button>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
+            <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
+            <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>MODO TESTER</span>
+            <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
+          </div>
+
+          <button className="stk" disabled={loading} onClick={async () => {
+            setError(""); setLoading(true);
+            try {
+              await loginUser({ email: "tester@inkrush.app", password: "test1234" });
+              setSuccess("¡Bienvenido, tester! Cargando…");
+              setTimeout(() => window.location.reload(), 800);
+            } catch (e) {
+              setError(e.message || "Cuenta tester no disponible.");
+              setLoading(false);
+            }
+          }}
+            style={{ height: 48, background: "transparent", border: "2px dashed rgba(20,17,15,.35)", borderRadius: 16, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", color: "rgba(20,17,15,.6)", opacity: loading ? 0.6 : 1 }}>
+            🧪 {loading ? "Entrando…" : "Entrar como tester · test1234"}
+          </button>
+
+          {error   && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)", textAlign: "center" }}>{error}</p>}
+          {success && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--ink)", textAlign: "center" }}>{success}</p>}
         </div>
 
         <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.45)", textAlign: "center", marginTop: "auto", paddingTop: 16 }}>AL REGISTRARTE ACEPTAS TÉRMINOS Y PRIVACIDAD</p>
