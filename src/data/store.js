@@ -83,12 +83,16 @@ export const initialState = {
   viewingUserId:    null,
   followListUserId: null,
   followListType:   "following",
+  profileInitialTab: null,
 };
 
 export function reducer(state, action) {
   switch (action.type) {
     case "SET_SCREEN":
-      return { ...state, screen: action.screen };
+      return { ...state, screen: action.screen, profileInitialTab: action.profileTab ?? null };
+
+    case "CLEAR_PROFILE_TAB":
+      return { ...state, profileInitialTab: null };
 
     case "LOGIN":
       return { ...state, user: action.user,

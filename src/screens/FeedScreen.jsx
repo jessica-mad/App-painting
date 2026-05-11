@@ -3,8 +3,8 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { fetchArtworks, addReaction, deleteArtwork, hideArtwork, reportArtwork, useTryAPI, IS_LOGGED_IN, WP_USER_ID, WP_TRIES_LEFT, WP_TRIES_LIMIT } from "../utils/api";
-import { IHeart, IInspire, IFlame, IUser, IArrowL, IArrowR, IDotsV, ITrash, IEyeOff, IFlag } from "../components/Icons";
+import { fetchArtworks, addReaction, deleteArtwork, hideArtwork, reportArtwork, updateArtwork, useTryAPI, IS_LOGGED_IN, WP_USER_ID, WP_TRIES_LEFT, WP_TRIES_LIMIT } from "../utils/api";
+import { IHeart, IInspire, IFlame, IUser, IArrowL, IArrowR, IDotsV, ITrash, IEyeOff, IFlag, IBrush } from "../components/Icons";
 
 function decodeTag(t) {
   const raw = typeof t === "string" ? t : (t.value ?? "");
@@ -20,6 +20,31 @@ function localTriesLeft() {
 function markLocalTry() {
   const used = parseInt(localStorage.getItem(triesKey()) || "0");
   localStorage.setItem(triesKey(), String(used + 1));
+}
+
+function filterToParams(f) {
+  if (f === "Legendarios") return { rarity: "Legendario" };
+  if (f === "Siguiendo")   return { following: 1 };
+  if (f === "Esta semana") return { period: "week" };
+  return {};
+}
+
+function useCountdown() {
+  const [label, setLabel] = useState("0h 00m");
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const midnight = new Date(); midnight.setHours(24, 0, 0, 0);
+      const diff = midnight - now;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setLabel(`${h}h ${m.toString().padStart(2, "0")}m`);
+    };
+    update();
+    const id = setInterval(update, 30000);
+    return () => clearInterval(id);
+  }, []);
+  return label;
 }
 
 const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana"];
@@ -101,12 +126,57 @@ function DeleteConfirm({ onConfirm, onCancel }) {
   );
 }
 
-function PostMenu({ isOwn, hidden, onDelete, onHide, onReport, onFlag, onClose }) {
+function EditArtworkModal({ post, onClose, onSaved }) {
+  const [prompt, setPrompt] = useState(post.prompt ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateArtwork(post.id, { prompt });
+      onSaved({ ...post, prompt });
+    } catch {}
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(20,17,15,.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 24px" }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="stk"
+        style={{ background: "var(--paper-2)", borderRadius: 20, padding: "24px 20px", width: "100%", maxWidth: 340 }}
+      >
+        <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginBottom: 16 }}>Editar obra</p>
+        <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Descripción / reto</label>
+        <textarea
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          style={{ width: "100%", height: 80, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", marginBottom: 16 }}
+        />
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onClose}
+            style={{ flex: 1, height: 44, border: "2px solid var(--ink)", borderRadius: 12, background: "var(--paper-2)", fontWeight: 800, fontSize: 13, cursor: "pointer" }}
+          >Cancelar</button>
+          <button
+            onClick={save}
+            disabled={saving}
+            style={{ flex: 1, height: 44, border: "2px solid var(--ink)", borderRadius: 12, background: "var(--acid)", fontWeight: 800, fontSize: 13, cursor: "pointer", opacity: saving ? 0.6 : 1 }}
+          >{saving ? "Guardando..." : "Guardar"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PostMenu({ isOwn, hidden, onEdit, onDelete, onHide, onReport, onFlag, onClose }) {
   return (
     <>
-      {/* Overlay transparente para cerrar al tocar fuera */}
       <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200 }}/>
-      {/* Dropdown */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
@@ -118,6 +188,10 @@ function PostMenu({ isOwn, hidden, onDelete, onHide, onReport, onFlag, onClose }
       >
         {isOwn ? (
           <>
+            <button onClick={onEdit}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "13px 16px", border: "none", borderBottom: "1.5px solid rgba(20,17,15,.1)", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left" }}>
+              <IBrush s={16}/> Editar obra
+            </button>
             <button onClick={onHide}
               style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "13px 16px", border: "none", borderBottom: "1.5px solid rgba(20,17,15,.1)", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left" }}>
               <IEyeOff s={16}/> {hidden ? "Mostrar obra" : "Ocultar obra"}
@@ -165,12 +239,10 @@ function ArtworkDetailModal({ post, onClose, react, reactions, trySaved, viewAut
         onClick={e => e.stopPropagation()}
         style={{ width: "100%", maxWidth: 480, maxHeight: "94vh", overflowY: "auto", background: "var(--paper-2)", borderRadius: "22px 22px 0 0", border: "2px solid var(--ink)", borderBottom: "none" }}
       >
-        {/* Handle + close */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px 8px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 999, background: "rgba(20,17,15,.2)", margin: "0 auto" }}/>
         </div>
 
-        {/* Author */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px 10px" }}>
           <div
             onClick={hasAuthor ? viewAuthor : undefined}
@@ -195,7 +267,6 @@ function ArtworkDetailModal({ post, onClose, react, reactions, trySaved, viewAut
           >✕</button>
         </div>
 
-        {/* Tags */}
         {tags.length > 0 && (
           <div style={{ display: "flex", gap: 6, padding: "0 16px 10px", flexWrap: "wrap" }}>
             {tags.map((t, i) => (
@@ -206,7 +277,6 @@ function ArtworkDetailModal({ post, onClose, react, reactions, trySaved, viewAut
           </div>
         )}
 
-        {/* Image (full width) */}
         {images.length > 0 ? (
           <PostImages images={images}/>
         ) : (
@@ -217,7 +287,6 @@ function ArtworkDetailModal({ post, onClose, react, reactions, trySaved, viewAut
           </div>
         )}
 
-        {/* Reactions */}
         <div style={{ display: "flex", gap: 8, padding: "12px 16px 16px" }}>
           {reactions.map((b, j) => {
             const isTry = b.type === "try";
@@ -245,7 +314,7 @@ function ArtworkDetailModal({ post, onClose, react, reactions, trySaved, viewAut
   );
 }
 
-function ArtCard({ post, idx, onRemove, triesLeft, onTryUsed }) {
+function ArtCard({ post, idx, onRemove, onUpdate, triesLeft, onTryUsed, countdown }) {
   const { dispatch } = useApp();
   const [likes,    setLikes]    = useState(post.likes    ?? 0);
   const [inspires, setInspires] = useState(post.inspires ?? 0);
@@ -258,21 +327,26 @@ function ArtCard({ post, idx, onRemove, triesLeft, onTryUsed }) {
   const [trySaved,   setTrySaved]   = useState(false);
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [editOpen,   setEditOpen]   = useState(false);
   const [hidden,     setHidden]     = useState(post.hidden ?? false);
   const [reported,   setReported]   = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [localPrompt, setLocalPrompt] = useState(post.prompt ?? "");
   const menuRef = useRef(null);
 
   const isOwn = IS_LOGGED_IN && parseInt(post.author_id) === WP_USER_ID;
 
   const react = (type) => {
-    if (post.id) addReaction(post.id, type).catch(() => {});
     const was = reacted[type];
+    /* Block adding a "try" when exhausted */
+    if (type === "try" && !was && triesLeft <= 0) return;
+
+    if (post.id) addReaction(post.id, type).catch(() => {});
     if (type === "like")    setLikes(n    => was ? n - 1 : n + 1);
     if (type === "inspire") setInspires(n => was ? n - 1 : n + 1);
     if (type === "try") {
       setTries(n => was ? n - 1 : n + 1);
-      if (!was && IS_LOGGED_IN && triesLeft > 0) {
+      if (!was && IS_LOGGED_IN) {
         const tags = post.variables ?? post.tags ?? [];
         const variables = tags.map(t => ({
           value: decodeTag(t),
@@ -290,7 +364,12 @@ function ArtCard({ post, idx, onRemove, triesLeft, onTryUsed }) {
   };
 
   const viewAuthor = () => {
-    if (post.author_id) dispatch({ type: "VIEW_USER", userId: post.author_id });
+    if (!post.author_id) return;
+    if (IS_LOGGED_IN && parseInt(post.author_id) === WP_USER_ID) {
+      dispatch({ type: "SET_SCREEN", screen: "profile" });
+    } else {
+      dispatch({ type: "VIEW_USER", userId: post.author_id });
+    }
   };
 
   const handleDelete = async () => {
@@ -317,7 +396,7 @@ function ArtCard({ post, idx, onRemove, triesLeft, onTryUsed }) {
   const user   = post.username ?? post.user ?? "Artista";
   const tech   = post.technique ?? "—";
   const rarity = post.rarity ?? "Común";
-  const prompt = post.prompt ?? tags.join(" + ");
+  const prompt = localPrompt || tags.join(" + ");
   const col    = COL_CYCLE[idx % COL_CYCLE.length];
   const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
   const hasAuthor = !!post.author_id;
@@ -331,9 +410,16 @@ function ArtCard({ post, idx, onRemove, triesLeft, onTryUsed }) {
   return (
     <>
       {confirmDel && <DeleteConfirm onConfirm={handleDelete} onCancel={() => setConfirmDel(false)}/>}
+      {editOpen && (
+        <EditArtworkModal
+          post={{ ...post, prompt: localPrompt }}
+          onClose={() => setEditOpen(false)}
+          onSaved={(updated) => { setLocalPrompt(updated.prompt ?? ""); onUpdate?.(updated); }}
+        />
+      )}
       {detailOpen && (
         <ArtworkDetailModal
-          post={post}
+          post={{ ...post, prompt }}
           col={col}
           onClose={() => setDetailOpen(false)}
           react={react}
@@ -357,6 +443,7 @@ function ArtCard({ post, idx, onRemove, triesLeft, onTryUsed }) {
             <PostMenu
               isOwn={isOwn}
               hidden={hidden}
+              onEdit={() => { setMenuOpen(false); setEditOpen(true); }}
               onDelete={() => { setMenuOpen(false); setConfirmDel(true); }}
               onHide={handleHide}
               onReport={() => handleReport("denuncia")}
@@ -416,17 +503,22 @@ function ArtCard({ post, idx, onRemove, triesLeft, onTryUsed }) {
           {reactions.map((b, j) => {
             const isTry = b.type === "try";
             const saved = isTry && trySaved;
+            const blocked = isTry && !reacted.try && triesLeft <= 0;
             return (
               <button
                 key={j}
                 onClick={() => react(b.type)}
+                disabled={blocked}
+                title={blocked ? `Sin intentos · se reinician en ${countdown}` : undefined}
                 style={{
                   flex: 1, height: 38, borderRadius: 12, border: "2px solid var(--ink)",
                   background: saved ? "var(--mint)" : b.active ? b.col : "var(--paper-2)",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   fontWeight: 800, fontSize: 12,
                   boxShadow: b.active ? "3px 3px 0 var(--ink)" : "none",
-                  cursor: "pointer", transition: "background .2s",
+                  cursor: blocked ? "not-allowed" : "pointer",
+                  opacity: blocked ? 0.45 : 1,
+                  transition: "background .2s, opacity .2s",
                 }}
               >
                 <b.Ico s={15}/> {saved ? "Guardado" : b.count}
@@ -455,15 +547,19 @@ export function FeedScreen() {
   const [posts, setPosts]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [triesLeft, setTriesLeft] = useState(() => IS_LOGGED_IN ? WP_TRIES_LEFT : localTriesLeft());
+  const countdown = useCountdown();
 
   useEffect(() => {
-    fetchArtworks()
+    setLoading(true);
+    setPosts([]);
+    fetchArtworks(filterToParams(filter))
       .then(data => { if (data?.artworks) setPosts(data.artworks); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [filter]);
 
-  const removePost = (id) => setPosts(ps => ps.filter(p => p.id !== id));
+  const removePost   = (id) => setPosts(ps => ps.filter(p => p.id !== id));
+  const updatePost   = (updated) => setPosts(ps => ps.map(p => p.id === updated.id ? { ...p, ...updated } : p));
 
   return (
     <Phone>
@@ -472,10 +568,17 @@ export function FeedScreen() {
         <div style={{ padding: "8px 22px 6px", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>Feed</h2>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 999, padding: "4px 12px" }}>
-              <IFlame s={14}/>
-              <span style={{ fontWeight: 800, fontSize: 13 }}>{triesLeft}</span>
-              <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>/{WP_TRIES_LIMIT}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {triesLeft === 0 && (
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.45)" }}>
+                  reset {countdown}
+                </span>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, background: triesLeft === 0 ? "rgba(20,17,15,.08)" : "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 999, padding: "4px 12px" }}>
+                <IFlame s={14}/>
+                <span style={{ fontWeight: 800, fontSize: 13, color: triesLeft === 0 ? "rgba(20,17,15,.4)" : "var(--ink)" }}>{triesLeft}</span>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>/{WP_TRIES_LIMIT}</span>
+              </div>
             </div>
           </div>
           {/* Filters */}
@@ -507,14 +610,19 @@ export function FeedScreen() {
           {!loading && posts.length === 0 && (
             <div style={{ textAlign: "center", padding: "60px 24px" }}>
               <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>Sin obras aún</p>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 8 }}>Completa tu primer reto y sube tu obra.</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
+                {filter === "Siguiendo" ? "Sigue a otros artistas para ver sus obras aquí." : "Completa tu primer reto y sube tu obra."}
+              </p>
             </div>
           )}
           {posts.map((post, i) => (
             <ArtCard
-              key={post.id ?? i} post={post} idx={i} onRemove={removePost}
+              key={post.id ?? i} post={post} idx={i}
+              onRemove={removePost}
+              onUpdate={updatePost}
               triesLeft={triesLeft}
               onTryUsed={() => setTriesLeft(t => Math.max(0, t - 1))}
+              countdown={countdown}
             />
           ))}
         </div>

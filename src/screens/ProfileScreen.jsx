@@ -31,7 +31,7 @@ export function ProfileScreen() {
   const { state, dispatch } = useApp();
   const { profile } = state;
   const level = getUserLevel(profile.completedChallenges);
-  const [tab, setTab] = useState("Perfil");
+  const [tab, setTab] = useState(() => state.profileInitialTab ?? "Perfil");
 
   /* edit state */
   const [editName,    setEditName]    = useState(profile.displayName);
@@ -46,8 +46,13 @@ export function ProfileScreen() {
   const [copied,      setCopied]      = useState(false);
   const avatarRef = useRef(null);
 
+  useEffect(() => {
+    if (state.profileInitialTab) dispatch({ type: "CLEAR_PROFILE_TAB" });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* artworks */
   const [artworks, setArtworks] = useState([]);
+  const [selectedArtwork, setSelectedArtwork] = useState(null);
   const [loadingArt, setLoadingArt] = useState(false);
 
   const favTechs = TECHNIQUES.filter(t => state.favoriteTechniques.includes(t.id));
@@ -117,6 +122,39 @@ export function ProfileScreen() {
   return (
     <Phone>
       <input ref={avatarRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarFile}/>
+      {selectedArtwork && (
+        <div
+          onClick={() => setSelectedArtwork(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(20,17,15,.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", background: "var(--paper-2)", borderRadius: "22px 22px 0 0", border: "2px solid var(--ink)", borderBottom: "none" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px 8px" }}>
+              <p className="serif" style={{ fontSize: 18, lineHeight: 1 }}>{selectedArtwork.prompt || "Mi obra"}</p>
+              <button onClick={() => setSelectedArtwork(null)} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid rgba(20,17,15,.2)", background: "transparent", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>✕</button>
+            </div>
+            {selectedArtwork.variables?.length > 0 && (
+              <div style={{ display: "flex", gap: 6, padding: "0 16px 10px", flexWrap: "wrap" }}>
+                {selectedArtwork.variables.map((v, i) => (
+                  <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                    {typeof v === "string" ? v : v.value}
+                  </span>
+                ))}
+              </div>
+            )}
+            {(selectedArtwork.images?.[0] || selectedArtwork.image) ? (
+              <img src={selectedArtwork.images?.[0] || selectedArtwork.image} alt="" style={{ width: "100%", display: "block" }}/>
+            ) : (
+              <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 40, opacity: 0.4 }}>🖼</span>
+              </div>
+            )}
+            <div style={{ height: 24 }}/>
+          </div>
+        </div>
+      )}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Hero */}
         <div style={{ background: "var(--lilac)", borderBottom: "2px solid var(--ink)", padding: "12px 22px 14px", position: "relative", overflow: "hidden", flexShrink: 0 }} className="grain-soft">
@@ -226,7 +264,7 @@ export function ProfileScreen() {
                   {artworks.map((aw, i) => {
                     const img = aw.images?.[0] || aw.image;
                     return (
-                      <div key={aw.id ?? i} style={{ aspectRatio: "3/4", background: "var(--lilac)", overflow: "hidden", position: "relative" }}>
+                      <div key={aw.id ?? i} onClick={() => setSelectedArtwork(aw)} style={{ aspectRatio: "3/4", background: "var(--lilac)", overflow: "hidden", position: "relative", cursor: "pointer" }}>
                         {img
                           ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
                           : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: `var(--${["rose","lilac","sky","mint","butter","acid"][i%6]})` }}>

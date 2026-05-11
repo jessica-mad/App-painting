@@ -28,9 +28,22 @@ export async function fetchParameters(filters = {}) {
 }
 
 /* ── Obras (artworks) ── */
-export async function fetchArtworks({ page = 1, technique, rarity } = {}) {
-  const qs = new URLSearchParams({ page, ...(technique && { technique }), ...(rarity && { rarity }) }).toString();
+export async function fetchArtworks({ page = 1, technique, rarity, following, period } = {}) {
+  const qs = new URLSearchParams({
+    page,
+    ...(technique  && { technique }),
+    ...(rarity     && { rarity }),
+    ...(following  && { following }),
+    ...(period     && { period }),
+  }).toString();
   return apiFetch(`/artworks?${qs}`);
+}
+
+export async function updateArtwork(id, data) {
+  return apiFetch(`/artworks/${id}`, {
+    method: "PATCH",
+    body:   JSON.stringify(data),
+  });
 }
 
 export async function createArtwork(data) {

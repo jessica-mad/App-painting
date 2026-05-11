@@ -29,7 +29,7 @@ export function HomeScreen() {
               <Wordmark size={26}/>
             </div>
             <button
-              onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile" })}
+              onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile", profileTab: "Editar" })}
               style={{ width: 46, height: 46, borderRadius: 999, border: "2px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 var(--ink)", position: "relative", cursor: "pointer" }}
             >
               <IUser s={22}/>
