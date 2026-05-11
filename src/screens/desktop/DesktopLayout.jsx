@@ -8,7 +8,7 @@ import {
   IArrowR, ILock, ICam, IShare, IPlus, IBolt, ICircle, IArrowL,
 } from "../../components/Icons";
 import { getUserLevel, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY, SEASONS } from "../../data/parameters";
-import { fetchArtworks, addReaction, updateProfile, fetchUserArtworks, WP_LOGOUT_URL, WP_LOGIN_URL, IS_LOGGED_IN, IS_ADMIN, WP_USER_ID } from "../../utils/api";
+import { fetchArtworks, addReaction, updateProfile, fetchUserArtworks, WP_LOGOUT_URL, WP_LOGIN_URL, IS_LOGGED_IN, WP_USER_ID } from "../../utils/api";
 import { compressImage } from "../../utils/imageUtils";
 
 function decodeTag(t) {
@@ -103,23 +103,6 @@ function DeskSidebar({ current }) {
 
       {/* User card */}
       <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-        {IS_ADMIN && (
-          <button
-            onClick={() => dispatch({ type: "SET_SCREEN", screen: "admin" })}
-            style={{
-              width: "100%", padding: "9px 12px", borderRadius: 12,
-              border: current === "admin" ? "2px solid var(--ink)" : "2px solid rgba(20,17,15,.25)",
-              background: current === "admin" ? "var(--acid)" : "var(--ink)",
-              color: current === "admin" ? "var(--ink)" : "var(--acid)",
-              display: "flex", alignItems: "center", gap: 10,
-              fontWeight: 800, fontSize: 12, fontFamily: "Space Grotesk", cursor: "pointer",
-            }}
-          >
-            <IMusic s={16} stroke={current === "admin" ? "var(--ink)" : "var(--acid)"}/>
-            <span style={{ flex: 1, textAlign: "left" }}>Panel Admin</span>
-            <span style={{ fontSize: 10 }}>⚙</span>
-          </button>
-        )}
         <div onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile" })} style={{ display: "flex", gap: 10, padding: "10px 8px", borderRadius: 12, background: "var(--rose)", border: "2px solid var(--ink)", boxShadow: "3px 3px 0 var(--ink)", alignItems: "center", cursor: "pointer" }}>
           <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <IUser s={18}/>

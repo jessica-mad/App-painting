@@ -3,7 +3,7 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { getUserLevel, LEVELS, TECHNIQUES } from "../data/parameters";
-import { updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN, IS_ADMIN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
+import { updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
 import { compressImage } from "../utils/imageUtils";
 import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock } from "../components/Icons";
 
@@ -307,15 +307,6 @@ export function ProfileScreen() {
               </button>
 
               <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-                {IS_ADMIN && (
-                  <button
-                    onClick={() => dispatch({ type: "SET_SCREEN", screen: "admin" })}
-                    className="stk-sm"
-                    style={{ width: "100%", height: 48, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-                  >
-                    ⚙ Panel de administración
-                  </button>
-                )}
                 <button onClick={handleLogout} className="stk-sm"
                   style={{ width: "100%", height: 48, background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
                   Cerrar sesión

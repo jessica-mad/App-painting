@@ -17,7 +17,6 @@ import { ProfileScreen }        from "./screens/ProfileScreen";
 import { PublicProfileScreen }  from "./screens/PublicProfileScreen";
 import { FollowListScreen }     from "./screens/FollowListScreen";
 import { SavedScreen }          from "./screens/SavedScreen";
-import { AdminScreen }          from "./screens/AdminScreen";
 import { DeskHome, DeskFeed, DeskProfile, DeskLogin, DeskFlowWrapper } from "./screens/desktop/DesktopLayout";
 
 const MOBILE_SCREENS = {
@@ -36,7 +35,6 @@ const MOBILE_SCREENS = {
   publicProfile: PublicProfileScreen,
   followList:    FollowListScreen,
   saved:         SavedScreen,
-  admin:         AdminScreen,
 };
 
 /* On desktop, screens without a dedicated layout use DeskFlowWrapper to keep sidebar visible */
@@ -59,7 +57,6 @@ const DESKTOP_FLOW = {
   saved:         SavedScreen,
   publicProfile: PublicProfileScreen,
   followList:    FollowListScreen,
-  admin:         AdminScreen,
 };
 
 function useIsDesktop() {

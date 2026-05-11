@@ -20,6 +20,7 @@ require_once INKRUSH_DIR . 'admin/variables.php';
 require_once INKRUSH_DIR . 'admin/users.php';
 require_once INKRUSH_DIR . 'admin/settings.php';
 require_once INKRUSH_DIR . 'admin/music.php';
+require_once INKRUSH_DIR . 'admin/reports.php';
 require_once INKRUSH_DIR . 'admin/api.php';
 
 /* ──────────────────────────────────────────────────────────────
@@ -167,6 +168,7 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'inkrush', 'Variables',     'Variables',     'manage_options', 'inkrush-variables', 'inkrush_page_variables' );
     add_submenu_page( 'inkrush', 'Usuarios',      'Usuarios',      'manage_options', 'inkrush-users',     'inkrush_page_users' );
     add_submenu_page( 'inkrush', 'Música Pomodoro', '🎵 Música',   'manage_options', 'inkrush-music',     'inkrush_page_music' );
+    add_submenu_page( 'inkrush', 'Reportes',        '🚨 Reportes', 'manage_options', 'inkrush-reports',   'inkrush_page_reports' );
 } );
 
 /* ──────────────────────────────────────────────────────────────
