@@ -6,6 +6,7 @@ import { getUserLevel, LEVELS, TECHNIQUES } from "../data/parameters";
 import { updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
 import { compressImage } from "../utils/imageUtils";
 import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock } from "../components/Icons";
+import { ArtworkModal } from "../components/ArtworkModal";
 
 function copyToClipboard(text, onDone) {
   if (navigator.clipboard) {
@@ -123,37 +124,10 @@ export function ProfileScreen() {
     <Phone>
       <input ref={avatarRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarFile}/>
       {selectedArtwork && (
-        <div
-          onClick={() => setSelectedArtwork(null)}
-          style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(20,17,15,.75)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", background: "var(--paper-2)", borderRadius: "22px 22px 0 0", border: "2px solid var(--ink)", borderBottom: "none" }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px 8px" }}>
-              <p className="serif" style={{ fontSize: 18, lineHeight: 1 }}>{selectedArtwork.prompt || "Mi obra"}</p>
-              <button onClick={() => setSelectedArtwork(null)} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid rgba(20,17,15,.2)", background: "transparent", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>✕</button>
-            </div>
-            {selectedArtwork.variables?.length > 0 && (
-              <div style={{ display: "flex", gap: 6, padding: "0 16px 10px", flexWrap: "wrap" }}>
-                {selectedArtwork.variables.map((v, i) => (
-                  <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
-                    {typeof v === "string" ? v : v.value}
-                  </span>
-                ))}
-              </div>
-            )}
-            {(selectedArtwork.images?.[0] || selectedArtwork.image) ? (
-              <img src={selectedArtwork.images?.[0] || selectedArtwork.image} alt="" style={{ width: "100%", display: "block" }}/>
-            ) : (
-              <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 40, opacity: 0.4 }}>🖼</span>
-              </div>
-            )}
-            <div style={{ height: 24 }}/>
-          </div>
-        </div>
+        <ArtworkModal
+          post={selectedArtwork}
+          onClose={() => setSelectedArtwork(null)}
+        />
       )}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Hero */}

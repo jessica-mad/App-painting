@@ -29,6 +29,8 @@ export function TimerSetupScreen() {
         previewRef.current.play().catch(() => {});
       }
       setPreviewId(track.id);
+      setMusic(track);
+      setMusicOn(true);
     }
   };
 
