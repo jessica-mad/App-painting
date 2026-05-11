@@ -124,6 +124,14 @@ export async function republishArtwork(id) {
   return apiFetch(`/artworks/${id}/republish`, { method: "POST" });
 }
 
+/* ── IA: keyword rain ── */
+export async function generateAIKeywords(variables) {
+  return apiFetch('/ai/keywords', {
+    method: 'POST',
+    body: JSON.stringify({ variables }),
+  });
+}
+
 /* ── Config de WP ── */
 export const WP_USER_ID      = cfg.userId      ?? 0;
 export const IS_LOGGED_IN    = WP_USER_ID > 0;

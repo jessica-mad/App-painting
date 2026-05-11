@@ -172,6 +172,7 @@ body {
 @keyframes countdown   { 0%,100% { transform: scale(1); } 50% { transform: scale(1.025); } }
 @keyframes pulse       { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 @keyframes bars        { 0%,100% { transform: scaleY(0.6); } 50% { transform: scaleY(1); } }
+@keyframes fall        { from { transform: translateY(-60px) rotate(var(--kw-rotate,0deg)); opacity:0; } 10% { opacity:1; } 90% { opacity:1; } to { transform: translateY(calc(100vh + 60px)) rotate(var(--kw-rotate,0deg)); opacity:0; } }
 
 .float-1   { animation: float   4s ease-in-out infinite; }
 .float-2   { animation: float2  5s ease-in-out infinite; }

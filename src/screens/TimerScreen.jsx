@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
+import { generateAIKeywords } from "../utils/api";
 import { IMusic, IPause, IPlay, IReload, ICheck, ISpark, IStar, IDiamond, ICircle, IArrowR } from "../components/Icons";
 
 function CircularProgress({ progress, size = 240, strokeWidth = 14 }) {
@@ -34,9 +35,66 @@ const DECO = [
   { top: "78%", left: "88%", Icon: ICircle,  s: 10 },
 ];
 
+/* Deterministic PRNG — avoids re-randomising on every countdown tick */
+function seededRand(seed) {
+  const x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
+}
+
+function KeywordRain({ keywords }) {
+  const TOTAL = 30;
+
+  const elements = useMemo(() => {
+    if (!keywords.length) return [];
+    return Array.from({ length: TOTAL }, (_, i) => ({
+      word:     keywords[i % keywords.length],
+      left:     seededRand(i * 3)   * 90,
+      duration: 8 + seededRand(i * 7)  * 14,
+      delay:    seededRand(i * 11)  * -20,
+      fontSize: 11 + seededRand(i * 5) * 14,
+      opacity:  0.10 + seededRand(i * 13) * 0.18,
+      rotate:   (seededRand(i * 17) * 20) - 10,
+      key:      `kw-${i}-${keywords[i % keywords.length]}`,
+    }));
+  }, [keywords]);
+
+  if (!elements.length) return null;
+
+  return (
+    <div
+      style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}
+      aria-hidden="true"
+    >
+      {elements.map(el => (
+        <span
+          key={el.key}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: `${el.left}%`,
+            fontSize: el.fontSize,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 700,
+            color: "#fff",
+            opacity: el.opacity,
+            letterSpacing: "0.05em",
+            textTransform: "lowercase",
+            whiteSpace: "nowrap",
+            userSelect: "none",
+            "--kw-rotate": `${el.rotate}deg`,
+            animation: `fall ${el.duration}s linear ${el.delay}s infinite`,
+          }}
+        >
+          {el.word}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function TimerScreen() {
   const { state, dispatch } = useApp();
-  const { timerConfig } = state;
+  const { timerConfig, currentIdea } = state;
 
   if (!timerConfig) {
     dispatch({ type: "SET_SCREEN", screen: "setupTimer" });
@@ -44,12 +102,14 @@ export function TimerScreen() {
   }
 
   const isFree = timerConfig.duration.seconds === null;
-  const [seconds, setSeconds] = useState(isFree ? 0 : timerConfig.duration.seconds);
-  const [running, setRunning] = useState(false);
+  const [seconds,  setSeconds]  = useState(isFree ? 0 : timerConfig.duration.seconds);
+  const [running,  setRunning]  = useState(false);
   const [finished, setFinished] = useState(false);
-  const [musicOn, setMusicOn] = useState(timerConfig.musicOn);
+  const [musicOn,  setMusicOn]  = useState(timerConfig.musicOn);
+  const [keywords, setKeywords] = useState([]);
   const totalSeconds = timerConfig.duration.seconds || 1;
 
+  /* Countdown / count-up */
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => {
@@ -66,12 +126,22 @@ export function TimerScreen() {
     return () => clearInterval(id);
   }, [running, isFree]);
 
+  /* Fetch AI keywords once per idea — fails silently */
+  useEffect(() => {
+    if (!currentIdea?.variables?.length) return;
+    if (keywords.length > 0) return;
+    const vars = currentIdea.variables.map(v => v.value);
+    generateAIKeywords(vars)
+      .then(data => { if (data?.keywords?.length) setKeywords(data.keywords); })
+      .catch(() => {});
+  }, [currentIdea]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const min = String(Math.floor(seconds / 60)).padStart(2, "0");
   const sec = String(seconds % 60).padStart(2, "0");
   const progress = isFree ? 0 : 1 - seconds / totalSeconds;
   const pct = Math.round(progress * 100);
 
-  const reset = () => { setSeconds(isFree ? 0 : timerConfig.duration.seconds); setRunning(false); setFinished(false); };
+  const reset  = () => { setSeconds(isFree ? 0 : timerConfig.duration.seconds); setRunning(false); setFinished(false); };
   const finish = () => dispatch({ type: "COMPLETE_CHALLENGE" });
 
   if (finished) {
@@ -98,83 +168,92 @@ export function TimerScreen() {
   return (
     <Phone dark>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
-        {/* Deco */}
-        {DECO.map((d, i) => (
-          <span key={i} style={{ position: "absolute", top: d.top, left: d.left, color: "rgba(255,255,255,.18)", pointerEvents: "none" }}>
-            <d.Icon s={d.s}/>
-          </span>
-        ))}
 
-        {/* Music card */}
-        <div style={{ margin: "10px 22px", border: "2px solid rgba(255,255,255,.22)", borderRadius: 16, background: "rgba(255,255,255,.06)", padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(223,255,35,.15)", border: "1.5px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <IMusic s={20} stroke="var(--acid)"/>
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 800, fontSize: 13, color: "#fff" }}>{timerConfig.music.title}</p>
-            <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{musicOn ? "REPRODUCIENDO · ∞ LOOP" : "EN PAUSA"}</p>
-          </div>
-          {musicOn && (
-            <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 16 }}>
-              {[8, 12, 5, 14, 9].map((h, j) => (
-                <span key={j} style={{ width: 2, height: h, background: "var(--acid)", borderRadius: 2 }}/>
-              ))}
+        {/* Keyword rain — z-index 0, behind everything */}
+        <KeywordRain keywords={keywords}/>
+
+        {/* Timer UI — z-index 1 */}
+        <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
+
+          {/* Deco */}
+          {DECO.map((d, i) => (
+            <span key={i} style={{ position: "absolute", top: d.top, left: d.left, color: "rgba(255,255,255,.18)", pointerEvents: "none" }}>
+              <d.Icon s={d.s}/>
+            </span>
+          ))}
+
+          {/* Music card */}
+          <div style={{ margin: "10px 22px", border: "2px solid rgba(255,255,255,.22)", borderRadius: 16, background: "rgba(255,255,255,.06)", padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(223,255,35,.15)", border: "1.5px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <IMusic s={20} stroke="var(--acid)"/>
             </div>
-          )}
-          <button onClick={() => setMusicOn(m => !m)} style={{ width: 30, height: 30, borderRadius: 999, border: "1.5px solid rgba(255,255,255,.4)", background: "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            {musicOn ? <IPause s={14} stroke="#fff"/> : <IPlay s={14} stroke="#fff"/>}
-          </button>
-        </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 800, fontSize: 13, color: "#fff" }}>{timerConfig.music.title}</p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{musicOn ? "REPRODUCIENDO · ∞ LOOP" : "EN PAUSA"}</p>
+            </div>
+            {musicOn && (
+              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 16 }}>
+                {[8, 12, 5, 14, 9].map((h, j) => (
+                  <span key={j} style={{ width: 2, height: h, background: "var(--acid)", borderRadius: 2 }}/>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setMusicOn(m => !m)} style={{ width: 30, height: 30, borderRadius: 999, border: "1.5px solid rgba(255,255,255,.4)", background: "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              {musicOn ? <IPause s={14} stroke="#fff"/> : <IPlay s={14} stroke="#fff"/>}
+            </button>
+          </div>
 
-        {/* Timer ring */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 30 }}>
-          <div style={{ position: "relative", width: 240, height: 240 }}>
-            <CircularProgress progress={progress} size={240}/>
-            <div style={{ position: "absolute", inset: 30, borderRadius: 999, background: "rgba(255,255,255,.04)", border: "2px solid rgba(255,255,255,.1)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.5)" }}>
-                {running ? (isFree ? "MODO LIBRE" : "POMODORO ACTIVO") : "LISTO PARA INICIAR"}
+          {/* Timer ring */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 30 }}>
+            <div style={{ position: "relative", width: 240, height: 240 }}>
+              <CircularProgress progress={progress} size={240}/>
+              <div style={{ position: "absolute", inset: 30, borderRadius: 999, background: "rgba(255,255,255,.04)", border: "2px solid rgba(255,255,255,.1)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.5)" }}>
+                  {running ? (isFree ? "MODO LIBRE" : "POMODORO ACTIVO") : "LISTO PARA INICIAR"}
+                </p>
+                <p className="serif" style={{ fontSize: 64, lineHeight: 1, color: "#fff", marginTop: 4, letterSpacing: "-0.02em" }}>{min}:{sec}</p>
+                {!isFree && (
+                  <span style={{ marginTop: 8, padding: "3px 10px", border: "1.5px solid var(--acid)", borderRadius: 999, color: "var(--acid)", fontFamily: "JetBrains Mono", fontSize: 10, fontWeight: 700 }}>
+                    {pct}% completado
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+              <button onClick={reset} style={{ width: 56, height: 56, borderRadius: 999, border: "2px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <IReload s={22} stroke="#fff"/>
+              </button>
+              <button
+                onClick={() => setRunning(r => !r)}
+                className="stk"
+                style={{ width: 84, height: 84, borderRadius: 999, background: "var(--acid)", border: "3px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 4px var(--ink), 6px 6px 0 var(--ink)", cursor: "pointer" }}
+              >
+                {running ? <IPause s={32} stroke="var(--ink)"/> : <IPlay s={32} stroke="var(--ink)"/>}
+              </button>
+              <button onClick={finish} style={{ width: 56, height: 56, borderRadius: 999, border: "2px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <ICheck s={22} stroke="#fff"/>
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom */}
+          <div style={{ padding: "0 22px 28px" }}>
+            <div style={{ border: "1.5px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", padding: 12, borderRadius: 14, marginBottom: 10, display: "flex", gap: 10, alignItems: "center" }}>
+              <ISpark s={18} stroke="rgba(255,255,255,.7)"/>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.6)" }}>
+                SESIÓN DE {timerConfig.duration.label.toUpperCase()} · MODO POMODORO
               </p>
-              <p className="serif" style={{ fontSize: 64, lineHeight: 1, color: "#fff", marginTop: 4, letterSpacing: "-0.02em" }}>{min}:{sec}</p>
-              {!isFree && (
-                <span style={{ marginTop: 8, padding: "3px 10px", border: "1.5px solid var(--acid)", borderRadius: 999, color: "var(--acid)", fontFamily: "JetBrains Mono", fontSize: 10, fontWeight: 700 }}>
-                  {pct}% completado
-                </span>
-              )}
             </div>
-          </div>
-
-          {/* Controls */}
-          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-            <button onClick={reset} style={{ width: 56, height: 56, borderRadius: 999, border: "2px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <IReload s={22} stroke="#fff"/>
-            </button>
             <button
-              onClick={() => setRunning(r => !r)}
-              className="stk"
-              style={{ width: 84, height: 84, borderRadius: 999, background: "var(--acid)", border: "3px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 4px var(--ink), 6px 6px 0 var(--ink)", cursor: "pointer" }}
+              onClick={finish}
+              style={{ width: "100%", height: 48, borderRadius: 16, border: "1.5px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
             >
-              {running ? <IPause s={32} stroke="var(--ink)"/> : <IPlay s={32} stroke="var(--ink)"/>}
-            </button>
-            <button onClick={finish} style={{ width: 56, height: 56, borderRadius: 999, border: "2px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <ICheck s={22} stroke="#fff"/>
+              Finalizar y subir <IArrowR s={16} stroke="#fff"/>
             </button>
           </div>
-        </div>
 
-        {/* Bottom */}
-        <div style={{ padding: "0 22px 28px" }}>
-          <div style={{ border: "1.5px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", padding: 12, borderRadius: 14, marginBottom: 10, display: "flex", gap: 10, alignItems: "center" }}>
-            <ISpark s={18} stroke="rgba(255,255,255,.7)"/>
-            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.6)" }}>
-              SESIÓN DE {timerConfig.duration.label.toUpperCase()} · MODO POMODORO
-            </p>
-          </div>
-          <button
-            onClick={finish}
-            style={{ width: "100%", height: 48, borderRadius: 16, border: "1.5px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.08)", color: "#fff", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
-          >
-            Finalizar y subir <IArrowR s={16} stroke="#fff"/>
-          </button>
         </div>
       </div>
     </Phone>

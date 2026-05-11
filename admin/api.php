@@ -102,6 +102,13 @@ function inkrush_register_routes() {
         'permission_callback' => fn() => current_user_can('manage_options'),
     ] );
 
+    /* ── IA: keyword rain ── */
+    register_rest_route( 'inkrush/v1', '/ai/keywords', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_ai_keywords',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
+
     /* ── Reset intentos diarios (admin) ── */
     register_rest_route( 'inkrush/v1', '/rolls/reset', [
         'methods'             => 'POST',
@@ -714,4 +721,79 @@ function inkrush_save_base64_image( $base64, $post_id ) {
     wp_update_attachment_metadata( $attach_id, $attach_data );
 
     return $attach_id;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   IA: KEYWORD RAIN
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_ai_keywords( WP_REST_Request $req ) {
+    $api_key = get_option( 'inkrush_anthropic_key', '' );
+    if ( empty( $api_key ) ) {
+        return new WP_Error( 'no_api_key', 'Clave de Anthropic no configurada.', [ 'status' => 400 ] );
+    }
+
+    $raw_vars = $req->get_param( 'variables' );
+    if ( ! is_array( $raw_vars ) || empty( $raw_vars ) ) {
+        return new WP_Error( 'missing_variables', 'Se requieren las variables de la idea.', [ 'status' => 400 ] );
+    }
+
+    $variables = array_map( 'sanitize_text_field', (array) $raw_vars );
+    $joined    = implode( ', ', $variables );
+
+    $system_prompt = 'Eres un asistente creativo para artistas ilustradores. Tu única tarea es generar exactamente 8 palabras clave en español que amplíen la inspiración visual de una idea de ilustración.
+
+Reglas estrictas:
+- Devuelve ÚNICAMENTE 8 palabras, una por línea, sin numeración, guiones, puntuación ni explicación
+- Cada palabra debe ser una sola palabra (sin espacios)
+- Las palabras deben ser en español
+- Deben evocar imágenes, texturas, atmósferas o elementos visuales
+- Varía el tipo: adjetivos, sustantivos visuales, palabras de ambiente
+- Evita repetir palabras que ya aparecen en la idea original';
+
+    $user_message = "Idea de ilustración con estos conceptos: {$joined}.\n\nGenera 8 palabras clave visuales en español:";
+
+    $body = wp_json_encode( [
+        'model'      => 'claude-haiku-4-5-20251001',
+        'max_tokens' => 120,
+        'system'     => $system_prompt,
+        'messages'   => [
+            [ 'role' => 'user', 'content' => $user_message ],
+        ],
+    ] );
+
+    $response = wp_remote_post( 'https://api.anthropic.com/v1/messages', [
+        'timeout' => 15,
+        'headers' => [
+            'Content-Type'      => 'application/json',
+            'x-api-key'         => $api_key,
+            'anthropic-version' => '2023-06-01',
+        ],
+        'body' => $body,
+    ] );
+
+    if ( is_wp_error( $response ) ) {
+        return new WP_Error( 'anthropic_unreachable', 'No se pudo contactar con la API de Anthropic.', [ 'status' => 502 ] );
+    }
+
+    $code = wp_remote_retrieve_response_code( $response );
+    if ( $code !== 200 ) {
+        return new WP_Error( 'anthropic_error', 'Error de la API de Anthropic: ' . $code, [ 'status' => 502 ] );
+    }
+
+    $data = json_decode( wp_remote_retrieve_body( $response ), true );
+    $text = $data['content'][0]['text'] ?? '';
+
+    $keywords = array_values( array_filter(
+        array_map( 'trim', explode( "\n", $text ) ),
+        fn( $w ) => $w !== '' && strpos( $w, ' ' ) === false
+    ) );
+
+    $keywords = array_slice( $keywords, 0, 8 );
+
+    if ( count( $keywords ) < 3 ) {
+        return new WP_Error( 'parse_error', 'No se pudieron parsear palabras clave de la respuesta.', [ 'status' => 500 ] );
+    }
+
+    return rest_ensure_response( [ 'keywords' => $keywords ] );
 }

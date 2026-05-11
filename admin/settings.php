@@ -8,13 +8,22 @@ function inkrush_page_settings() {
         update_option( 'inkrush_active_season',    sanitize_text_field( $_POST['active_season'] ) );
         update_option( 'inkrush_rolls_per_day',    (int) $_POST['rolls_per_day'] );
         update_option( 'inkrush_max_params',       (int) $_POST['max_params'] );
+        if ( isset( $_POST['anthropic_api_key'] ) ) {
+            $key = sanitize_text_field( $_POST['anthropic_api_key'] );
+            if ( $key !== '••••••••' && $key !== '' ) {
+                update_option( 'inkrush_anthropic_key', $key );
+            } elseif ( $key === '' ) {
+                delete_option( 'inkrush_anthropic_key' );
+            }
+        }
         $message = '✅ Configuración guardada.';
     }
 
-    $seasons   = [ '', 'Primavera', 'Verano', 'Otoño', 'Invierno', 'Halloween', 'Navidad', 'San Valentín' ];
-    $cur_season = get_option( 'inkrush_active_season', '' );
-    $rolls      = get_option( 'inkrush_rolls_per_day', 3 );
-    $max_params = get_option( 'inkrush_max_params', 3 );
+    $seasons        = [ '', 'Primavera', 'Verano', 'Otoño', 'Invierno', 'Halloween', 'Navidad', 'San Valentín' ];
+    $cur_season     = get_option( 'inkrush_active_season', '' );
+    $rolls          = get_option( 'inkrush_rolls_per_day', 3 );
+    $max_params     = get_option( 'inkrush_max_params', 3 );
+    $has_anthropic  = ! empty( get_option( 'inkrush_anthropic_key', '' ) );
     $page_id    = get_option( 'inkrush_page_id' );
     $page_url   = $page_id ? get_permalink( $page_id ) : '';
     ?>
@@ -75,6 +84,23 @@ function inkrush_page_settings() {
                             value="<?php echo intval( $max_params ); ?>" min="1" max="5"
                             style="width:80px;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;">
                         <p class="description">Cuántos parámetros puede combinar a la vez. Por defecto: 3.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="anthropic_api_key">🤖 Clave API de Anthropic</label></th>
+                    <td>
+                        <input type="password" name="anthropic_api_key" id="anthropic_api_key"
+                            value="<?php echo $has_anthropic ? '••••••••' : ''; ?>"
+                            placeholder="sk-ant-..."
+                            style="width:320px;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;font-family:monospace;">
+                        <p class="description">
+                            Necesaria para la lluvia de palabras clave IA durante el Pomodoro.
+                            <?php if ( $has_anthropic ) : ?>
+                                <strong style="color:green;">✅ Clave configurada.</strong>
+                            <?php else : ?>
+                                <strong style="color:darkorange;">⚠️ No configurada — la lluvia de ideas estará desactivada.</strong>
+                            <?php endif; ?>
+                        </p>
                     </td>
                 </tr>
             </table>
