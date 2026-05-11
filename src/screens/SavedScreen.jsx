@@ -34,7 +34,7 @@ export function SavedScreen() {
           </p>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 22px 90px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "14px 22px 90px", display: "flex", flexDirection: "column", gap: 12 }}>
           {savedIdeas.map((idea, i) => {
             const rarity = idea.variables?.[0]?.rarity ?? "Común";
             const rarityColor = rarity === "Legendario" ? "var(--acid)" : rarity === "Épico" ? "var(--lilac)" : rarity === "Raro" ? "var(--sky)" : "rgba(20,17,15,.12)";

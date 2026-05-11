@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { PARAM_CATEGORIES, getOverallRarity, generatePrompt, pickVariables } from "../data/parameters";
-import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar, ITimer } from "../components/Icons";
+import { PARAM_CATEGORIES, RARITY, getOverallRarity, generatePrompt, pickVariables } from "../data/parameters";
+import { generateAIPrompt } from "../utils/api";
+import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar } from "../components/Icons";
 
 const CAT_MAP = Object.fromEntries(PARAM_CATEGORIES.map(c => [c.id, c]));
 const CAT_ICONS_EL = { Emociones: IHeart, Animales: IFlame, Lugares: IStar, Objetos: IBrush, Eventos: IStar, Acciones: IBrush };
@@ -16,11 +17,11 @@ const VAR_COLORS = {
   "Legendario": "var(--acid)",
 };
 
-const RARITY_META = {
-  "Común":      { difficulty: "Accesible", time: "15 min" },
-  "Raro":       { difficulty: "Moderada",  time: "25 min" },
-  "Épico":      { difficulty: "Alta",      time: "30 min" },
-  "Legendario": { difficulty: "Extrema",   time: "45 min" },
+const RARITY_INFO = {
+  [RARITY.COMUN]:      { emoji: "⚪", desc: "Conceptos accesibles — ideal para empezar", pct: "50%" },
+  [RARITY.RARO]:       { emoji: "🔵", desc: "Combinación más original e inesperada",     pct: "30%" },
+  [RARITY.EPICO]:      { emoji: "🟣", desc: "Reto complejo — requiere imaginación alta",  pct: "15%" },
+  [RARITY.LEGENDARIO]: { emoji: "🌟", desc: "Extremo — solo el 5% obtiene este reto",     pct: "5%"  },
 };
 
 const GLOW_COLORS = {
@@ -31,8 +32,20 @@ const GLOW_COLORS = {
 export function IdeaScreen() {
   const { state, dispatch } = useApp();
   const { currentIdea, rollsLeft, activeSeason } = state;
-  const [saved, setSaved]       = useState(false);
+  const [saved, setSaved]         = useState(false);
   const [rerolling, setRerolling] = useState(false);
+  const [aiPrompt, setAiPrompt]   = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  useEffect(() => {
+    if (!currentIdea?.variables?.length) return;
+    setAiPrompt(null);
+    setAiLoading(true);
+    generateAIPrompt(currentIdea.variables.map(v => v.value))
+      .then(data => { if (data?.prompt) setAiPrompt(data.prompt); })
+      .catch(() => {})
+      .finally(() => setAiLoading(false));
+  }, [currentIdea]);
 
   const saveIdea = () => {
     dispatch({ type: "SAVE_IDEA", idea: currentIdea });
@@ -56,10 +69,10 @@ export function IdeaScreen() {
   }
 
   const { variables, params } = currentIdea;
-  const rarity  = getOverallRarity(variables);
-  const prompt  = generatePrompt(variables);
-  const meta    = RARITY_META[rarity] || RARITY_META["Común"];
-  const glowRgb = GLOW_COLORS[rarity];
+  const rarity   = getOverallRarity(variables);
+  const prompt   = aiPrompt ?? generatePrompt(variables);
+  const rarityInfo = RARITY_INFO[rarity] ?? RARITY_INFO[RARITY.COMUN];
+  const glowRgb  = GLOW_COLORS[rarity];
   const rotations = [-1, 1, -0.5];
 
   return (
@@ -75,17 +88,10 @@ export function IdeaScreen() {
             <IArrowL s={16}/> Volver
           </button>
 
-          {/* Rarity badge with glow for Épico/Legendario */}
+          {/* Rarity badge — glows for Épico/Legendario */}
           {glowRgb ? (
             <motion.div
-              animate={{
-                boxShadow: [
-                  `0 0 0px rgba(${glowRgb},0)`,
-                  `0 0 14px rgba(${glowRgb},0.75)`,
-                  `0 0 5px rgba(${glowRgb},0.3)`,
-                  `0 0 14px rgba(${glowRgb},0.75)`,
-                ],
-              }}
+              animate={{ boxShadow: [`0 0 0px rgba(${glowRgb},0)`, `0 0 14px rgba(${glowRgb},0.75)`, `0 0 5px rgba(${glowRgb},0.3)`, `0 0 14px rgba(${glowRgb},0.75)`] }}
               transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
               style={{ borderRadius: 999, display: "inline-flex" }}
             >
@@ -97,33 +103,6 @@ export function IdeaScreen() {
         </div>
 
         <h2 className="serif" style={{ fontSize: 36, marginTop: 6, lineHeight: 1, padding: "0 22px", flexShrink: 0 }}>Tu idea</h2>
-
-        {/* Metadata pills row */}
-        <div style={{ display: "flex", gap: 6, padding: "8px 22px 0", flexShrink: 0, flexWrap: "wrap" }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 999,
-            padding: "3px 10px", fontSize: 11, fontWeight: 700,
-          }}>
-            <ITimer s={12}/> {meta.time}
-          </span>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 999,
-            padding: "3px 10px", fontSize: 11, fontWeight: 700,
-          }}>
-            🎯 Dificultad {meta.difficulty}
-          </span>
-          {rollsLeft > 0 && (
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: 5,
-              background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 999,
-              padding: "3px 10px", fontSize: 11, fontWeight: 700,
-            }}>
-              <IDice s={12}/> {rollsLeft} intento{rollsLeft !== 1 ? "s" : ""} restante{rollsLeft !== 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
 
         {/* Scrollable content */}
         <div className="scroll" style={{ flex: 1, minHeight: 0, padding: "14px 22px 8px" }}>
@@ -142,11 +121,7 @@ export function IdeaScreen() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.07, type: "spring", stiffness: 380, damping: 28 }}
                     className="stk"
-                    style={{
-                      background: bg, padding: 12, marginBottom: 10,
-                      display: "flex", gap: 10, alignItems: "center",
-                      transform: `rotate(${rotations[i] || 0}deg)`,
-                    }}
+                    style={{ background: bg, padding: 12, marginBottom: 10, display: "flex", gap: 10, alignItems: "center", transform: `rotate(${rotations[i] || 0}deg)` }}
                   >
                     <div style={{ width: 44, height: 44, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <CatIcon s={22}/>
@@ -169,9 +144,13 @@ export function IdeaScreen() {
               <div style={{ position: "relative", padding: "20px 18px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                   <span className="tag">// TU RETO</span>
-                  <span className="stamp" style={{ background: rarity === "Legendario" ? "var(--coral)" : "var(--acid)", color: rarity === "Legendario" ? "#fff" : "var(--ink)", borderColor: rarity === "Legendario" ? "#fff" : "var(--ink)" }}>
-                    ★ {rarity.toLowerCase()}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {aiPrompt && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>✦ IA</span>}
+                    {aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1s infinite" }}>generando...</span>}
+                    <span className="stamp" style={{ background: rarity === "Legendario" ? "var(--coral)" : "var(--acid)", color: rarity === "Legendario" ? "#fff" : "var(--ink)", borderColor: rarity === "Legendario" ? "#fff" : "var(--ink)" }}>
+                      ★ {rarity.toLowerCase()}
+                    </span>
+                  </div>
                 </div>
                 <p className="serif" style={{ fontSize: 22, lineHeight: 1.1, letterSpacing: "-0.005em" }}>
                   {prompt}
@@ -185,16 +164,25 @@ export function IdeaScreen() {
             </div>
           </div>
 
+          {/* Rarity legend — shown below the ticket */}
+          <div style={{ marginTop: 12, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{rarityInfo.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                <span style={{ fontWeight: 800, fontSize: 12 }}>{rarity}</span>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, background: "rgba(20,17,15,.1)", padding: "1px 6px", borderRadius: 4 }}>{rarityInfo.pct} de probabilidad</span>
+              </div>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.6)", lineHeight: 1.3 }}>{rarityInfo.desc}</p>
+            </div>
+          </div>
+
         </div>
 
-        {/* Sticky CTA bar — always visible, never scrolled away */}
+        {/* Sticky CTA bar */}
         <div style={{
-          flexShrink: 0,
-          padding: "12px 22px",
+          flexShrink: 0, padding: "12px 22px",
           paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
-          background: "rgba(255,253,243,0.92)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
+          background: "rgba(255,253,243,0.92)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
           borderTop: "2px solid rgba(20,17,15,.08)",
           display: "flex", flexDirection: "column", gap: 8,
         }}>
@@ -211,23 +199,16 @@ export function IdeaScreen() {
                 opacity: rollsLeft <= 0 ? 0.4 : 1,
               }}
             >
-              {rerolling ? (
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}>
-                  <IDice s={15}/>
-                </motion.div>
-              ) : (
-                <IDice s={15}/>
-              )}
+              {rerolling
+                ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}><IDice s={15}/></motion.div>
+                : <IDice s={15}/>
+              }
               {rollsLeft > 0 ? "No me convence, dame otro" : "Sin intentos"}
             </button>
             <button
               onClick={saveIdea}
               className="stk"
-              style={{
-                background: saved ? "var(--acid)" : "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 14,
-                display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                transition: "background .2s",
-              }}
+              style={{ background: saved ? "var(--acid)" : "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background .2s" }}
               title={saved ? "¡Guardado!" : "Guardar idea"}
             >
               <IBookmark s={20}/>
@@ -238,11 +219,7 @@ export function IdeaScreen() {
           <button
             onClick={() => dispatch({ type: "SET_SCREEN", screen: "setupTimer" })}
             className="stk"
-            style={{
-              height: 56, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18,
-              fontWeight: 800, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center",
-              gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer",
-            }}
+            style={{ height: 56, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
           >
             <IBrush s={20}/> ¡Aceptar reto!
           </button>

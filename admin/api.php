@@ -116,6 +116,20 @@ function inkrush_register_routes() {
         'permission_callback' => 'is_user_logged_in',
     ] );
 
+    /* ── IA: creative challenge prompt ── */
+    register_rest_route( 'inkrush/v1', '/ai/prompt', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_ai_prompt',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
+
+    /* ── Intentos "Lo intentaré" diarios ── */
+    register_rest_route( 'inkrush/v1', '/tries/use', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_use_try',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
+
     /* ── Reset intentos diarios (admin) ── */
     register_rest_route( 'inkrush/v1', '/rolls/reset', [
         'methods'             => 'POST',
@@ -779,6 +793,40 @@ function inkrush_api_login( WP_REST_Request $req ) {
 }
 
 /* ──────────────────────────────────────────────────────────────
+   INTENTOS "LO INTENTARÉ" POR NIVEL
+────────────────────────────────────────────────────────────── */
+
+function inkrush_get_tries_limit( $user_id ) {
+    $challenges = (int) get_user_meta( $user_id, 'inkrush_challenges_completed', true );
+    if ( $challenges >= 30 ) return 15; // Nivel 5
+    if ( $challenges >= 20 ) return 10; // Nivel 4
+    if ( $challenges >= 10 ) return 7;  // Nivel 3
+    if ( $challenges >= 5  ) return 5;  // Nivel 2
+    return 3;                            // Nivel 1
+}
+
+function inkrush_api_use_try() {
+    $uid     = get_current_user_id();
+    $tz      = wp_timezone();
+    $today   = ( new DateTime( 'now', $tz ) )->format( 'Y-m-d' );
+    $key     = 'inkrush_daily_tries_' . $today;
+    $used    = (int) get_user_meta( $uid, $key, true );
+    $limit   = inkrush_get_tries_limit( $uid );
+
+    if ( $used >= $limit ) {
+        return new WP_Error( 'tries_exhausted', 'Sin intentos disponibles hoy.', [ 'status' => 429 ] );
+    }
+
+    update_user_meta( $uid, $key, $used + 1 );
+    return rest_ensure_response( [
+        'success' => true,
+        'used'    => $used + 1,
+        'limit'   => $limit,
+        'left'    => $limit - $used - 1,
+    ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
    IA: KEYWORD RAIN
 ────────────────────────────────────────────────────────────── */
 
@@ -851,4 +899,60 @@ Reglas estrictas:
     }
 
     return rest_ensure_response( [ 'keywords' => $keywords ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   IA: CREATIVE CHALLENGE PROMPT
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_ai_prompt( WP_REST_Request $req ) {
+    $api_key = get_option( 'inkrush_anthropic_key', '' );
+    if ( empty( $api_key ) ) {
+        return rest_ensure_response( [ 'prompt' => null ] ); // fallback gracefully
+    }
+
+    $raw_vars = $req->get_param( 'variables' );
+    if ( ! is_array( $raw_vars ) || empty( $raw_vars ) ) {
+        return new WP_Error( 'missing_variables', 'Se requieren las variables.', [ 'status' => 400 ] );
+    }
+
+    $variables = array_map( 'sanitize_text_field', (array) $raw_vars );
+    $joined    = implode( ', ', $variables );
+
+    $system_prompt = 'Eres un generador de enunciados creativos para retos de ilustración. Dado un conjunto de conceptos, crea UNA sola frase corta y evocadora en español (máximo 20 palabras) que sirva como enunciado poético de un reto de dibujo. La frase debe ser sugerente y visual, no literal. No uses la palabra "ilustra", "dibuja" ni imperativos. Solo devuelve la frase sin comillas ni explicaciones.';
+
+    $user_message = "Conceptos: {$joined}";
+
+    $body = wp_json_encode( [
+        'model'      => 'claude-haiku-4-5-20251001',
+        'max_tokens' => 80,
+        'system'     => $system_prompt,
+        'messages'   => [
+            [ 'role' => 'user', 'content' => $user_message ],
+        ],
+    ] );
+
+    $response = wp_remote_post( 'https://api.anthropic.com/v1/messages', [
+        'timeout' => 12,
+        'headers' => [
+            'Content-Type'      => 'application/json',
+            'x-api-key'         => $api_key,
+            'anthropic-version' => '2023-06-01',
+        ],
+        'body' => $body,
+    ] );
+
+    if ( is_wp_error( $response ) ) {
+        return rest_ensure_response( [ 'prompt' => null ] );
+    }
+
+    $code = wp_remote_retrieve_response_code( $response );
+    if ( $code !== 200 ) {
+        return rest_ensure_response( [ 'prompt' => null ] );
+    }
+
+    $data   = json_decode( wp_remote_retrieve_body( $response ), true );
+    $prompt = trim( $data['content'][0]['text'] ?? '' );
+
+    return rest_ensure_response( [ 'prompt' => $prompt ?: null ] );
 }

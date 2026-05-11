@@ -151,12 +151,28 @@ export async function generateAIKeywords(variables) {
   });
 }
 
+/* ── IA: creative challenge prompt ── */
+export async function generateAIPrompt(variables) {
+  return apiFetch('/ai/prompt', {
+    method: 'POST',
+    body: JSON.stringify({ variables }),
+  });
+}
+
+/* ── "Lo intentaré" daily tries ── */
+export async function useTryAPI() {
+  return apiFetch('/tries/use', { method: 'POST' });
+}
+
 /* ── Config de WP ── */
 export const WP_USER_ID      = cfg.userId      ?? 0;
 export const IS_LOGGED_IN    = WP_USER_ID > 0;
 export const WP_LOGIN_URL    = cfg.loginUrl    ?? "/wp-login.php";
 export const WP_LOGOUT_URL   = cfg.logoutUrl   ?? "/wp-login.php?action=logout";
-export const WP_ROLLS        = cfg.rolls       ?? 3;
-export const WP_ROLLS_USED   = cfg.rollsUsedToday ?? 0;
-export const WP_SEASON       = cfg.activeSeason ?? "";
-export const IS_ADMIN        = cfg.isAdmin     ?? false;
+export const WP_ROLLS        = cfg.rolls           ?? 3;
+export const WP_ROLLS_USED   = cfg.rollsUsedToday  ?? 0;
+export const WP_SEASON       = cfg.activeSeason    ?? "";
+export const IS_ADMIN        = cfg.isAdmin         ?? false;
+export const WP_TRIES_LIMIT  = cfg.triesLimit      ?? 3;
+export const WP_TRIES_USED   = cfg.triesUsedToday  ?? 0;
+export const WP_TRIES_LEFT   = Math.max(0, (cfg.triesLimit ?? 3) - (cfg.triesUsedToday ?? 0));

@@ -124,6 +124,8 @@ add_shortcode( 'inkrush_app', function() {
         'isAdmin'          => current_user_can('manage_options'),
         'rollsUsedToday'   => $user_id ? (int) get_user_meta( $user_id, 'inkrush_daily_rolls_' . date('Y-m-d'), true ) : 0,
         'musicSrcs'        => (object) get_option( 'inkrush_music_srcs', [] ),
+        'triesLimit'       => $user_id ? inkrush_get_tries_limit( $user_id ) : 3,
+        'triesUsedToday'   => $user_id ? (int) get_user_meta( $user_id, 'inkrush_daily_tries_' . ( new DateTime( 'now', wp_timezone() ) )->format( 'Y-m-d' ), true ) : 0,
     ] );
 
     return '<div id="inkrush-root" style="min-height:100vh;background:#FFFDF3;"></div>';

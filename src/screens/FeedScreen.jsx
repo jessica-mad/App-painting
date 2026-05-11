@@ -3,18 +3,24 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { fetchArtworks, addReaction, deleteArtwork, hideArtwork, reportArtwork, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
-import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser, IArrowL, IArrowR, IDotsV, ITrash, IEyeOff, IFlag } from "../components/Icons";
+import { fetchArtworks, addReaction, deleteArtwork, hideArtwork, reportArtwork, useTryAPI, IS_LOGGED_IN, WP_USER_ID, WP_TRIES_LEFT, WP_TRIES_LIMIT } from "../utils/api";
+import { IHeart, IInspire, IFlame, IUser, IArrowL, IArrowR, IDotsV, ITrash, IEyeOff, IFlag } from "../components/Icons";
 
 function decodeTag(t) {
   const raw = typeof t === "string" ? t : (t.value ?? "");
   try { return decodeURIComponent(raw); } catch { return raw; }
 }
 
-const TRIES_LIMIT = 5;
+/* Daily "lo intentaré" tries — seeded from WP config, fallback localStorage */
 function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
-function triesLeft() { return Math.max(0, TRIES_LIMIT - parseInt(localStorage.getItem(triesKey()) || "0")); }
-function useTry()    { localStorage.setItem(triesKey(), String(TRIES_LIMIT - triesLeft() + 1)); }
+function localTriesLeft() {
+  const used = parseInt(localStorage.getItem(triesKey()) || "0");
+  return Math.max(0, WP_TRIES_LIMIT - used);
+}
+function markLocalTry() {
+  const used = parseInt(localStorage.getItem(triesKey()) || "0");
+  localStorage.setItem(triesKey(), String(used + 1));
+}
 
 const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana"];
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
@@ -239,7 +245,7 @@ function ArtworkDetailModal({ post, onClose, react, reactions, trySaved, viewAut
   );
 }
 
-function ArtCard({ post, idx, onRemove }) {
+function ArtCard({ post, idx, onRemove, triesLeft, onTryUsed }) {
   const { dispatch } = useApp();
   const [likes,    setLikes]    = useState(post.likes    ?? 0);
   const [inspires, setInspires] = useState(post.inspires ?? 0);
@@ -266,14 +272,16 @@ function ArtCard({ post, idx, onRemove }) {
     if (type === "inspire") setInspires(n => was ? n - 1 : n + 1);
     if (type === "try") {
       setTries(n => was ? n - 1 : n + 1);
-      if (!was && IS_LOGGED_IN && triesLeft() > 0) {
+      if (!was && IS_LOGGED_IN && triesLeft > 0) {
         const tags = post.variables ?? post.tags ?? [];
         const variables = tags.map(t => ({
           value: decodeTag(t),
           rarity: typeof t === "object" && t.rarity ? t.rarity : "Común",
         }));
         dispatch({ type: "SAVE_IDEA", idea: { variables, params: post.params ?? [] } });
-        useTry();
+        useTryAPI().catch(() => {});
+        markLocalTry();
+        onTryUsed?.();
         setTrySaved(true);
         setTimeout(() => setTrySaved(false), 1800);
       }
@@ -443,9 +451,10 @@ function ArtCard({ post, idx, onRemove }) {
 }
 
 export function FeedScreen() {
-  const [filter, setFilter] = useState("Para ti");
-  const [posts, setPosts]   = useState([]);
+  const [filter, setFilter]   = useState("Para ti");
+  const [posts, setPosts]     = useState([]);
   const [loading, setLoading] = useState(true);
+  const [triesLeft, setTriesLeft] = useState(() => IS_LOGGED_IN ? WP_TRIES_LEFT : localTriesLeft());
 
   useEffect(() => {
     fetchArtworks()
@@ -463,13 +472,10 @@ export function FeedScreen() {
         <div style={{ padding: "8px 22px 6px", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>Feed</h2>
-            <div style={{ display: "flex", gap: 8 }}>
-              <span className="stk-sm" style={{ width: 36, height: 36, borderRadius: 10, background: "var(--paper-2)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                <ISpark s={18}/>
-              </span>
-              <span className="stk-sm" style={{ width: 36, height: 36, borderRadius: 10, background: "var(--paper-2)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                <IBookmark s={18}/>
-              </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 999, padding: "4px 12px" }}>
+              <IFlame s={14}/>
+              <span style={{ fontWeight: 800, fontSize: 13 }}>{triesLeft}</span>
+              <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>/{WP_TRIES_LIMIT}</span>
             </div>
           </div>
           {/* Filters */}
@@ -505,7 +511,11 @@ export function FeedScreen() {
             </div>
           )}
           {posts.map((post, i) => (
-            <ArtCard key={post.id ?? i} post={post} idx={i} onRemove={removePost}/>
+            <ArtCard
+              key={post.id ?? i} post={post} idx={i} onRemove={removePost}
+              triesLeft={triesLeft}
+              onTryUsed={() => setTriesLeft(t => Math.max(0, t - 1))}
+            />
           ))}
         </div>
 

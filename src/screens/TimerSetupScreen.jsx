@@ -2,25 +2,53 @@ import { useState, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { DURATIONS, MUSIC_TRACKS } from "../data/parameters";
-import { IArrowL, ITimer, IMusic, IPlay } from "../components/Icons";
+import { IArrowL, ITimer, IMusic, IPlay, IPause } from "../components/Icons";
 
 export function TimerSetupScreen() {
   const { state, dispatch } = useApp();
   const [duration, setDuration] = useState(DURATIONS[2]);
   const [music, setMusic] = useState(MUSIC_TRACKS[0]);
   const [musicOn, setMusicOn] = useState(true);
+  const [previewId, setPreviewId] = useState(null);
   const musicScrollRef = useRef(null);
+  const previewRef     = useRef(null);
 
   const availableTracks = MUSIC_TRACKS.filter(t => state.musicSrcs?.[t.id]);
   const hasMusicConfigured = availableTracks.length > 0;
 
+  const togglePreview = (track) => {
+    const src = state.musicSrcs?.[track.id];
+    if (!src) return;
+    if (previewId === track.id) {
+      previewRef.current?.pause();
+      setPreviewId(null);
+    } else {
+      if (previewRef.current) {
+        previewRef.current.src = src;
+        previewRef.current.currentTime = 0;
+        previewRef.current.play().catch(() => {});
+      }
+      setPreviewId(track.id);
+    }
+  };
+
+  const selectTrack = (track) => {
+    if (previewRef.current) { previewRef.current.pause(); }
+    setPreviewId(null);
+    setMusic(track);
+    setMusicOn(true);
+  };
+
   const start = () => {
+    if (previewRef.current) { previewRef.current.pause(); }
     dispatch({ type: "SET_TIMER_CONFIG", config: { duration, music, musicOn } });
     dispatch({ type: "SET_SCREEN", screen: "timer" });
   };
 
   return (
     <Phone>
+      <audio ref={previewRef} onEnded={() => setPreviewId(null)} style={{ display: "none" }}/>
+
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
         <button
           onClick={() => dispatch({ type: "SET_SCREEN", screen: "idea" })}
@@ -55,7 +83,7 @@ export function TimerSetupScreen() {
             ))}
           </div>
 
-          {/* Music — only shown when at least one track URL is configured */}
+          {/* Music */}
           {!hasMusicConfigured && (
             <div className="stk-sm" style={{ background: "var(--paper-2)", border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 4 }}>
               <p style={{ fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
@@ -101,27 +129,47 @@ export function TimerSetupScreen() {
               )}
 
               <div ref={musicScrollRef} className="scroll" style={{ display: "flex", gap: 10, paddingBottom: 4 }}>
-                {availableTracks.map((track) => (
-                  <button
-                    key={track.id}
-                    onClick={() => { setMusic(track); setMusicOn(true); }}
-                    style={{
-                      minWidth: 140, padding: 12, borderRadius: 18,
-                      border: "2px solid var(--ink)",
-                      background: music.id === track.id ? "var(--acid)" : "var(--paper-2)",
-                      boxShadow: music.id === track.id ? "var(--shadow)" : "3px 3px 0 var(--ink)",
-                      outline: music.id === track.id ? "2px solid var(--ink)" : "none", outlineOffset: 2,
-                      cursor: "pointer", textAlign: "left",
-                    }}
-                  >
-                    <div style={{ width: 38, height: 38, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
-                      <IMusic s={20}/>
+                {availableTracks.map((track) => {
+                  const isPreviewing = previewId === track.id;
+                  const isSelected   = music.id === track.id;
+                  return (
+                    <div
+                      key={track.id}
+                      onClick={() => selectTrack(track)}
+                      style={{
+                        minWidth: 148, padding: 12, borderRadius: 18, flexShrink: 0,
+                        border: "2px solid var(--ink)",
+                        background: isSelected ? "var(--acid)" : "var(--paper-2)",
+                        boxShadow: isSelected ? "var(--shadow)" : "3px 3px 0 var(--ink)",
+                        outline: isSelected ? "2px solid var(--ink)" : "none", outlineOffset: 2,
+                        cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, border: "2px solid var(--ink)", background: isSelected ? "rgba(20,17,15,.1)" : "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <IMusic s={20}/>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); togglePreview(track); }}
+                          title={isPreviewing ? "Detener" : "Preescuchar"}
+                          style={{
+                            width: 30, height: 30, borderRadius: 999, border: "2px solid var(--ink)",
+                            background: isPreviewing ? "var(--ink)" : "var(--paper-2)",
+                            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                          }}
+                        >
+                          {isPreviewing
+                            ? <IPause s={12} stroke="var(--acid)"/>
+                            : <IPlay s={12} stroke="var(--ink)"/>
+                          }
+                        </button>
+                      </div>
+                      <p style={{ fontWeight: 800, fontSize: 12, lineHeight: 1.1 }}>{track.title}</p>
+                      <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{track.mood?.toUpperCase()}</p>
+                      <span style={{ display: "inline-block", marginTop: 8, background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 9, fontWeight: 800, fontFamily: "JetBrains Mono" }}>∞ LOOP</span>
                     </div>
-                    <p style={{ fontWeight: 800, fontSize: 12, lineHeight: 1.1 }}>{track.title}</p>
-                    <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{track.mood?.toUpperCase()}</p>
-                    <span style={{ display: "inline-block", marginTop: 8, background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 9, fontWeight: 800, fontFamily: "JetBrains Mono" }}>∞ LOOP</span>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Scroll dots */}
@@ -130,16 +178,15 @@ export function TimerSetupScreen() {
                   <button
                     key={track.id}
                     onClick={() => {
-                      setMusic(track);
-                      setMusicOn(true);
+                      selectTrack(track);
                       if (musicScrollRef.current) {
                         const idx = availableTracks.findIndex(t => t.id === track.id);
-                        musicScrollRef.current.scrollTo({ left: idx * 150, behavior: "smooth" });
+                        musicScrollRef.current.scrollTo({ left: idx * 160, behavior: "smooth" });
                       }
                     }}
                     style={{
-                      width: track.id === music.id ? 18 : 6,
-                      height: 6, borderRadius: 999, padding: 0, border: "1.5px solid var(--ink)",
+                      width: track.id === music.id ? 18 : 6, height: 6, borderRadius: 999, padding: 0,
+                      border: "1.5px solid var(--ink)",
                       background: track.id === music.id ? "var(--ink)" : "rgba(20,17,15,.2)",
                       cursor: "pointer", transition: "width .2s, background .2s",
                     }}

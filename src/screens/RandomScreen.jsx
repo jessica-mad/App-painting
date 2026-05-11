@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
-import { PARAM_CATEGORIES, PARAMETERS, RARITY, pickVariables } from "../data/parameters";
+import { PARAM_CATEGORIES, PARAMETERS, pickVariables } from "../data/parameters";
 import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
 
 const CAT_ICONS = {
@@ -25,20 +25,12 @@ const CAT_COLORS = {
   Personajes: "var(--paper-2)",
 };
 
-const RARITY_INFO = [
-  { key: RARITY.COMUN,      emoji: "⚪", label: "Común",      desc: "Conceptos accesibles, gran variedad",   pct: "50%" },
-  { key: RARITY.RARO,       emoji: "🔵", label: "Raro",       desc: "Combinaciones más originales",          pct: "30%" },
-  { key: RARITY.EPICO,      emoji: "🟣", label: "Épico",      desc: "Retos complejos y de alto impacto",     pct: "15%" },
-  { key: RARITY.LEGENDARIO, emoji: "🌟", label: "Legendario", desc: "Solo los más valientes lo intentan",    pct: "5%"  },
-];
-
 export function RandomScreen() {
   const { state, dispatch } = useApp();
   const { selectedParams, rollsLeft, activeSeason } = state;
   const [rolling, setRolling] = useState(false);
   const [slots, setSlots] = useState([null, null, null]);
   const [toast, setToast] = useState(null);
-  const [showRarityLegend, setShowRarityLegend] = useState(false);
   const toastTimer = useRef(null);
 
   const getCatCount = (catId) => {
@@ -304,57 +296,9 @@ export function RandomScreen() {
             Ya tengo mi obra · Continuar sin sesión →
           </button>
 
-          {/* Rarity legend — collapsible */}
-          <div className="stk-sm" style={{ background: "var(--lilac)", padding: 12, marginTop: 12 }}>
-            <button
-              onClick={() => setShowRarityLegend(r => !r)}
-              style={{
-                width: "100%", background: "transparent", border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "space-between", padding: 0,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <ISpark s={16}/>
-                <span style={{ fontWeight: 800, fontSize: 12 }}>¿Qué significa la rareza?</span>
-              </div>
-              <motion.span
-                animate={{ rotate: showRarityLegend ? 180 : 0 }}
-                transition={{ duration: 0.18 }}
-                style={{ display: "block", fontWeight: 800, fontSize: 14, lineHeight: 1 }}
-              >
-                ↓
-              </motion.span>
-            </button>
-
-            <AnimatePresence>
-              {showRarityLegend && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  style={{ overflow: "hidden" }}
-                >
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 9 }}>
-                    {RARITY_INFO.map(r => (
-                      <div key={r.key} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                        <span style={{ fontSize: 15, lineHeight: 1.3 }}>{r.emoji}</span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontWeight: 800, fontSize: 12 }}>{r.label}</span>
-                            <span className="mono" style={{ fontSize: 9, fontWeight: 700, background: "rgba(20,17,15,.12)", padding: "1px 6px", borderRadius: 4 }}>{r.pct}</span>
-                          </div>
-                          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.62)", marginTop: 1 }}>{r.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                    <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.42)", marginTop: 4 }}>
-                      // LAS COMBINACIONES RARAS GENERAN IDEAS MÁS ÚNICAS Y SORPRENDENTES
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="stk-sm" style={{ background: "var(--lilac)", padding: 12, marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
+            <ISpark s={20}/>
+            <p style={{ fontWeight: 700, fontSize: 11, lineHeight: 1.3 }}>Épico y Legendario tienen menor probabilidad. ¡Mezcla bien para una idea más original!</p>
           </div>
 
         </div>

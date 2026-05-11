@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
+import { MUSIC_TRACKS } from "../data/parameters";
 import { generateAIKeywords } from "../utils/api";
 import { IMusic, IPause, IPlay, IReload, ICheck, ISpark, IStar, IDiamond, ICircle, IArrowR } from "../components/Icons";
 
@@ -40,51 +41,66 @@ function seededRand(seed) {
   return x - Math.floor(x);
 }
 
+/* 5 slots, each cycles independently through the 30-word pool */
 function KeywordRain({ keywords }) {
-  const TOTAL = 32;
+  const SLOTS    = 5;
+  const POOL_MAX = 30;
 
-  const elements = useMemo(() => {
+  const pool = useMemo(() => {
     if (!keywords.length) return [];
-    return Array.from({ length: TOTAL }, (_, i) => ({
-      word:     keywords[i % keywords.length],
-      left:     seededRand(i * 3)   * 88,
-      duration: 9 + seededRand(i * 7)  * 13,
-      delay:    seededRand(i * 11)  * -22,
-      fontSize: 12 + seededRand(i * 5) * 13,
-      opacity:  0.14 + seededRand(i * 13) * 0.20,
-      rotate:   (seededRand(i * 17) * 18) - 9,
-      key:      `kw-${i}-${keywords[i % keywords.length]}`,
-    }));
+    return Array.from({ length: POOL_MAX }, (_, i) => keywords[i % keywords.length]);
   }, [keywords]);
 
-  if (!elements.length) return null;
+  /* Stable per-slot visual config — position/speed/size never changes mid-session */
+  const slotCfg = useMemo(() =>
+    Array.from({ length: SLOTS }, (_, i) => ({
+      left:     seededRand(i * 3)   * 82 + 4,
+      duration: 15 + seededRand(i * 7)  * 14,   // 15–29 s (slow)
+      delay:    -(seededRand(i * 11) * 22),
+      fontSize: 11 + seededRand(i * 5) * 11,
+      opacity:  0.22 + seededRand(i * 13) * 0.10, // ~22–32 %
+      blur:     0.6  + seededRand(i * 19) * 1.4,
+      rotate:   (seededRand(i * 17) * 16) - 8,
+    }))
+  , []);
+
+  const [words, setWords] = useState(() =>
+    Array.from({ length: SLOTS }, (_, i) => pool[i] ?? "")
+  );
+  const nextRef = useRef(SLOTS);
+
+  const advance = useCallback((slotIdx) => {
+    if (!pool.length) return;
+    const idx = nextRef.current % pool.length;
+    nextRef.current++;
+    setWords(prev => {
+      const next = [...prev];
+      next[slotIdx] = pool[idx];
+      return next;
+    });
+  }, [pool]);
+
+  if (!pool.length) return null;
 
   return (
-    <div
-      style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}
-      aria-hidden="true"
-    >
-      {elements.map(el => (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }} aria-hidden="true">
+      {slotCfg.map((cfg, i) => (
         <span
-          key={el.key}
+          key={i}
+          onAnimationIteration={() => advance(i)}
           style={{
-            position: "absolute",
-            top: 0,
-            left: `${el.left}%`,
-            fontSize: el.fontSize,
-            fontFamily: "'JetBrains Mono', monospace",
-            fontWeight: 700,
-            color: "#fff",
-            opacity: el.opacity,
-            letterSpacing: "0.06em",
-            textTransform: "lowercase",
-            whiteSpace: "nowrap",
-            userSelect: "none",
-            "--kw-rotate": `${el.rotate}deg`,
-            animation: `fall ${el.duration}s linear ${el.delay}s infinite`,
+            position: "absolute", top: 0, left: `${cfg.left}%`,
+            fontSize: cfg.fontSize, fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 700, color: "#fff",
+            opacity: cfg.opacity,
+            filter: `blur(${cfg.blur}px)`,
+            letterSpacing: "0.06em", textTransform: "lowercase",
+            whiteSpace: "nowrap", userSelect: "none",
+            "--kw-rotate": `${cfg.rotate}deg`,
+            animation: `fall ${cfg.duration}s linear ${cfg.delay}s infinite`,
           }}
         >
-          {el.word}
+          {words[i]}
         </span>
       ))}
     </div>
@@ -95,7 +111,6 @@ export function TimerScreen() {
   const { state, dispatch } = useApp();
   const { timerConfig, currentIdea, musicSrcs } = state;
 
-  /* ── All hooks before any conditional return ── */
   const isFree       = timerConfig?.duration?.seconds == null;
   const totalSeconds = timerConfig?.duration?.seconds || 1;
 
@@ -106,49 +121,71 @@ export function TimerScreen() {
   const [keywords, setKeywords] = useState([]);
   const audioRef = useRef(null);
 
+  /* Available tracks for auto-advance */
+  const availableTracks = useMemo(
+    () => MUSIC_TRACKS.filter(t => musicSrcs?.[t.id]),
+    [musicSrcs]
+  );
+  const [currentTrack, setCurrentTrack] = useState(() => {
+    const sel = timerConfig?.music;
+    return sel ?? availableTracks[0] ?? null;
+  });
+
   /* Countdown / count-up */
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => {
       setSeconds(s => {
-        if (!isFree && s <= 1) {
-          clearInterval(id);
-          setRunning(false);
-          setFinished(true);
-          return 0;
-        }
+        if (!isFree && s <= 1) { clearInterval(id); setRunning(false); setFinished(true); return 0; }
         return isFree ? s + 1 : s - 1;
       });
     }, 1000);
     return () => clearInterval(id);
   }, [running, isFree]);
 
-  /* Audio playback — play when running + musicOn, pause otherwise */
+  /* Audio: play/pause */
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (running && musicOn) {
-      audio.play().catch(() => {}); // silently handle autoplay policy
-    } else {
-      audio.pause();
-    }
+    if (running && musicOn) { audio.play().catch(() => {}); }
+    else { audio.pause(); }
   }, [running, musicOn]);
 
-  /* AI keyword rain — set variables as immediate fallback, then upgrade with AI */
+  /* Auto-advance to next track when current ends */
+  const advanceTrack = useCallback(() => {
+    if (!availableTracks.length) return;
+    if (availableTracks.length === 1) {
+      /* Single track: restart */
+      if (audioRef.current) { audioRef.current.currentTime = 0; audioRef.current.play().catch(() => {}); }
+      return;
+    }
+    const idx     = availableTracks.findIndex(t => t.id === currentTrack?.id);
+    const nextIdx = (idx + 1) % availableTracks.length;
+    setCurrentTrack(availableTracks[nextIdx]);
+  }, [availableTracks, currentTrack]);
+
+  /* Update audio src when track changes */
   useEffect(() => {
-    const GENERIC = ["pintura", "color", "trazo", "forma", "luz", "sombra", "textura", "boceto", "paleta", "composición", "detalle", "atmósfera"];
+    const audio = audioRef.current;
+    if (!audio || !currentTrack) return;
+    const src = musicSrcs[currentTrack.id];
+    if (!src) return;
+    audio.src = src;
+    if (running && musicOn) { audio.play().catch(() => {}); }
+  }, [currentTrack]); // eslint-disable-line
+
+  /* AI keyword rain — variables as fallback */
+  useEffect(() => {
+    const GENERIC = ["pintura","color","trazo","forma","luz","sombra","textura","boceto","paleta","composición","detalle","atmósfera"];
     const vars = currentIdea?.variables?.map(v => v.value) ?? [];
     const fallback = vars.length ? vars : GENERIC;
-
     setKeywords(fallback);
-
     if (!vars.length) return;
     generateAIKeywords(vars)
       .then(data => { if (data?.keywords?.length >= 3) setKeywords(data.keywords); })
       .catch(() => {});
-  }, [currentIdea]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentIdea]); // eslint-disable-line
 
-  /* Guard after all hooks */
   if (!timerConfig) {
     dispatch({ type: "SET_SCREEN", screen: "setupTimer" });
     return null;
@@ -161,6 +198,9 @@ export function TimerScreen() {
 
   const reset  = () => { setSeconds(isFree ? 0 : timerConfig.duration.seconds); setRunning(false); setFinished(false); };
   const finish = () => dispatch({ type: "COMPLETE_CHALLENGE" });
+
+  /* Randómetro variables for display */
+  const ideaVars = currentIdea?.variables ?? [];
 
   if (finished) {
     return (
@@ -183,17 +223,17 @@ export function TimerScreen() {
     );
   }
 
+  const trackSrc = currentTrack ? musicSrcs[currentTrack.id] : null;
+
   return (
     <Phone dark>
-      {timerConfig?.music?.id && musicSrcs[timerConfig.music.id] && (
-        <audio ref={audioRef} src={musicSrcs[timerConfig.music.id]} loop preload="none" style={{ display: "none" }}/>
+      {trackSrc && (
+        <audio ref={audioRef} src={trackSrc} onEnded={advanceTrack} preload="none" style={{ display: "none" }}/>
       )}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
 
-        {/* Keyword rain — z-index 0 */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
         <KeywordRain keywords={keywords}/>
 
-        {/* Timer UI — z-index 1 */}
         <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
 
           {/* Deco */}
@@ -204,25 +244,27 @@ export function TimerScreen() {
           ))}
 
           {/* Music card */}
-          <div style={{ margin: "10px 22px", border: "2px solid rgba(255,255,255,.22)", borderRadius: 16, background: "rgba(255,255,255,.06)", padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(223,255,35,.15)", border: "1.5px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <IMusic s={20} stroke="var(--acid)"/>
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 800, fontSize: 13, color: "#fff" }}>{timerConfig.music.title}</p>
-              <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{musicOn ? "REPRODUCIENDO · ∞ LOOP" : "EN PAUSA"}</p>
-            </div>
-            {musicOn && (
-              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 16 }}>
-                {[8, 12, 5, 14, 9].map((h, j) => (
-                  <span key={j} style={{ width: 2, height: h, background: "var(--acid)", borderRadius: 2 }}/>
-                ))}
+          {currentTrack && (
+            <div style={{ margin: "10px 22px", border: "2px solid rgba(255,255,255,.22)", borderRadius: 16, background: "rgba(255,255,255,.06)", padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(223,255,35,.15)", border: "1.5px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IMusic s={20} stroke="var(--acid)"/>
               </div>
-            )}
-            <button onClick={() => setMusicOn(m => !m)} style={{ width: 30, height: 30, borderRadius: 999, border: "1.5px solid rgba(255,255,255,.4)", background: "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              {musicOn ? <IPause s={14} stroke="#fff"/> : <IPlay s={14} stroke="#fff"/>}
-            </button>
-          </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontWeight: 800, fontSize: 13, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{currentTrack.title}</p>
+                <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{musicOn ? "REPRODUCIENDO · →SIGUIENTE AUTO" : "EN PAUSA"}</p>
+              </div>
+              {musicOn && (
+                <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 16 }}>
+                  {[8, 12, 5, 14, 9].map((h, j) => (
+                    <span key={j} style={{ width: 2, height: h, background: "var(--acid)", borderRadius: 2 }}/>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setMusicOn(m => !m)} style={{ width: 30, height: 30, borderRadius: 999, border: "1.5px solid rgba(255,255,255,.4)", background: "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                {musicOn ? <IPause s={14} stroke="#fff"/> : <IPlay s={14} stroke="#fff"/>}
+              </button>
+            </div>
+          )}
 
           {/* Timer ring */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 30 }}>
@@ -259,8 +301,26 @@ export function TimerScreen() {
             </div>
           </div>
 
-          {/* Bottom */}
+          {/* Bottom info */}
           <div style={{ padding: "0 22px 28px" }}>
+            {/* Randómetro words */}
+            {ideaVars.length > 0 && (
+              <div style={{ border: "1.5px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", padding: "10px 12px", borderRadius: 14, marginBottom: 8 }}>
+                <p className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,.4)", marginBottom: 6 }}>// TU RETO</p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {ideaVars.map((v, i) => (
+                    <span key={i} style={{
+                      background: "rgba(223,255,35,.14)", border: "1px solid rgba(223,255,35,.35)",
+                      color: "var(--acid)", borderRadius: 999, padding: "3px 10px",
+                      fontSize: 11, fontWeight: 800, fontFamily: "JetBrains Mono", textTransform: "lowercase",
+                    }}>
+                      {v.value}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{ border: "1.5px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", padding: 12, borderRadius: 14, marginBottom: 10, display: "flex", gap: 10, alignItems: "center" }}>
               <ISpark s={18} stroke="rgba(255,255,255,.7)"/>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.6)" }}>
