@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { generateAIKeywords } from "../utils/api";
@@ -104,6 +104,7 @@ export function TimerScreen() {
   const [finished, setFinished] = useState(false);
   const [musicOn,  setMusicOn]  = useState(timerConfig?.musicOn ?? true);
   const [keywords, setKeywords] = useState([]);
+  const audioRef = useRef(null);
 
   /* Countdown / count-up */
   useEffect(() => {
@@ -121,6 +122,17 @@ export function TimerScreen() {
     }, 1000);
     return () => clearInterval(id);
   }, [running, isFree]);
+
+  /* Audio playback — play when running + musicOn, pause otherwise */
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (running && musicOn) {
+      audio.play().catch(() => {}); // silently handle autoplay policy
+    } else {
+      audio.pause();
+    }
+  }, [running, musicOn]);
 
   /* AI keyword rain — set variables as immediate fallback, then upgrade with AI */
   useEffect(() => {
@@ -173,6 +185,9 @@ export function TimerScreen() {
 
   return (
     <Phone dark>
+      {timerConfig?.music?.src && (
+        <audio ref={audioRef} src={timerConfig.music.src} loop preload="none" style={{ display: "none" }}/>
+      )}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
 
         {/* Keyword rain — z-index 0 */}

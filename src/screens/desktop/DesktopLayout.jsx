@@ -388,7 +388,7 @@ export function DeskFeed() {
         <div className="scroll" style={{ flex: 1, padding: 22, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, alignContent: "start" }}>
           {loading && (
             <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 0" }}>
-              <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// CARGANDO FEED...</p>
+              <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1.5s ease-in-out infinite" }}>// CARGANDO FEED...</p>
             </div>
           )}
           {!loading && posts.length === 0 && (
@@ -553,7 +553,7 @@ export function DeskProfile() {
               <div>
                 <h3 className="serif" style={{ fontSize: 24, marginBottom: 12 }}>Obras publicadas</h3>
                 {loadingArt && (
-                  <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// CARGANDO...</p>
+                  <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1.5s ease-in-out infinite" }}>// CARGANDO...</p>
                 )}
                 {!loadingArt && artworks.length === 0 && (
                   <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 20, borderRadius: 16, textAlign: "center" }}>

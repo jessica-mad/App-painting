@@ -214,7 +214,7 @@ export function ProfileScreen() {
               )}
               <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10 }}>Mis obras</p>
               {loadingArt && (
-                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// CARGANDO...</p>
+                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1.5s ease-in-out infinite" }}>// CARGANDO...</p>
               )}
               {!loadingArt && artworks.length === 0 && (
                 <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>
