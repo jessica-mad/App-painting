@@ -73,6 +73,7 @@ export const initialState = {
   selectedParams:   ["Emociones", "Animales", "Eventos"],
   /* idea = { variables: [...], params: [...] } — guarda los params usados */
   currentIdea:      null,
+  musicSrcs:        { ...(wpConfig.musicSrcs ?? {}) },
   rollsLeft:        wpConfig.userId
     ? Math.max(0, WP_ROLLS - WP_ROLLS_USED)
     : getLocalRolls(WP_ROLLS),
@@ -110,6 +111,9 @@ export function reducer(state, action) {
         rollsLeft: left,
       };
     }
+
+    case "SET_MUSIC_SRCS":
+      return { ...state, musicSrcs: { ...state.musicSrcs, ...action.srcs } };
 
     case "RESET_ROLLS":
       return { ...state, rollsLeft: WP_ROLLS };

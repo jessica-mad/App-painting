@@ -93,7 +93,7 @@ function KeywordRain({ keywords }) {
 
 export function TimerScreen() {
   const { state, dispatch } = useApp();
-  const { timerConfig, currentIdea } = state;
+  const { timerConfig, currentIdea, musicSrcs } = state;
 
   /* ── All hooks before any conditional return ── */
   const isFree       = timerConfig?.duration?.seconds == null;
@@ -185,8 +185,8 @@ export function TimerScreen() {
 
   return (
     <Phone dark>
-      {timerConfig?.music?.src && (
-        <audio ref={audioRef} src={timerConfig.music.src} loop preload="none" style={{ display: "none" }}/>
+      {timerConfig?.music?.id && musicSrcs[timerConfig.music.id] && (
+        <audio ref={audioRef} src={musicSrcs[timerConfig.music.id]} loop preload="none" style={{ display: "none" }}/>
       )}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
 

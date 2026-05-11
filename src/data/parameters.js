@@ -301,18 +301,15 @@ export const TECHNIQUES = [
   { id: "carboncillo", label: "Carboncillo", icon: "🪨", color: "#F0F0F0" },
 ];
 
-const PLUGIN_URL = window.InkRushConfig?.pluginUrl ?? "";
-const _m = (id) => PLUGIN_URL ? `${PLUGIN_URL}assets/music/${id}.mp3` : "";
-
 export const MUSIC_TRACKS = [
-  { id: "lofi",   icon: "🌙", title: "Midnight Lofi",      mood: "beat suave infinito",  color: "#1a1a2e", src: _m("lofi")   },
-  { id: "rain",   icon: "🌧️", title: "Rain Studio",         mood: "lluvia relajante",     color: "#2c5f7a", src: _m("rain")   },
-  { id: "coffee", icon: "☕", title: "Coffee Shop",          mood: "cafetería creativa",   color: "#6b3a2a", src: _m("coffee") },
-  { id: "forest", icon: "🌲", title: "Forest Sketching",    mood: "bosque tranquilo",     color: "#1a4a2e", src: _m("forest") },
-  { id: "piano",  icon: "🎹", title: "Soft Piano",           mood: "piano relajante",      color: "#2a2a4a", src: _m("piano")  },
-  { id: "analog", icon: "📼", title: "Analog Chill",         mood: "cinta vintage",        color: "#4a3a1a", src: _m("analog") },
-  { id: "synth",  icon: "🪐", title: "Synth Chill",          mood: "espacial suave",       color: "#1a1a5a", src: _m("synth")  },
-  { id: "night",  icon: "🕯️", title: "Night Studio",         mood: "estudio nocturno",     color: "#2a1a3a", src: _m("night")  },
+  { id: "lofi",   icon: "🌙", title: "Midnight Lofi",    mood: "beat suave infinito", color: "#1a1a2e" },
+  { id: "rain",   icon: "🌧️", title: "Rain Studio",       mood: "lluvia relajante",    color: "#2c5f7a" },
+  { id: "coffee", icon: "☕", title: "Coffee Shop",        mood: "cafetería creativa",  color: "#6b3a2a" },
+  { id: "forest", icon: "🌲", title: "Forest Sketching",  mood: "bosque tranquilo",    color: "#1a4a2e" },
+  { id: "piano",  icon: "🎹", title: "Soft Piano",         mood: "piano relajante",     color: "#2a2a4a" },
+  { id: "analog", icon: "📼", title: "Analog Chill",       mood: "cinta vintage",       color: "#4a3a1a" },
+  { id: "synth",  icon: "🪐", title: "Synth Chill",        mood: "espacial suave",      color: "#1a1a5a" },
+  { id: "night",  icon: "🕯️", title: "Night Studio",       mood: "estudio nocturno",    color: "#2a1a3a" },
 ];
 
 export const DURATIONS = [

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
-import { PARAMETERS, PARAM_CATEGORIES, RARITY, RARITY_COLORS, SEASONS } from "../data/parameters";
+import { PARAMETERS, PARAM_CATEGORIES, RARITY, RARITY_COLORS, SEASONS, MUSIC_TRACKS } from "../data/parameters";
 import { RarityBadge } from "../components/RarityBadge";
-import { fetchReports, republishArtwork, deleteArtwork } from "../utils/api";
-import { IArrowL, IBrush, IStar, IFlag, ITrash, ICheck } from "../components/Icons";
+import { fetchReports, republishArtwork, deleteArtwork, saveMusicSrcs } from "../utils/api";
+import { IArrowL, IBrush, IStar, IFlag, ITrash, ICheck, IMusic } from "../components/Icons";
 
 const RARITY_OPTIONS = [RARITY.COMUN, RARITY.RARO, RARITY.EPICO, RARITY.LEGENDARIO];
 
@@ -112,7 +112,133 @@ function ReportsTab() {
   );
 }
 
-const ADMIN_TABS = ["Variables", "Reportes"];
+const ADMIN_TABS = ["Variables", "Música", "Reportes"];
+
+function MusicTab() {
+  const { state, dispatch } = useApp();
+  const [srcs, setSrcs] = useState(() =>
+    MUSIC_TRACKS.reduce((acc, t) => ({ ...acc, [t.id]: state.musicSrcs[t.id] ?? "" }), {})
+  );
+  const [saving, setSaving] = useState(false);
+  const [saved,  setSaved]  = useState(false);
+  const [error,  setError]  = useState(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await saveMusicSrcs(srcs);
+      dispatch({ type: "SET_MUSIC_SRCS", srcs });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err?.message || "Error al guardar. Revisa tu conexión.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const configured = Object.values(srcs).filter(Boolean).length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Status banner */}
+      <div className="stk-sm" style={{ background: configured === MUSIC_TRACKS.length ? "var(--mint)" : "var(--butter)", padding: "10px 14px", borderRadius: 12, display: "flex", alignItems: "center", gap: 10 }}>
+        <IMusic s={16}/>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontWeight: 800, fontSize: 12 }}>
+            {configured}/{MUSIC_TRACKS.length} tracks configurados
+          </p>
+          <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 2 }}>
+            // URLs DE AUDIO · MP3, OGG O STREAM COMPATIBLE
+          </p>
+        </div>
+      </div>
+
+      {/* Track rows */}
+      {MUSIC_TRACKS.map(track => {
+        const hasUrl = !!srcs[track.id];
+        return (
+          <div key={track.id} className="stk-sm" style={{ background: "var(--paper-2)", borderRadius: 14, overflow: "hidden" }}>
+            {/* Track header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px 8px" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, border: "2px solid var(--ink)", background: track.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                {track.icon}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{track.title}</p>
+                <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>
+                  {track.mood?.toUpperCase()}
+                </p>
+              </div>
+              <span style={{
+                padding: "2px 8px", borderRadius: 999, fontSize: 9, fontWeight: 800,
+                background: hasUrl ? "var(--mint)" : "var(--paper)",
+                border: "1.5px solid var(--ink)",
+              }}>
+                {hasUrl ? "✓ OK" : "Sin URL"}
+              </span>
+            </div>
+
+            {/* URL input */}
+            <div style={{ padding: "0 14px 12px", display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="url"
+                value={srcs[track.id]}
+                onChange={e => setSrcs(s => ({ ...s, [track.id]: e.target.value }))}
+                placeholder="https://... · mp3, ogg, stream"
+                style={{
+                  flex: 1, height: 38, borderRadius: 10, border: "2px solid var(--ink)",
+                  background: hasUrl ? "var(--paper-2)" : "#FFFDF3",
+                  padding: "0 10px", fontFamily: "JetBrains Mono", fontSize: 10,
+                  fontWeight: 600, outline: "none", color: "var(--ink)",
+                }}
+              />
+              {hasUrl && (
+                <button
+                  onClick={() => setSrcs(s => ({ ...s, [track.id]: "" }))}
+                  title="Limpiar URL"
+                  style={{ width: 36, height: 36, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontWeight: 900, fontSize: 14 }}
+                >×</button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Error */}
+      {error && (
+        <div style={{ padding: "10px 14px", background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 12, fontSize: 12, fontWeight: 700 }}>
+          ⚠ {error}
+        </div>
+      )}
+
+      {/* Save button */}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="stk"
+        style={{ height: 52, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}
+      >
+        <IMusic s={18}/>
+        {saved ? "✓ Guardado en WordPress" : saving ? "Guardando..." : "Guardar URLs de música"}
+      </button>
+
+      {/* Info box */}
+      <div className="stk-sm" style={{ background: "var(--ink)", color: "#fff", padding: 14, borderRadius: 14 }}>
+        <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8, color: "var(--acid)" }}>// FORMATOS COMPATIBLES</p>
+        {[
+          "MP3, OGG, AAC, WAV (HTML5 Audio)",
+          "Streams: SoundCloud embed, Mixcloud, etc.",
+          "Ruta relativa al plugin: /wp-content/plugins/inkrush-app/assets/music/lofi.mp3",
+          "Las URLs se guardan en wp_options y se inyectan en InkRushConfig.musicSrcs",
+        ].map((t, i) => (
+          <p key={i} className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.6)", lineHeight: 1.6 }}>• {t}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function AdminScreen() {
   const { dispatch } = useApp();
@@ -180,6 +306,7 @@ export function AdminScreen() {
 
         <div className="scroll" style={{ flex: 1, padding: "14px 22px 22px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
           {adminTab === "Reportes" && <ReportsTab/>}
+          {adminTab === "Música"   && <MusicTab/>}
 
           {adminTab === "Variables" && (
             <>

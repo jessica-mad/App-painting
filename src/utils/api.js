@@ -131,6 +131,18 @@ export async function republishArtwork(id) {
   return apiFetch(`/artworks/${id}/republish`, { method: "POST" });
 }
 
+/* ── Música: URLs por track ── */
+export async function fetchMusicSrcs() {
+  return apiFetch("/music-srcs");
+}
+
+export async function saveMusicSrcs(srcs) {
+  return apiFetch("/music-srcs", {
+    method: "POST",
+    body:   JSON.stringify(srcs),
+  });
+}
+
 /* ── IA: keyword rain ── */
 export async function generateAIKeywords(variables) {
   return apiFetch('/ai/keywords', {
