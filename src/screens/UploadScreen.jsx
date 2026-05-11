@@ -1,9 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { TECHNIQUES, getUserLevel } from "../data/parameters";
 import { createArtwork, IS_LOGGED_IN } from "../utils/api";
-import { compressImages } from "../utils/imageUtils";
 import { IArrowL, IArrowR, IBrush, ICam, ILock, IShare } from "../components/Icons";
 
 const TECH_COLORS = {
@@ -13,32 +12,180 @@ const TECH_COLORS = {
 };
 
 const MAX_PHOTOS = 5;
+/* Output resolution of the cropped image */
+const CROP_OUT_W = 900;
+const CROP_OUT_H = 1200;
 
+/* ── Crop modal ─────────────────────────────────────────────────────────── */
+function CropModal({ src, naturalW, naturalH, onConfirm, onCancel }) {
+  /* Container display size – 3:4, as wide as screen allows */
+  const CONT_W = Math.min(300, (typeof window !== "undefined" ? window.innerWidth : 390) - 48);
+  const CONT_H = Math.round(CONT_W * 4 / 3);
+
+  /* Scale so the image fully covers the container (like object-fit: cover) */
+  const baseScale = Math.max(CONT_W / naturalW, CONT_H / naturalH);
+
+  const [offset, setOffset] = useState(() => ({
+    x: (CONT_W - naturalW * baseScale) / 2,
+    y: (CONT_H - naturalH * baseScale) / 2,
+  }));
+  const [userScale, setUserScale] = useState(1);
+
+  const dragRef  = useRef(null);
+  const pinchRef = useRef(null);
+
+  /* Keep image clamped so it always covers the crop frame */
+  const clamp = useCallback((ox, oy, us) => {
+    const imgW = naturalW * baseScale * us;
+    const imgH = naturalH * baseScale * us;
+    return {
+      x: Math.max(CONT_W - imgW, Math.min(0, ox)),
+      y: Math.max(CONT_H - imgH, Math.min(0, oy)),
+    };
+  }, [naturalW, naturalH, baseScale, CONT_W, CONT_H]);
+
+  /* Mouse events (desktop) */
+  const onMouseDown = (e) => {
+    e.preventDefault();
+    dragRef.current = { sx: e.clientX - offset.x, sy: e.clientY - offset.y };
+  };
+  const onMouseMove = (e) => {
+    if (!dragRef.current) return;
+    setOffset(clamp(e.clientX - dragRef.current.sx, e.clientY - dragRef.current.sy, userScale));
+  };
+  const onMouseUp = () => { dragRef.current = null; };
+
+  /* Touch events (mobile) */
+  const onTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      dragRef.current = { sx: e.touches[0].clientX - offset.x, sy: e.touches[0].clientY - offset.y };
+    } else if (e.touches.length === 2) {
+      const d = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY,
+      );
+      pinchRef.current = { d, scale: userScale };
+    }
+  };
+  const onTouchMove = (e) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && dragRef.current) {
+      const nx = e.touches[0].clientX - dragRef.current.sx;
+      const ny = e.touches[0].clientY - dragRef.current.sy;
+      setOffset(clamp(nx, ny, userScale));
+    } else if (e.touches.length === 2 && pinchRef.current) {
+      const d = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY,
+      );
+      const ns = Math.max(1, Math.min(4, pinchRef.current.scale * (d / pinchRef.current.d)));
+      setUserScale(ns);
+      setOffset(prev => clamp(prev.x, prev.y, ns));
+    }
+  };
+  const onTouchEnd = (e) => {
+    if (e.touches.length === 0) { dragRef.current = null; pinchRef.current = null; }
+  };
+
+  /* Render crop to canvas */
+  const confirm = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width  = CROP_OUT_W;
+    canvas.height = CROP_OUT_H;
+    const ctx = canvas.getContext("2d");
+    const totalScale = baseScale * userScale;
+    /* Translate display offset → source image coordinates */
+    const srcX = -offset.x / totalScale;
+    const srcY = -offset.y / totalScale;
+    const srcW = CONT_W  / totalScale;
+    const srcH = CONT_H  / totalScale;
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, CROP_OUT_W, CROP_OUT_H);
+      onConfirm(canvas.toDataURL("image/jpeg", 0.88));
+    };
+    img.src = src;
+  };
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(20,17,15,.94)", zIndex: 600, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 24px" }}
+    >
+      <p className="serif" style={{ color: "#fff", fontSize: 22, lineHeight: 1, marginBottom: 16 }}>Ajusta tu obra</p>
+
+      {/* Crop frame */}
+      <div
+        style={{ width: CONT_W, height: CONT_H, overflow: "hidden", position: "relative", border: "3px solid var(--acid)", borderRadius: 14, cursor: "grab", touchAction: "none", userSelect: "none" }}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          style={{
+            width:  naturalW * baseScale * userScale,
+            height: naturalH * baseScale * userScale,
+            transform: `translate(${offset.x}px, ${offset.y}px)`,
+            transformOrigin: "0 0",
+            display: "block",
+            pointerEvents: "none",
+          }}
+        />
+        {/* Rule-of-thirds overlay */}
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          backgroundImage: "linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px)",
+          backgroundSize: `${CONT_W / 3}px ${CONT_H / 3}px`,
+        }}/>
+        {/* Corner marks */}
+        {[["0 0","top","left"],["0 0","top","right"],["0 0","bottom","left"],["0 0","bottom","right"]].map(([,v,h],i) => (
+          <div key={i} style={{ position:"absolute", [v]: 0, [h]: 0, width: 22, height: 22, borderTop: v==="top" ? "3px solid var(--acid)" : "none", borderBottom: v==="bottom" ? "3px solid var(--acid)" : "none", borderLeft: h==="left" ? "3px solid var(--acid)" : "none", borderRight: h==="right" ? "3px solid var(--acid)" : "none", pointerEvents:"none" }}/>
+        ))}
+      </div>
+
+      <p className="mono" style={{ color: "rgba(255,255,255,.38)", fontSize: 9, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em" }}>
+        arrastra · pellizca para zoom
+      </p>
+
+      <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
+        <button
+          onClick={onCancel}
+          style={{ padding: "12px 26px", borderRadius: 14, border: "2px solid rgba(255,255,255,.25)", background: "transparent", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" }}
+        >Cancelar</button>
+        <button
+          onClick={confirm}
+          className="stk"
+          style={{ padding: "12px 26px", borderRadius: 14, border: "2px solid var(--acid)", background: "var(--acid)", color: "var(--ink)", fontWeight: 800, fontSize: 14, cursor: "pointer" }}
+        >Usar esta</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Photo carousel ─────────────────────────────────────────────────────── */
 function PhotoCarousel({ images, onRemove }) {
   const [idx, setIdx] = useState(0);
   const cur = Math.min(idx, images.length - 1);
 
   return (
     <div style={{ position: "relative", width: "100%", maxHeight: 260, aspectRatio: "3/4", borderRadius: 18, border: "2px solid var(--ink)", overflow: "hidden", background: "var(--ink)" }}>
-      {/* Image */}
-      <img
-        src={images[cur]}
-        alt=""
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-      />
+      <img src={images[cur]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
 
-      {/* Counter badge */}
       <div style={{ position: "absolute", top: 10, left: 10, background: "var(--ink)", color: "var(--acid)", borderRadius: 999, padding: "3px 8px", fontSize: 11, fontWeight: 800 }}>
         {cur + 1}/{images.length}
       </div>
 
-      {/* Remove button */}
       <button
         onClick={() => { onRemove(cur); setIdx(Math.max(0, cur - 1)); }}
         style={{ position: "absolute", top: 10, right: 10, width: 28, height: 28, borderRadius: 999, background: "var(--rose)", border: "2px solid var(--ink)", fontWeight: 900, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
       >×</button>
 
-      {/* Arrows */}
       {images.length > 1 && (
         <>
           <button
@@ -51,34 +198,27 @@ function PhotoCarousel({ images, onRemove }) {
             disabled={cur === images.length - 1}
             style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === images.length - 1 ? 0.3 : 1 }}
           ><IArrowR s={16}/></button>
+          <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 5 }}>
+            {images.map((_, i) => (
+              <button key={i} onClick={() => setIdx(i)} style={{ width: i === cur ? 16 : 6, height: 6, borderRadius: 999, border: "1.5px solid var(--ink)", background: i === cur ? "var(--acid)" : "rgba(255,255,255,.6)", cursor: "pointer", padding: 0, transition: "width .15s" }}/>
+            ))}
+          </div>
         </>
-      )}
-
-      {/* Dots */}
-      {images.length > 1 && (
-        <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 5 }}>
-          {images.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setIdx(i)}
-              style={{ width: i === cur ? 16 : 6, height: 6, borderRadius: 999, border: "1.5px solid var(--ink)", background: i === cur ? "var(--acid)" : "rgba(255,255,255,.6)", cursor: "pointer", padding: 0, transition: "width .15s" }}
-            />
-          ))}
-        </div>
       )}
     </div>
   );
 }
 
+/* ── Main screen ────────────────────────────────────────────────────────── */
 export function UploadScreen() {
   const { state, dispatch } = useApp();
   const { profile, currentIdea } = state;
-  const [technique, setTechnique] = useState(TECHNIQUES[0].id);
+  const [technique,   setTechnique]   = useState(TECHNIQUES[0].id);
   const [description, setDescription] = useState("");
-  const [images, setImages] = useState([]);
-  const [compressing, setCompressing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
+  const [images,      setImages]      = useState([]);
+  const [cropQueue,   setCropQueue]   = useState([]); /* [{src, naturalW, naturalH}] */
+  const [saving,      setSaving]      = useState(false);
+  const [done,        setDone]        = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const fileRef = useRef(null);
 
@@ -86,16 +226,31 @@ export function UploadScreen() {
   const canVideo    = profile.completedChallenges >= 10;
   const videoNeeded = Math.max(0, 10 - profile.completedChallenges);
 
-  const handleFiles = async (e) => {
+  const handleFiles = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    setCompressing(true);
-    const remaining = MAX_PHOTOS - images.length;
+    const remaining = MAX_PHOTOS - images.length - cropQueue.length;
     const toProcess = files.slice(0, remaining);
-    const compressed = await compressImages(toProcess);
-    setImages(prev => [...prev, ...compressed]);
-    setCompressing(false);
+
+    /* Load each file to get natural dimensions, then queue for cropping */
+    toProcess.forEach(file => {
+      const src = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        setCropQueue(q => [...q, { src, naturalW: img.naturalWidth, naturalH: img.naturalHeight }]);
+      };
+      img.src = src;
+    });
     e.target.value = "";
+  };
+
+  const handleCropConfirm = (croppedB64) => {
+    setImages(prev => [...prev, croppedB64]);
+    setCropQueue(q => { URL.revokeObjectURL(q[0].src); return q.slice(1); });
+  };
+
+  const handleCropCancel = () => {
+    setCropQueue(q => { URL.revokeObjectURL(q[0].src); return q.slice(1); });
   };
 
   const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
@@ -123,6 +278,7 @@ export function UploadScreen() {
     }
   };
 
+  /* Success screen */
   if (done) {
     return (
       <Phone>
@@ -134,7 +290,11 @@ export function UploadScreen() {
               <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>Publicada.</h2>
               <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, color: "rgba(20,17,15,.65)" }}>Ahora la comunidad tiene que lidiar con tu talento.</p>
               <div className="perforated" style={{ margin: "20px 0 16px" }}/>
-              <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })} className="stk" style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
+              <button
+                onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
+                className="stk"
+                style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}
+              >
                 Ver en el Feed <IArrowR s={18} stroke="var(--acid)"/>
               </button>
             </div>
@@ -146,14 +306,19 @@ export function UploadScreen() {
 
   return (
     <Phone>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        multiple
-        style={{ display: "none" }}
-        onChange={handleFiles}
-      />
+      {/* Crop modal rendered over the Phone */}
+      {cropQueue.length > 0 && (
+        <CropModal
+          src={cropQueue[0].src}
+          naturalW={cropQueue[0].naturalW}
+          naturalH={cropQueue[0].naturalH}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
+
+      <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles}/>
+
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "8px 22px 22px" }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -179,33 +344,24 @@ export function UploadScreen() {
               {images.length < MAX_PHOTOS && (
                 <button
                   onClick={() => fileRef.current?.click()}
-                  disabled={compressing}
                   className="stk-sm"
                   style={{ width: "100%", height: 44, marginTop: 10, border: "2px dashed var(--ink)", background: "var(--paper-2)", borderRadius: 12, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
                 >
-                  <ICam s={16}/> {compressing ? "Procesando..." : `Añadir foto (${images.length}/${MAX_PHOTOS})`}
+                  <ICam s={16}/> Añadir foto ({images.length}/{MAX_PHOTOS})
                 </button>
               )}
             </div>
           ) : (
             <button
               onClick={() => fileRef.current?.click()}
-              disabled={compressing}
               className="stk"
-              style={{
-                width: "100%", height: 220,
-                border: "3px dashed var(--ink)",
-                background: "var(--rose)",
-                borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", overflow: "hidden", cursor: "pointer",
-              }}
+              style={{ width: "100%", height: 220, border: "3px dashed var(--ink)", background: "var(--rose)", borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", overflow: "hidden", cursor: "pointer" }}
             >
               <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.2 }}/>
               <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                 <ICam s={28}/>
               </div>
-              <p style={{ fontWeight: 800, fontSize: 13, position: "relative" }}>
-                {compressing ? "Procesando..." : "Toca para añadir tu obra"}
-              </p>
+              <p style={{ fontWeight: 800, fontSize: 13, position: "relative" }}>Toca para añadir tu obra</p>
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>JPG · PNG · MÁXIMO 5 FOTOS</p>
             </button>
           )}
@@ -231,14 +387,7 @@ export function UploadScreen() {
               <button
                 key={t.id}
                 onClick={() => setTechnique(t.id)}
-                style={{
-                  flexShrink: 0, padding: "6px 12px", borderRadius: 12,
-                  border: "2px solid var(--ink)",
-                  background: technique === t.id ? (TECH_COLORS[t.id] || "var(--acid)") : "var(--paper-2)",
-                  fontSize: 11, fontWeight: 700,
-                  boxShadow: technique === t.id ? "3px 3px 0 var(--ink)" : "none",
-                  display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer",
-                }}
+                style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 12, border: "2px solid var(--ink)", background: technique === t.id ? (TECH_COLORS[t.id] || "var(--acid)") : "var(--paper-2)", fontSize: 11, fontWeight: 700, boxShadow: technique === t.id ? "3px 3px 0 var(--ink)" : "none", display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
               >
                 <IBrush s={13}/> {t.label}
               </button>
@@ -288,9 +437,9 @@ export function UploadScreen() {
         )}
         <button
           onClick={publish}
-          disabled={saving || compressing}
+          disabled={saving}
           className="stk"
-          style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: (saving || compressing) ? 0.6 : 1 }}
+          style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: saving ? 0.6 : 1 }}
         >
           <IShare s={18}/> {saving ? "Publicando..." : "Publicar"}
         </button>
