@@ -1,6 +1,7 @@
 import { useReducer, useMemo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppContext, initialState, reducer } from "./data/store";
+import { IS_LOGGED_IN } from "./utils/api";
 import { TutorialScreen }    from "./screens/TutorialScreen";
 import { LoginScreen }       from "./screens/LoginScreen";
 import { OnboardingScreen }  from "./screens/OnboardingScreen";
@@ -62,23 +63,28 @@ function useIsDesktop() {
   return isDesktop;
 }
 
+const PUBLIC_SCREENS = new Set(["login", "tutorial"]);
+
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const ctx = useMemo(() => ({ state, dispatch }), [state]);
   const isDesktop = useIsDesktop();
 
-  const MobileScreen = MOBILE_SCREENS[state.screen] ?? HomeScreen;
+  /* Hard guard: if no WP session and trying to access a protected screen, force login */
+  const guardedScreen = !IS_LOGGED_IN && !PUBLIC_SCREENS.has(state.screen) ? "login" : state.screen;
+  const MobileScreen = MOBILE_SCREENS[guardedScreen] ?? LoginScreen;
 
   if (isDesktop) {
-    const FullScreen = DESKTOP_FULL[state.screen];
-    const FlowScreen = DESKTOP_FLOW[state.screen];
+    const guardedDesktop = !IS_LOGGED_IN && !PUBLIC_SCREENS.has(state.screen) ? "login" : state.screen;
+    const FullScreen = DESKTOP_FULL[guardedDesktop];
+    const FlowScreen = DESKTOP_FLOW[guardedDesktop];
 
     return (
       <AppContext.Provider value={ctx}>
         <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "var(--paper)", overflow: "hidden" }}>
           <AnimatePresence mode="wait">
             <motion.div
-              key={state.screen}
+              key={guardedDesktop}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -101,7 +107,7 @@ export default function App() {
       <div style={{ minHeight: "100dvh", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <AnimatePresence mode="wait">
           <motion.div
-            key={state.screen}
+            key={guardedScreen}
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -14 }}

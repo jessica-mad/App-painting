@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Phone } from "../components/Phone";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";

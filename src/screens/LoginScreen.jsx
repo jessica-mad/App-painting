@@ -3,19 +3,17 @@ import { Phone } from "../components/Phone";
 import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
 import { IS_LOGGED_IN, WP_LOGIN_URL, registerUser } from "../utils/api";
-import { IBrush, ISpark, IStar, ILock, IBolt, IArrowL, IUser, ICheck } from "../components/Icons";
+import { IBrush, ISpark, IStar, ILock, IArrowL, IUser, ICheck } from "../components/Icons";
 
 export function LoginScreen() {
   const { dispatch } = useApp();
-  const [mode, setMode]       = useState("main"); // main | login | register | sms | sms-code
-  const [email, setEmail]     = useState("");
+  const [mode, setMode]         = useState("main"); // main | login | register
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName]       = useState("");
-  const [phone, setPhone]     = useState("");
-  const [code, setCode]       = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
-  const [success, setSuccess] = useState("");
+  const [name, setName]         = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [success, setSuccess]   = useState("");
 
   if (IS_LOGGED_IN) {
     dispatch({ type: "SET_SCREEN", screen: "onboarding" });
@@ -50,74 +48,6 @@ export function LoginScreen() {
     window.location.href = url;
   };
 
-  /* ── SMS (demo) ── */
-  const sendSMS = () => {
-    if (phone.replace(/\s/g, "").length < 8) { setError("Número inválido"); return; }
-    setError(""); setLoading(true);
-    setTimeout(() => { setLoading(false); setMode("sms-code"); }, 1000);
-  };
-
-  const verifyCode = () => {
-    if (code !== "1234") { setError("Código incorrecto (demo: 1234)"); return; }
-    setError(""); setLoading(true);
-    setTimeout(() => dispatch({ type: "LOGIN", user: { name: "Artista", phone, provider: "sms" } }), 700);
-  };
-
-  /* ── Pantalla SMS ── */
-  if (mode === "sms") {
-    return (
-      <Phone>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
-          <button onClick={() => setMode("main")} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
-            <IArrowL s={16}/> Volver
-          </button>
-          <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>Tu número</h2>
-          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// DEMO — ACEPTA CUALQUIER NÚMERO</p>
-          <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-            <div style={{ height: 50, width: 76, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, flexShrink: 0 }}>🇪🇸 +34</div>
-            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="612 345 678"
-              style={{ flex: 1, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: "0 16px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none" }}/>
-          </div>
-          {error && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)", marginTop: 8 }}>{error}</p>}
-          <button onClick={sendSMS} disabled={loading} className="stk"
-            style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", marginTop: "auto", cursor: "pointer" }}>
-            {loading ? "Enviando…" : "Enviar código SMS"}
-          </button>
-        </div>
-      </Phone>
-    );
-  }
-
-  /* ── Pantalla código SMS ── */
-  if (mode === "sms-code") {
-    return (
-      <Phone>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
-          <button onClick={() => { setMode("sms"); setCode(""); }} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
-            <IArrowL s={16}/> Volver
-          </button>
-          <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>Código enviado</h2>
-          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>
-            // SMS A {phone} · <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "1px 6px", borderRadius: 4 }}>DEMO: USA 1234</span>
-          </p>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 24 }}>
-            {[0,1,2,3].map(i => (
-              <div key={i} style={{ width: 56, height: 64, borderRadius: 16, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, background: code[i] ? "var(--acid)" : "var(--paper-2)", boxShadow: code[i] ? "3px 3px 0 var(--ink)" : "none" }}>
-                {code[i] ?? "_"}
-              </div>
-            ))}
-          </div>
-          <input type="number" value={code} onChange={e => setCode(e.target.value.slice(0,4))} placeholder="Código de 4 dígitos"
-            style={{ height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: "0 16px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 20, outline: "none", textAlign: "center", marginTop: 16 }}/>
-          {error && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)", marginTop: 8 }}>{error}</p>}
-          <button onClick={verifyCode} disabled={loading || code.length < 4} className="stk"
-            style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow-lg)", marginTop: "auto", cursor: "pointer", opacity: code.length < 4 ? 0.5 : 1 }}>
-            {loading ? "Verificando…" : "Verificar código"}
-          </button>
-        </div>
-      </Phone>
-    );
-  }
 
   /* ── Crear cuenta con email ── */
   if (mode === "register") {
@@ -251,10 +181,6 @@ export function LoginScreen() {
             <ILock s={16}/> Iniciar sesión con email
           </button>
 
-          <button className="stk" onClick={() => setMode("sms")}
-            style={{ height: 52, background: "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
-            <IBolt s={16}/> Verificar con teléfono (SMS)
-          </button>
 
         </div>
 
