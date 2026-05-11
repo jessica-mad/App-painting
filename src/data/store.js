@@ -16,7 +16,10 @@ const wpUser   = wpConfig.userId ? {
 
 /* Si hay usuario WP, saltamos tutorial/login */
 function startScreen() {
-  if (!wpUser) return "login";
+  if (!wpUser) {
+    const seenIntro = localStorage.getItem("inkrush_seen_intro");
+    return seenIntro ? "login" : "intro";
+  }
   const techniques = JSON.parse(localStorage.getItem("inkrush_techniques") || "[]");
   return techniques.length >= 1 ? "home" : "onboarding";
 }
@@ -61,6 +64,7 @@ export const initialState = {
   timerConfig:      null,
   activeSeason:     wpConfig.activeSeason ?? ACTIVE_SEASON,
   profile:          initialProfile,
+  viewingUserId:    null,
 };
 
 export function reducer(state, action) {
@@ -124,6 +128,12 @@ export function reducer(state, action) {
       localStorage.setItem("inkrush_saved", JSON.stringify(filtered));
       return { ...state, savedIdeas: filtered };
     }
+
+    case "VIEW_USER":
+      return { ...state, viewingUserId: action.userId, screen: "publicProfile" };
+
+    case "CLEAR_VIEW_USER":
+      return { ...state, viewingUserId: null, screen: action.returnScreen ?? "feed" };
 
     default:
       return state;

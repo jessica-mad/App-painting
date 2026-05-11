@@ -8,7 +8,7 @@ import {
   IArrowR, ILock, ICam, IShare, IPlus, IBolt, ICircle, IArrowL,
 } from "../../components/Icons";
 import { getUserLevel, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY, SEASONS } from "../../data/parameters";
-import { fetchArtworks, addReaction, updateProfile, fetchUserArtworks, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID } from "../../utils/api";
+import { fetchArtworks, addReaction, updateProfile, fetchUserArtworks, WP_LOGOUT_URL, WP_LOGIN_URL, IS_LOGGED_IN, WP_USER_ID } from "../../utils/api";
 import { compressImage } from "../../utils/imageUtils";
 
 function copyToClipboard(text, onDone) {
@@ -289,19 +289,28 @@ const FEED_FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana", "Acu
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
 function DeskFeedCard({ post, index }) {
+  const { dispatch } = useApp();
   const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
   const user = post.username ?? post.user ?? "Artista";
   const tech = post.technique ?? "—";
   const rarity = post.rarity ?? "Común";
   const tags = post.variables ?? post.tags ?? [];
+  const hasAuthor = !!post.author_id;
+  const viewAuthor = () => { if (hasAuthor) dispatch({ type: "VIEW_USER", userId: post.author_id }); };
 
   return (
     <div className="stk-sm" style={{ background: "var(--paper-2)", borderRadius: 16, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px" }}>
-        <div style={{ width: 34, height: 34, borderRadius: 999, border: "2px solid var(--ink)", background: COL_CYCLE[index % COL_CYCLE.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <IUser s={16}/>
+        <div
+          onClick={viewAuthor}
+          style={{ width: 34, height: 34, borderRadius: 999, border: "2px solid var(--ink)", background: COL_CYCLE[index % COL_CYCLE.length], display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: hasAuthor ? "pointer" : "default", flexShrink: 0 }}
+        >
+          {post.avatar_url
+            ? <img src={post.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+            : <IUser s={16}/>
+          }
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, cursor: hasAuthor ? "pointer" : "default" }} onClick={viewAuthor}>
           <p style={{ fontWeight: 800, fontSize: 12 }}>{user}</p>
           <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{tech.toUpperCase()}</p>
         </div>
@@ -728,7 +737,9 @@ export function DeskProfile() {
 
 /* ─── Desktop Login ─── */
 export function DeskLogin() {
-  const { dispatch } = useApp();
+  const goLogin    = () => { window.location.href = `${WP_LOGIN_URL}?redirect_to=${encodeURIComponent(window.location.href)}`; };
+  const goRegister = () => { window.location.href = `${WP_LOGIN_URL}?action=register&redirect_to=${encodeURIComponent(window.location.href)}`; };
+
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100vh", background: "var(--paper)", overflow: "hidden" }}>
       {/* Left — marketing */}
@@ -739,14 +750,14 @@ export function DeskLogin() {
         <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
           <Wordmark size={42}/>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <span className="stamp" style={{ background: "var(--coral)", color: "#fff", borderColor: "#fff", alignSelf: "flex-start" }}>★ riso reload</span>
-            <h1 className="serif" style={{ fontSize: 80, lineHeight: 0.95, marginTop: 18, maxWidth: 540 }}>Retos creativos para artistas reales.</h1>
-            <p style={{ fontSize: 16, fontWeight: 600, marginTop: 18, maxWidth: 460, lineHeight: 1.4 }}>Combina variables aleatorias, traza tu reto en tiempo real y comparte con una comunidad que dibuja, no scrollea.</p>
+            <span className="stamp" style={{ background: "var(--coral)", color: "#fff", borderColor: "#fff", alignSelf: "flex-start" }}>★ Para artistas reales</span>
+            <h1 className="serif" style={{ fontSize: 72, lineHeight: 0.95, marginTop: 18, maxWidth: 540 }}>Por fin, completa tus sketchbooks.</h1>
+            <p style={{ fontSize: 16, fontWeight: 600, marginTop: 18, maxWidth: 460, lineHeight: 1.4 }}>Retos creativos aleatorios, timer Pomodoro y una comunidad que dibuja — no scrollea. Captura tu inspiración antes de que desaparezca.</p>
             <div style={{ display: "flex", gap: 8, marginTop: 26, flexWrap: "wrap" }}>
               {[
-                { Icon: IDice, l: "Randómetro 3000" },
-                { Icon: ITimer, l: "Pomodoro lo-fi" },
-                { Icon: ILock, l: "Anti-bots" },
+                { Icon: IDice,  l: "Randómetro" },
+                { Icon: ITimer, l: "Pomodoro" },
+                { Icon: IHeart, l: "Comunidad real" },
               ].map(({ Icon, l }, i) => (
                 <span key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: "6px 12px", borderRadius: 999, border: "2px solid var(--ink)", fontSize: 12, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
                   <Icon s={14}/> {l}
@@ -756,13 +767,13 @@ export function DeskLogin() {
           </div>
           <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
             <div>
-              <p className="serif" style={{ fontSize: 36, lineHeight: 1 }}>12K+</p>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>ARTISTAS ACTIVOS</p>
+              <p className="serif" style={{ fontSize: 36, lineHeight: 1 }}>+∞</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>IDEAS POSIBLES</p>
             </div>
             <div style={{ width: 2, height: 36, background: "var(--ink)", opacity: 0.4 }}/>
             <div>
-              <p className="serif" style={{ fontSize: 36, lineHeight: 1 }}>347</p>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>RETOS LEGENDARIOS HOY</p>
+              <p className="serif" style={{ fontSize: 36, lineHeight: 1 }}>0</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>EXCUSAS ACEPTADAS</p>
             </div>
           </div>
         </div>
@@ -770,28 +781,44 @@ export function DeskLogin() {
 
       {/* Right — form */}
       <div style={{ padding: 48, display: "flex", flexDirection: "column", justifyContent: "center", background: "var(--paper-2)" }}>
-        <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// VERIFICACIÓN ANTI-BOT · BIENVENIDA</p>
-        <h2 className="serif" style={{ fontSize: 48, lineHeight: 1, marginTop: 8 }}>Inicia sesión</h2>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(20,17,15,.65)", marginTop: 8, maxWidth: 380 }}>Solo artistas reales. Verificamos por SMS o Google para que la comunidad siga limpia.</p>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// BIENVENIDA · ACCESO</p>
+        <h2 className="serif" style={{ fontSize: 48, lineHeight: 1, marginTop: 8 }}>Únete a InkRush</h2>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(20,17,15,.65)", marginTop: 8, maxWidth: 380 }}>
+          Crea tu cuenta o inicia sesión con tu cuenta de WordPress para acceder a la plataforma.
+        </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28, maxWidth: 420 }}>
-          <button className="stk" onClick={() => dispatch({ type: "SET_SCREEN", screen: "onboarding" })} style={{ height: 56, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, cursor: "pointer" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            Continuar con Google
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 32, maxWidth: 420 }}>
+          {/* Google — próximamente */}
+          <button disabled style={{ height: 56, background: "var(--paper-2)", border: "2px solid rgba(20,17,15,.25)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, opacity: 0.5, cursor: "not-allowed" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Google · Próximamente
           </button>
+
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
-            <span className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>O VERIFICA POR SMS</span>
+            <span className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>O CON EMAIL</span>
             <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
           </div>
-          <button className="stk" style={{ height: 56, background: "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}>
-            <ILock s={18}/> Enviar código por SMS
+
+          <button className="stk" onClick={goRegister}
+            style={{ height: 56, background: "var(--mint)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
+            <IUser s={18}/> Crear cuenta gratis
+          </button>
+
+          <button className="stk" onClick={goLogin}
+            style={{ height: 56, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
+            <ILock s={18}/> Iniciar sesión
           </button>
         </div>
 
-        <div className="stk-sm" style={{ background: "var(--butter)", padding: 14, marginTop: 32, maxWidth: 420, borderRadius: 14 }}>
+        <div className="stk-sm" style={{ background: "var(--butter)", padding: 14, marginTop: 28, maxWidth: 420, borderRadius: 14 }}>
           <p style={{ fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-            <ILock s={14}/> Verificación SMS protege a la comunidad de bots.
+            <ILock s={14}/> Solo artistas reales. Sin bots, sin spam.
           </p>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
+import { useApp } from "../data/store";
 import { fetchArtworks, addReaction } from "../utils/api";
 import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser, IArrowL, IArrowR } from "../components/Icons";
 
@@ -51,6 +52,7 @@ function PostImages({ images }) {
 }
 
 function ArtCard({ post, idx }) {
+  const { dispatch } = useApp();
   const [likes,    setLikes]    = useState(post.likes    ?? 0);
   const [inspires, setInspires] = useState(post.inspires ?? 0);
   const [tries,    setTries]    = useState(post.tries    ?? 0);
@@ -65,6 +67,10 @@ function ArtCard({ post, idx }) {
     setReacted(r => ({ ...r, [type]: !was }));
   };
 
+  const viewAuthor = () => {
+    if (post.author_id) dispatch({ type: "VIEW_USER", userId: post.author_id });
+  };
+
   const tags   = post.variables ?? post.tags ?? [];
   const user   = post.username ?? post.user ?? "Artista";
   const tech   = post.technique ?? "—";
@@ -72,6 +78,7 @@ function ArtCard({ post, idx }) {
   const prompt = post.prompt ?? tags.join(" + ");
   const col    = COL_CYCLE[idx % COL_CYCLE.length];
   const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
+  const hasAuthor = !!post.author_id;
 
   const reactions = [
     { Ico: IHeart,   count: likes,    type: "like",    col: "var(--rose)",   active: reacted.like },
@@ -83,10 +90,16 @@ function ArtCard({ post, idx }) {
     <div className="stk" style={{ background: "var(--paper-2)", padding: 0, marginBottom: 14, borderRadius: 18, overflow: "hidden", boxShadow: "var(--shadow-lg)" }}>
       {/* Author row */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px" }}>
-        <div style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: col, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <IUser s={18}/>
+        <div
+          onClick={hasAuthor ? viewAuthor : undefined}
+          style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: col, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: hasAuthor ? "pointer" : "default" }}
+        >
+          {post.avatar_url
+            ? <img src={post.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 999 }}/>
+            : <IUser s={18}/>
+          }
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, cursor: hasAuthor ? "pointer" : "default" }} onClick={hasAuthor ? viewAuthor : undefined}>
           <p style={{ fontWeight: 800, fontSize: 13 }}>{user}</p>
           <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{tech.toUpperCase()}</p>
         </div>

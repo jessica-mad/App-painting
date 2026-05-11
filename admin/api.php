@@ -160,11 +160,12 @@ function inkrush_api_list_artworks( WP_REST_Request $req ) {
         $uid    = (int) $post->post_author;
         $author = get_userdata($uid);
         $posts[] = [
-            'id'        => $post->ID,
-            'prompt'    => $post->post_title,
-            'username'  => $author ? $author->display_name : 'Artista',
-            'avatar'    => '🎨',
-            'technique' => get_post_meta( $post->ID, 'inkrush_technique', true ),
+            'id'         => $post->ID,
+            'author_id'  => $uid,
+            'prompt'     => $post->post_title,
+            'username'   => $author ? $author->display_name : 'Artista',
+            'avatar_url' => $uid ? ( get_user_meta( $uid, 'inkrush_avatar_url', true ) ?: '' ) : '',
+            'technique'  => get_post_meta( $post->ID, 'inkrush_technique', true ),
             'variables' => json_decode( get_post_meta( $post->ID, 'inkrush_variables', true ) ?: '[]', true ),
             'rarity'    => get_post_meta( $post->ID, 'inkrush_rarity', true ) ?: 'Común',
             'likes'     => (int) get_post_meta( $post->ID, 'inkrush_likes', true ),

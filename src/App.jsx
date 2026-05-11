@@ -2,55 +2,61 @@ import { useReducer, useMemo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppContext, initialState, reducer } from "./data/store";
 import { IS_LOGGED_IN } from "./utils/api";
-import { TutorialScreen }    from "./screens/TutorialScreen";
-import { LoginScreen }       from "./screens/LoginScreen";
-import { OnboardingScreen }  from "./screens/OnboardingScreen";
-import { HomeScreen }        from "./screens/HomeScreen";
-import { RandomScreen }      from "./screens/RandomScreen";
-import { IdeaScreen }        from "./screens/IdeaScreen";
-import { TimerSetupScreen }  from "./screens/TimerSetupScreen";
-import { TimerScreen }       from "./screens/TimerScreen";
-import { UploadScreen }      from "./screens/UploadScreen";
-import { FeedScreen }        from "./screens/FeedScreen";
-import { ProfileScreen }     from "./screens/ProfileScreen";
-import { SavedScreen }       from "./screens/SavedScreen";
-import { AdminScreen }       from "./screens/AdminScreen";
+import { TutorialScreen }       from "./screens/TutorialScreen";
+import { IntroScreen }          from "./screens/IntroScreen";
+import { LoginScreen }          from "./screens/LoginScreen";
+import { OnboardingScreen }     from "./screens/OnboardingScreen";
+import { HomeScreen }           from "./screens/HomeScreen";
+import { RandomScreen }         from "./screens/RandomScreen";
+import { IdeaScreen }           from "./screens/IdeaScreen";
+import { TimerSetupScreen }     from "./screens/TimerSetupScreen";
+import { TimerScreen }          from "./screens/TimerScreen";
+import { UploadScreen }         from "./screens/UploadScreen";
+import { FeedScreen }           from "./screens/FeedScreen";
+import { ProfileScreen }        from "./screens/ProfileScreen";
+import { PublicProfileScreen }  from "./screens/PublicProfileScreen";
+import { SavedScreen }          from "./screens/SavedScreen";
+import { AdminScreen }          from "./screens/AdminScreen";
 import { DeskHome, DeskFeed, DeskProfile, DeskLogin, DeskFlowWrapper } from "./screens/desktop/DesktopLayout";
 
 const MOBILE_SCREENS = {
-  tutorial:   TutorialScreen,
-  login:      LoginScreen,
-  onboarding: OnboardingScreen,
-  home:       HomeScreen,
-  random:     RandomScreen,
-  idea:       IdeaScreen,
-  setupTimer: TimerSetupScreen,
-  timer:      TimerScreen,
-  upload:     UploadScreen,
-  feed:       FeedScreen,
-  profile:    ProfileScreen,
-  saved:      SavedScreen,
-  admin:      AdminScreen,
+  intro:         IntroScreen,
+  tutorial:      TutorialScreen,
+  login:         LoginScreen,
+  onboarding:    OnboardingScreen,
+  home:          HomeScreen,
+  random:        RandomScreen,
+  idea:          IdeaScreen,
+  setupTimer:    TimerSetupScreen,
+  timer:         TimerScreen,
+  upload:        UploadScreen,
+  feed:          FeedScreen,
+  profile:       ProfileScreen,
+  publicProfile: PublicProfileScreen,
+  saved:         SavedScreen,
+  admin:         AdminScreen,
 };
 
 /* On desktop, screens without a dedicated layout use DeskFlowWrapper to keep sidebar visible */
 const DESKTOP_FULL = {
-  tutorial:   () => <DeskLogin/>,
-  login:      () => <DeskLogin/>,
-  home:       () => <DeskHome/>,
-  feed:       () => <DeskFeed/>,
-  profile:    () => <DeskProfile/>,
+  intro:    () => <DeskLogin/>,
+  tutorial: () => <DeskLogin/>,
+  login:    () => <DeskLogin/>,
+  home:     () => <DeskHome/>,
+  feed:     () => <DeskFeed/>,
+  profile:  () => <DeskProfile/>,
 };
 
 const DESKTOP_FLOW = {
-  onboarding: OnboardingScreen,
-  random:     RandomScreen,
-  idea:       IdeaScreen,
-  setupTimer: TimerSetupScreen,
-  timer:      TimerScreen,
-  upload:     UploadScreen,
-  saved:      SavedScreen,
-  admin:      AdminScreen,
+  onboarding:    OnboardingScreen,
+  random:        RandomScreen,
+  idea:          IdeaScreen,
+  setupTimer:    TimerSetupScreen,
+  timer:         TimerScreen,
+  upload:        UploadScreen,
+  saved:         SavedScreen,
+  publicProfile: PublicProfileScreen,
+  admin:         AdminScreen,
 };
 
 function useIsDesktop() {
@@ -63,7 +69,8 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-const PUBLIC_SCREENS = new Set(["login", "tutorial"]);
+/* intro and login are always public; publicProfile visible even without login */
+const PUBLIC_SCREENS = new Set(["intro", "login", "tutorial", "publicProfile"]);
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
