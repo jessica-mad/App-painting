@@ -79,6 +79,7 @@ export function UploadScreen() {
   const [compressing, setCompressing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   const fileRef = useRef(null);
 
   const level       = getUserLevel(profile.completedChallenges);
@@ -101,6 +102,7 @@ export function UploadScreen() {
 
   const publish = async () => {
     setSaving(true);
+    setUploadError(null);
     try {
       if (IS_LOGGED_IN && currentIdea) {
         await createArtwork({
@@ -115,8 +117,9 @@ export function UploadScreen() {
       }
       setDone(true);
       setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "feed" }), 1600);
-    } catch {
+    } catch (err) {
       setSaving(false);
+      setUploadError(err?.message || "No se pudo publicar. Revisa tu conexión e inténtalo de nuevo.");
     }
   };
 
@@ -278,11 +281,16 @@ export function UploadScreen() {
           )}
         </div>
 
+        {uploadError && (
+          <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "var(--ink)", lineHeight: 1.4 }}>
+            ⚠ {uploadError}
+          </div>
+        )}
         <button
           onClick={publish}
           disabled={saving || compressing}
           className="stk"
-          style={{ marginTop: 14, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: (saving || compressing) ? 0.6 : 1 }}
+          style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: (saving || compressing) ? 0.6 : 1 }}
         >
           <IShare s={18}/> {saving ? "Publicando..." : "Publicar en la comunidad"}
         </button>

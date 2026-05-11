@@ -7,6 +7,21 @@ export function useApp() { return useContext(AppContext); }
 
 /* Lee config inyectada por WordPress (wp_localize_script) */
 const wpConfig = window.InkRushConfig ?? {};
+
+function getLocalRolls(maxRolls) {
+  try {
+    const stored = localStorage.getItem("inkrush_daily_rolls");
+    if (!stored) return maxRolls;
+    const { date, rolls } = JSON.parse(stored);
+    return date === new Date().toDateString() ? Math.min(rolls, maxRolls) : maxRolls;
+  } catch {
+    return maxRolls;
+  }
+}
+
+function saveLocalRolls(rolls) {
+  localStorage.setItem("inkrush_daily_rolls", JSON.stringify({ date: new Date().toDateString(), rolls }));
+}
 const wpUser   = wpConfig.userId ? {
   id:       wpConfig.userId,
   name:     wpConfig.userName ?? "Artista",
@@ -60,7 +75,7 @@ export const initialState = {
   currentIdea:      null,
   rollsLeft:        wpConfig.userId
     ? Math.max(0, WP_ROLLS - WP_ROLLS_USED)
-    : parseInt(localStorage.getItem("inkrush_rolls_" + new Date().toDateString()) || String(WP_ROLLS)),
+    : getLocalRolls(WP_ROLLS),
   timerConfig:      null,
   activeSeason:     wpConfig.activeSeason ?? ACTIVE_SEASON,
   profile:          initialProfile,
@@ -88,7 +103,7 @@ export function reducer(state, action) {
 
     case "SET_IDEA": {
       const left = Math.max(0, state.rollsLeft - 1);
-      localStorage.setItem("inkrush_rolls_" + new Date().toDateString(), left);
+      if (!wpConfig.userId) saveLocalRolls(left);
       return {
         ...state,
         currentIdea: { variables: action.idea, params: action.params },
