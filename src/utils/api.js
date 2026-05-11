@@ -93,6 +93,10 @@ export async function followUser(userId) {
   return apiFetch(`/users/${userId}/follow`, { method: "POST" });
 }
 
+export async function fetchUserFollowing(userId) {
+  return apiFetch(`/users/${userId}/following`);
+}
+
 /* ── Config de WP ── */
 export const WP_USER_ID      = cfg.userId      ?? 0;
 export const IS_LOGGED_IN    = WP_USER_ID > 0;

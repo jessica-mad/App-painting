@@ -66,6 +66,12 @@ function inkrush_register_routes() {
         'permission_callback' => 'is_user_logged_in',
     ] );
 
+    /* ── Lista de usuarios que sigue ── */
+    register_rest_route( 'inkrush/v1', '/users/(?P<id>\d+)/following', [
+        'methods' => 'GET', 'callback' => 'inkrush_api_get_following',
+        'permission_callback' => '__return_true',
+    ] );
+
     /* ── Reset intentos diarios (admin) ── */
     register_rest_route( 'inkrush/v1', '/rolls/reset', [
         'methods'             => 'POST',
@@ -425,6 +431,42 @@ function inkrush_api_follow_user( WP_REST_Request $req ) {
     update_user_meta( $me, 'inkrush_following_count', $my_following );
 
     return rest_ensure_response( [ 'success'=>true, 'following'=>!$already, 'followers'=>$followers ] );
+}
+
+function inkrush_api_get_following( WP_REST_Request $req ) {
+    $uid  = (int) $req->get_param('id');
+    $user = get_userdata( $uid );
+    if ( ! $user ) return new WP_Error( 'not_found', 'Usuario no encontrado.', ['status'=>404] );
+
+    $all_meta = get_user_meta( $uid );
+    $result   = [];
+
+    foreach ( $all_meta as $key => $values ) {
+        if ( strpos( $key, 'inkrush_following_' ) !== 0 ) continue;
+        if ( ! $values[0] ) continue;
+        $tid    = (int) str_replace( 'inkrush_following_', '', $key );
+        $target = get_userdata( $tid );
+        if ( ! $target ) continue;
+        $challenges = (int) get_user_meta( $tid, 'inkrush_challenges', true );
+        $result[] = [
+            'id'                  => $tid,
+            'username'            => $target->user_login,
+            'displayName'         => $target->display_name,
+            'avatarUrl'           => get_user_meta( $tid, 'inkrush_avatar_url', true ) ?: '',
+            'completedChallenges' => $challenges,
+            'role'                => inkrush_level_name( $challenges ),
+        ];
+    }
+
+    return rest_ensure_response( ['success'=>true, 'users'=>$result] );
+}
+
+function inkrush_level_name( $challenges ) {
+    if ( $challenges >= 50 ) return 'Maestro';
+    if ( $challenges >= 30 ) return 'Avanzado';
+    if ( $challenges >= 15 ) return 'Intermedio';
+    if ( $challenges >= 5  ) return 'Aprendiz';
+    return 'Explorador';
 }
 
 /* ──────────────────────────────────────────────────────────────

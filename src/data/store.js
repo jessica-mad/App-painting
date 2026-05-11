@@ -65,6 +65,7 @@ export const initialState = {
   activeSeason:     wpConfig.activeSeason ?? ACTIVE_SEASON,
   profile:          initialProfile,
   viewingUserId:    null,
+  followListUserId: null,
 };
 
 export function reducer(state, action) {
@@ -134,6 +135,12 @@ export function reducer(state, action) {
 
     case "CLEAR_VIEW_USER":
       return { ...state, viewingUserId: null, screen: action.returnScreen ?? "feed" };
+
+    case "VIEW_FOLLOW_LIST":
+      return { ...state, followListUserId: action.userId, screen: "followList" };
+
+    case "CLEAR_FOLLOW_LIST":
+      return { ...state, followListUserId: null, screen: action.returnScreen ?? "profile" };
 
     default:
       return state;

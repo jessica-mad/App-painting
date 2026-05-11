@@ -167,12 +167,12 @@ export function ProfileScreen() {
           {/* Stats */}
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: 14 }}>
             {[
-              { l: "Retos",      v: profile.completedChallenges },
-              { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers },
-              { l: "Siguiendo",  v: profile.following },
+              { l: "Retos",      v: profile.completedChallenges, onClick: null },
+              { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers, onClick: null },
+              { l: "Siguiendo",  v: profile.following, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: state.user?.id ?? 0 }) : null },
             ].map((s, i) => (
-              <div key={i} style={{ textAlign: "center" }}>
-                <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{s.v}</p>
+              <div key={i} style={{ textAlign: "center", cursor: s.onClick ? "pointer" : "default" }} onClick={s.onClick ?? undefined}>
+                <p className="serif" style={{ fontSize: 22, lineHeight: 1, textDecoration: s.onClick ? "underline" : "none" }}>{s.v}</p>
                 <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 2 }}>{s.l.toUpperCase()}</p>
               </div>
             ))}

@@ -15,6 +15,7 @@ import { UploadScreen }         from "./screens/UploadScreen";
 import { FeedScreen }           from "./screens/FeedScreen";
 import { ProfileScreen }        from "./screens/ProfileScreen";
 import { PublicProfileScreen }  from "./screens/PublicProfileScreen";
+import { FollowListScreen }     from "./screens/FollowListScreen";
 import { SavedScreen }          from "./screens/SavedScreen";
 import { AdminScreen }          from "./screens/AdminScreen";
 import { DeskHome, DeskFeed, DeskProfile, DeskLogin, DeskFlowWrapper } from "./screens/desktop/DesktopLayout";
@@ -33,6 +34,7 @@ const MOBILE_SCREENS = {
   feed:          FeedScreen,
   profile:       ProfileScreen,
   publicProfile: PublicProfileScreen,
+  followList:    FollowListScreen,
   saved:         SavedScreen,
   admin:         AdminScreen,
 };
@@ -56,6 +58,7 @@ const DESKTOP_FLOW = {
   upload:        UploadScreen,
   saved:         SavedScreen,
   publicProfile: PublicProfileScreen,
+  followList:    FollowListScreen,
   admin:         AdminScreen,
 };
 
@@ -70,7 +73,7 @@ function useIsDesktop() {
 }
 
 /* intro and login are always public; publicProfile visible even without login */
-const PUBLIC_SCREENS = new Set(["intro", "login", "tutorial", "publicProfile"]);
+const PUBLIC_SCREENS = new Set(["intro", "login", "tutorial", "publicProfile", "followList"]);
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -111,7 +114,7 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <div style={{ minHeight: "100dvh", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ height: "100dvh", overflow: "hidden", background: "var(--paper-2)" }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={guardedScreen}

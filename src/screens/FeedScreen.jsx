@@ -3,7 +3,12 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { fetchArtworks, addReaction } from "../utils/api";
+import { fetchArtworks, addReaction, IS_LOGGED_IN } from "../utils/api";
+
+const TRIES_LIMIT = 5;
+function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
+function triesLeft() { return Math.max(0, TRIES_LIMIT - parseInt(localStorage.getItem(triesKey()) || "0")); }
+function useTry()    { localStorage.setItem(triesKey(), String(TRIES_LIMIT - triesLeft() + 1)); }
 import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser, IArrowL, IArrowR } from "../components/Icons";
 
 const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Temporada"];
@@ -57,13 +62,27 @@ function ArtCard({ post, idx }) {
   const [inspires, setInspires] = useState(post.inspires ?? 0);
   const [tries,    setTries]    = useState(post.tries    ?? 0);
   const [reacted,  setReacted]  = useState({ like: false, inspire: false, try: false });
+  const [trySaved, setTrySaved] = useState(false);
 
   const react = (type) => {
     if (post.id) addReaction(post.id, type).catch(() => {});
     const was = reacted[type];
     if (type === "like")    setLikes(n    => was ? n - 1 : n + 1);
     if (type === "inspire") setInspires(n => was ? n - 1 : n + 1);
-    if (type === "try")     setTries(n    => was ? n - 1 : n + 1);
+    if (type === "try") {
+      setTries(n => was ? n - 1 : n + 1);
+      if (!was && IS_LOGGED_IN && triesLeft() > 0) {
+        const tags = post.variables ?? post.tags ?? [];
+        const variables = tags.map(t => ({
+          value: typeof t === "string" ? t : (t.value ?? t),
+          rarity: typeof t === "object" && t.rarity ? t.rarity : "Común",
+        }));
+        dispatch({ type: "SAVE_IDEA", idea: { variables, params: post.params ?? [] } });
+        useTry();
+        setTrySaved(true);
+        setTimeout(() => setTrySaved(false), 1800);
+      }
+    }
     setReacted(r => ({ ...r, [type]: !was }));
   };
 
@@ -130,22 +149,26 @@ function ArtCard({ post, idx }) {
 
       {/* Reactions */}
       <div style={{ display: "flex", gap: 8, padding: 12 }}>
-        {reactions.map((b, j) => (
-          <button
-            key={j}
-            onClick={() => react(b.type)}
-            style={{
-              flex: 1, height: 38, borderRadius: 12, border: "2px solid var(--ink)",
-              background: b.active ? b.col : "var(--paper-2)",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              fontWeight: 800, fontSize: 12,
-              boxShadow: b.active ? "3px 3px 0 var(--ink)" : "none",
-              cursor: "pointer",
-            }}
-          >
-            <b.Ico s={15}/> {b.count}
-          </button>
-        ))}
+        {reactions.map((b, j) => {
+          const isTry = b.type === "try";
+          const saved = isTry && trySaved;
+          return (
+            <button
+              key={j}
+              onClick={() => react(b.type)}
+              style={{
+                flex: 1, height: 38, borderRadius: 12, border: "2px solid var(--ink)",
+                background: saved ? "var(--mint)" : b.active ? b.col : "var(--paper-2)",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                fontWeight: 800, fontSize: 12,
+                boxShadow: b.active ? "3px 3px 0 var(--ink)" : "none",
+                cursor: "pointer", transition: "background .2s",
+              }}
+            >
+              <b.Ico s={15}/> {saved ? "Guardado" : b.count}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
