@@ -54,7 +54,7 @@ function KeywordRain({ keywords }) {
   /* Stable per-slot visual config — position/speed/size never changes mid-session */
   const slotCfg = useMemo(() =>
     Array.from({ length: SLOTS }, (_, i) => ({
-      left:     seededRand(i * 3)   * 82 + 4,
+      left:     (i / SLOTS) * 80 + seededRand(i * 3) * 10 + 2,
       duration: 15 + seededRand(i * 7)  * 14,   // 15–29 s (slow)
       delay:    -(seededRand(i * 11) * 22),
       fontSize: 11 + seededRand(i * 5) * 11,
