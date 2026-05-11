@@ -61,6 +61,13 @@ export async function registerUser({ email, password, displayName }) {
   });
 }
 
+export async function loginUser({ email, password }) {
+  return apiFetch("/auth/login", {
+    method: "POST",
+    body:   JSON.stringify({ email, password }),
+  });
+}
+
 export async function updateProfile(data) {
   return apiFetch("/users/me", {
     method: "POST",

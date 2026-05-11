@@ -102,6 +102,13 @@ function inkrush_register_routes() {
         'permission_callback' => fn() => current_user_can('manage_options'),
     ] );
 
+    /* ── Autenticación en-app ── */
+    register_rest_route( 'inkrush/v1', '/auth/login', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_login',
+        'permission_callback' => '__return_true',
+    ] );
+
     /* ── IA: keyword rain ── */
     register_rest_route( 'inkrush/v1', '/ai/keywords', [
         'methods'             => 'POST',
@@ -721,6 +728,42 @@ function inkrush_save_base64_image( $base64, $post_id ) {
     wp_update_attachment_metadata( $attach_id, $attach_data );
 
     return $attach_id;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   AUTENTICACIÓN EN-APP
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_login( WP_REST_Request $req ) {
+    $email    = sanitize_email( $req->get_param('email') ?? '' );
+    $password = $req->get_param('password') ?? '';
+
+    if ( ! is_email( $email ) ) {
+        return new WP_Error( 'invalid_email', 'Email inválido.', [ 'status' => 400 ] );
+    }
+    if ( empty( $password ) ) {
+        return new WP_Error( 'missing_password', 'Contraseña requerida.', [ 'status' => 400 ] );
+    }
+
+    /* WP acepta email como user_login en wp_signon */
+    $creds = [
+        'user_login'    => $email,
+        'user_password' => $password,
+        'remember'      => true,
+    ];
+
+    $user = wp_signon( $creds, is_ssl() );
+
+    if ( is_wp_error( $user ) ) {
+        return new WP_Error( 'auth_failed', 'Email o contraseña incorrectos.', [ 'status' => 401 ] );
+    }
+
+    return rest_ensure_response( [
+        'success'     => true,
+        'userId'      => $user->ID,
+        'displayName' => $user->display_name,
+        'username'    => $user->user_login,
+    ] );
 }
 
 /* ──────────────────────────────────────────────────────────────

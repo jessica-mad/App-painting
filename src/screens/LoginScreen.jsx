@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Phone } from "../components/Phone";
 import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
-import { IS_LOGGED_IN, WP_LOGIN_URL, registerUser } from "../utils/api";
+import { IS_LOGGED_IN, registerUser, loginUser } from "../utils/api";
 import { IBrush, ISpark, IStar, ILock, IArrowL, IUser, ICheck } from "../components/Icons";
 
 export function LoginScreen() {
@@ -20,41 +20,47 @@ export function LoginScreen() {
     return null;
   }
 
-  const goToWPLogin = () => {
-    window.location.href = `${WP_LOGIN_URL}?redirect_to=${encodeURIComponent(window.location.href)}`;
-  };
+  const back = () => { setMode("main"); setError(""); setSuccess(""); };
 
   /* ── Registro con email ── */
   const handleRegister = async () => {
-    if (!name.trim())              { setError("Escribe tu nombre."); return; }
-    if (!email.includes("@"))     { setError("Email inválido."); return; }
-    if (password.length < 6)      { setError("Contraseña mínimo 6 caracteres."); return; }
+    if (!name.trim())          { setError("Escribe tu nombre."); return; }
+    if (!email.includes("@")) { setError("Email inválido."); return; }
+    if (password.length < 6)  { setError("Contraseña mínimo 6 caracteres."); return; }
     setError(""); setLoading(true);
     try {
       await registerUser({ email, password, displayName: name });
-      setSuccess("¡Cuenta creada! Redirigiendo…");
-      setTimeout(() => window.location.reload(), 1200);
+      setSuccess("¡Cuenta creada! Entrando…");
+      setTimeout(() => window.location.reload(), 1000);
     } catch (e) {
       setError(e.message || "Error al crear la cuenta.");
       setLoading(false);
     }
   };
 
-  /* ── Login con email → redirect a WP ── */
-  const handleEmailLogin = () => {
+  /* ── Login en-app ── */
+  const handleLogin = async () => {
     if (!email.includes("@")) { setError("Email inválido."); return; }
-    const url = `${WP_LOGIN_URL}?redirect_to=${encodeURIComponent(window.location.href)}` +
-                `&log=${encodeURIComponent(email)}`;
-    window.location.href = url;
+    if (!password)            { setError("Escribe tu contraseña."); return; }
+    setError(""); setLoading(true);
+    try {
+      await loginUser({ email, password });
+      setSuccess("¡Bienvenido! Cargando…");
+      setTimeout(() => window.location.reload(), 800);
+    } catch (e) {
+      setError(e.message || "Email o contraseña incorrectos.");
+      setLoading(false);
+    }
   };
 
+  const handleKey = (fn) => (e) => { if (e.key === "Enter") fn(); };
 
-  /* ── Crear cuenta con email ── */
+  /* ── Registro ── */
   if (mode === "register") {
     return (
       <Phone>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px", overflow: "hidden" }}>
-          <button onClick={() => { setMode("main"); setError(""); }} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
+          <button onClick={back} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
             <IArrowL s={16}/> Volver
           </button>
           <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>Crear cuenta</h2>
@@ -62,21 +68,22 @@ export function LoginScreen() {
 
           <div className="scroll" style={{ flex: 1, marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
             {[
-              { label: "Tu nombre artístico", val: name, set: setName, type: "text", ph: "Malva Ink", Icon: IUser },
-              { label: "Email", val: email, set: setEmail, type: "email", ph: "tu@email.com", Icon: ILock },
-              { label: "Contraseña (mín. 6 caracteres)", val: password, set: setPassword, type: "password", ph: "••••••••", Icon: ILock },
+              { label: "Tu nombre artístico", val: name,     set: setName,     type: "text",     ph: "Malva Ink",  Icon: IUser },
+              { label: "Email",               val: email,    set: setEmail,    type: "email",    ph: "tu@email.com", Icon: ILock },
+              { label: "Contraseña (mín. 6)", val: password, set: setPassword, type: "password", ph: "••••••••",   Icon: ILock },
             ].map(({ label, val, set, type, ph, Icon }) => (
               <div key={label}>
                 <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>{label}</p>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: "0 14px" }}>
                   <Icon s={16}/>
                   <input type={type} value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                    onKeyDown={handleKey(handleRegister)}
                     style={{ flex: 1, border: "none", background: "transparent", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 14, outline: "none" }}/>
                 </div>
               </div>
             ))}
 
-            {error && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)" }}>{error}</p>}
+            {error   && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)" }}>{error}</p>}
             {success && (
               <div className="stk-sm" style={{ background: "var(--mint)", padding: 12, display: "flex", alignItems: "center", gap: 8 }}>
                 <ICheck s={16}/> <span style={{ fontWeight: 800, fontSize: 12 }}>{success}</span>
@@ -88,7 +95,7 @@ export function LoginScreen() {
               <IBrush s={18}/> {loading ? "Creando cuenta…" : "Crear mi cuenta"}
             </button>
 
-            <button onClick={() => { setMode("login"); setError(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 800, color: "rgba(20,17,15,.55)", cursor: "pointer", textDecoration: "underline", marginTop: 4 }}>
+            <button onClick={() => { setMode("login"); setError(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 800, color: "rgba(20,17,15,.55)", cursor: "pointer", textDecoration: "underline", marginTop: 4, textAlign: "center" }}>
               ¿Ya tienes cuenta? Iniciar sesión
             </button>
           </div>
@@ -97,33 +104,44 @@ export function LoginScreen() {
     );
   }
 
-  /* ── Login con email ── */
+  /* ── Login ── */
   if (mode === "login") {
     return (
       <Phone>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
-          <button onClick={() => { setMode("main"); setError(""); }} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
+          <button onClick={back} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
             <IArrowL s={16}/> Volver
           </button>
           <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>Iniciar sesión</h2>
-          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// CON TU EMAIL Y CONTRASEÑA DE WORDPRESS</p>
+          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// CON TU EMAIL Y CONTRASEÑA</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: "0 14px" }}>
-              <IUser s={16}/>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com"
-                style={{ flex: 1, border: "none", background: "transparent", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 14, outline: "none" }}/>
-            </div>
-            {error && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)" }}>{error}</p>}
+            {[
+              { label: "Email",       val: email,    set: setEmail,    type: "email",    ph: "tu@email.com", Icon: IUser },
+              { label: "Contraseña",  val: password, set: setPassword, type: "password", ph: "••••••••",    Icon: ILock },
+            ].map(({ label, val, set, type, ph, Icon }) => (
+              <div key={label}>
+                <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>{label}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: "0 14px" }}>
+                  <Icon s={16}/>
+                  <input type={type} value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                    onKeyDown={handleKey(handleLogin)}
+                    style={{ flex: 1, border: "none", background: "transparent", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 14, outline: "none" }}/>
+                </div>
+              </div>
+            ))}
+
+            {error   && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)" }}>{error}</p>}
+            {success && (
+              <div className="stk-sm" style={{ background: "var(--mint)", padding: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <ICheck s={16}/> <span style={{ fontWeight: 800, fontSize: 12 }}>{success}</span>
+              </div>
+            )}
           </div>
 
-          <div className="stk-sm" style={{ background: "var(--butter)", padding: 12, marginTop: 16 }}>
-            <p style={{ fontSize: 11, fontWeight: 700 }}>Se abrirá la pantalla de login de WordPress para introducir tu contraseña de forma segura.</p>
-          </div>
-
-          <button onClick={handleEmailLogin} className="stk"
-            style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", marginTop: "auto", cursor: "pointer" }}>
-            <IArrowL s={18} style={{ transform: "scaleX(-1)" }}/> Ir a iniciar sesión
+          <button onClick={handleLogin} disabled={loading} className="stk"
+            style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", marginTop: "auto", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
+            <ILock s={18}/> {loading ? "Entrando…" : "Entrar"}
           </button>
 
           <button onClick={() => { setMode("register"); setError(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 800, color: "rgba(20,17,15,.55)", cursor: "pointer", textDecoration: "underline", marginTop: 12, textAlign: "center" }}>
@@ -153,7 +171,6 @@ export function LoginScreen() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* Google — pendiente */}
           <button disabled className="stk"
             style={{ height: 52, background: "var(--paper-2)", border: "2px solid rgba(20,17,15,.25)", borderRadius: 16, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, opacity: 0.5, cursor: "not-allowed" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -180,8 +197,6 @@ export function LoginScreen() {
             style={{ height: 52, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
             <ILock s={16}/> Iniciar sesión con email
           </button>
-
-
         </div>
 
         <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.45)", textAlign: "center", marginTop: "auto", paddingTop: 16 }}>AL REGISTRARTE ACEPTAS TÉRMINOS Y PRIVACIDAD</p>

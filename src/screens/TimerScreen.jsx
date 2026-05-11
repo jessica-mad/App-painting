@@ -35,25 +35,24 @@ const DECO = [
   { top: "78%", left: "88%", Icon: ICircle,  s: 10 },
 ];
 
-/* Deterministic PRNG — avoids re-randomising on every countdown tick */
 function seededRand(seed) {
   const x = Math.sin(seed + 1) * 10000;
   return x - Math.floor(x);
 }
 
 function KeywordRain({ keywords }) {
-  const TOTAL = 30;
+  const TOTAL = 32;
 
   const elements = useMemo(() => {
     if (!keywords.length) return [];
     return Array.from({ length: TOTAL }, (_, i) => ({
       word:     keywords[i % keywords.length],
-      left:     seededRand(i * 3)   * 90,
-      duration: 8 + seededRand(i * 7)  * 14,
-      delay:    seededRand(i * 11)  * -20,
-      fontSize: 11 + seededRand(i * 5) * 14,
-      opacity:  0.10 + seededRand(i * 13) * 0.18,
-      rotate:   (seededRand(i * 17) * 20) - 10,
+      left:     seededRand(i * 3)   * 88,
+      duration: 9 + seededRand(i * 7)  * 13,
+      delay:    seededRand(i * 11)  * -22,
+      fontSize: 12 + seededRand(i * 5) * 13,
+      opacity:  0.14 + seededRand(i * 13) * 0.20,
+      rotate:   (seededRand(i * 17) * 18) - 9,
       key:      `kw-${i}-${keywords[i % keywords.length]}`,
     }));
   }, [keywords]);
@@ -77,7 +76,7 @@ function KeywordRain({ keywords }) {
             fontWeight: 700,
             color: "#fff",
             opacity: el.opacity,
-            letterSpacing: "0.05em",
+            letterSpacing: "0.06em",
             textTransform: "lowercase",
             whiteSpace: "nowrap",
             userSelect: "none",
@@ -96,18 +95,15 @@ export function TimerScreen() {
   const { state, dispatch } = useApp();
   const { timerConfig, currentIdea } = state;
 
-  if (!timerConfig) {
-    dispatch({ type: "SET_SCREEN", screen: "setupTimer" });
-    return null;
-  }
+  /* ── All hooks before any conditional return ── */
+  const isFree       = timerConfig?.duration?.seconds == null;
+  const totalSeconds = timerConfig?.duration?.seconds || 1;
 
-  const isFree = timerConfig.duration.seconds === null;
-  const [seconds,  setSeconds]  = useState(isFree ? 0 : timerConfig.duration.seconds);
+  const [seconds,  setSeconds]  = useState(isFree ? 0 : (timerConfig?.duration?.seconds ?? 0));
   const [running,  setRunning]  = useState(false);
   const [finished, setFinished] = useState(false);
-  const [musicOn,  setMusicOn]  = useState(timerConfig.musicOn);
+  const [musicOn,  setMusicOn]  = useState(timerConfig?.musicOn ?? true);
   const [keywords, setKeywords] = useState([]);
-  const totalSeconds = timerConfig.duration.seconds || 1;
 
   /* Countdown / count-up */
   useEffect(() => {
@@ -126,15 +122,25 @@ export function TimerScreen() {
     return () => clearInterval(id);
   }, [running, isFree]);
 
-  /* Fetch AI keywords once per idea — fails silently */
+  /* AI keyword rain — set variables as immediate fallback, then upgrade with AI */
   useEffect(() => {
-    if (!currentIdea?.variables?.length) return;
-    if (keywords.length > 0) return;
-    const vars = currentIdea.variables.map(v => v.value);
+    const vars = currentIdea?.variables?.map(v => v.value) ?? [];
+    if (!vars.length) return;
+
+    // Show variables immediately so the rain starts at once
+    setKeywords(vars);
+
+    // Try to enhance with AI-generated keywords
     generateAIKeywords(vars)
-      .then(data => { if (data?.keywords?.length) setKeywords(data.keywords); })
-      .catch(() => {});
+      .then(data => { if (data?.keywords?.length >= 3) setKeywords(data.keywords); })
+      .catch(() => {}); // Keep fallback on error
   }, [currentIdea]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Guard after all hooks */
+  if (!timerConfig) {
+    dispatch({ type: "SET_SCREEN", screen: "setupTimer" });
+    return null;
+  }
 
   const min = String(Math.floor(seconds / 60)).padStart(2, "0");
   const sec = String(seconds % 60).padStart(2, "0");
@@ -169,7 +175,7 @@ export function TimerScreen() {
     <Phone dark>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
 
-        {/* Keyword rain — z-index 0, behind everything */}
+        {/* Keyword rain — z-index 0 */}
         <KeywordRain keywords={keywords}/>
 
         {/* Timer UI — z-index 1 */}
