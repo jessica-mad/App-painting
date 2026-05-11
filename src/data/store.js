@@ -139,6 +139,9 @@ export function reducer(state, action) {
       return { ...state, profile: { ...state.profile, ...action.data } };
 
     case "SAVE_IDEA": {
+      const ideaKey = (idea) =>
+        JSON.stringify((idea.variables ?? []).map(v => (typeof v === "string" ? v : v.value)).sort());
+      if (state.savedIdeas.some(s => ideaKey(s) === ideaKey(action.idea))) return state;
       const newSaved = [...state.savedIdeas, action.idea];
       localStorage.setItem("inkrush_saved", JSON.stringify(newSaved));
       return { ...state, savedIdeas: newSaved };

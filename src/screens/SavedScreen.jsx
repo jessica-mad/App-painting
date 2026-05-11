@@ -4,6 +4,11 @@ import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
 import { IBookmark, ITimer, ITrash } from "../components/Icons";
 
+function decodeTag(t) {
+  const raw = typeof t === "string" ? t : (t.value ?? "");
+  try { return decodeURIComponent(raw); } catch { return raw; }
+}
+
 export function SavedScreen() {
   const { state, dispatch } = useApp();
   const savedIdeas = state.savedIdeas ?? [];
@@ -41,7 +46,7 @@ export function SavedScreen() {
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1, marginRight: 8 }}>
                       {(idea.variables ?? []).map((v, j) => (
                         <span key={j} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 800 }}>
-                          {typeof v === "string" ? v : v.value}
+                          {decodeTag(v)}
                         </span>
                       ))}
                     </div>
@@ -49,8 +54,8 @@ export function SavedScreen() {
                   </div>
                   <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.65)", lineHeight: 1.4, marginBottom: 12 }}>
                     {idea.variables?.length >= 3
-                      ? <>Ilustra <b>{typeof idea.variables[0] === "string" ? idea.variables[0] : idea.variables[0].value}</b> encontrando <b>{typeof idea.variables[1] === "string" ? idea.variables[1] : idea.variables[1].value}</b> en <b>{typeof idea.variables[2] === "string" ? idea.variables[2] : idea.variables[2].value}</b>.</>
-                      : (idea.variables ?? []).map(v => typeof v === "string" ? v : v.value).join(" + ")
+                      ? <>Ilustra <b>{decodeTag(idea.variables[0])}</b> encontrando <b>{decodeTag(idea.variables[1])}</b> en <b>{decodeTag(idea.variables[2])}</b>.</>
+                      : (idea.variables ?? []).map(v => decodeTag(v)).join(" + ")
                     }
                   </p>
                   <div style={{ display: "flex", gap: 8 }}>

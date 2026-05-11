@@ -11,6 +11,11 @@ import { getUserLevel, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY,
 import { fetchArtworks, addReaction, updateProfile, fetchUserArtworks, WP_LOGOUT_URL, WP_LOGIN_URL, IS_LOGGED_IN, IS_ADMIN, WP_USER_ID } from "../../utils/api";
 import { compressImage } from "../../utils/imageUtils";
 
+function decodeTag(t) {
+  const raw = typeof t === "string" ? t : (t.value ?? "");
+  try { return decodeURIComponent(raw); } catch { return raw; }
+}
+
 function copyToClipboard(text, onDone) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(onDone).catch(() => legacyCopy(text, onDone));
@@ -302,7 +307,7 @@ export function DeskHome() {
 }
 
 /* ─── Desktop Feed ─── */
-const FEED_FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana", "Acuarela", "Tinta"];
+const FEED_FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana"];
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
 function DeskFeedCard({ post, index }) {
@@ -337,7 +342,7 @@ function DeskFeedCard({ post, index }) {
         <div style={{ display: "flex", gap: 5, padding: "0 14px 8px", flexWrap: "wrap" }}>
           {tags.slice(0, 3).map((t, j) => (
             <span key={j} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>
-              {typeof t === "string" ? t : t.value}
+              {decodeTag(t)}
             </span>
           ))}
         </div>
@@ -347,8 +352,10 @@ function DeskFeedCard({ post, index }) {
           <img src={images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
         </div>
       ) : (
-        <div style={{ width: "100%", height: 260, background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {post.prompt && <p className="serif" style={{ fontSize: 14, padding: "12px 16px", textAlign: "center", lineHeight: 1.3 }}>{post.prompt}</p>}
+        <div style={{ width: "100%", height: 260, background: "var(--lilac)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <span style={{ fontSize: 28, opacity: 0.35 }}>🖼</span>
+          <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// SIN IMAGEN</p>
+          {post.prompt && <p className="serif" style={{ fontSize: 13, padding: "4px 16px", textAlign: "center", lineHeight: 1.3, opacity: 0.65 }}>{post.prompt}</p>}
         </div>
       )}
       <div style={{ display: "flex", gap: 8, padding: 12 }}>

@@ -23,7 +23,9 @@ export function HomeScreen() {
         <div style={{ padding: "8px 22px 10px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.45)" }}>// HOLA DE NUEVO</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.45)" }}>
+                // HOLA, {(profile.displayName || profile.username || "ARTISTA").toUpperCase().split(" ")[0]}
+              </p>
               <Wordmark size={26}/>
             </div>
             <button

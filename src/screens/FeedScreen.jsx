@@ -6,12 +6,17 @@ import { useApp } from "../data/store";
 import { fetchArtworks, addReaction, deleteArtwork, hideArtwork, reportArtwork, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
 import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser, IArrowL, IArrowR, IDotsV, ITrash, IEyeOff, IFlag } from "../components/Icons";
 
+function decodeTag(t) {
+  const raw = typeof t === "string" ? t : (t.value ?? "");
+  try { return decodeURIComponent(raw); } catch { return raw; }
+}
+
 const TRIES_LIMIT = 5;
 function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
 function triesLeft() { return Math.max(0, TRIES_LIMIT - parseInt(localStorage.getItem(triesKey()) || "0")); }
 function useTry()    { localStorage.setItem(triesKey(), String(TRIES_LIMIT - triesLeft() + 1)); }
 
-const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Temporada"];
+const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana"];
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
 function PostImages({ images }) {
@@ -133,6 +138,107 @@ function PostMenu({ isOwn, hidden, onDelete, onHide, onReport, onFlag, onClose }
   );
 }
 
+function ArtworkDetailModal({ post, onClose, react, reactions, trySaved, viewAuthor, col }) {
+  const tags   = post.variables ?? post.tags ?? [];
+  const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
+  const hasAuthor = !!post.author_id;
+  const dateStr = post.date ? new Date(post.date).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : "";
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(20,17,15,.72)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ width: "100%", maxWidth: 480, maxHeight: "94vh", overflowY: "auto", background: "var(--paper-2)", borderRadius: "22px 22px 0 0", border: "2px solid var(--ink)", borderBottom: "none" }}
+      >
+        {/* Handle + close */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px 8px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 999, background: "rgba(20,17,15,.2)", margin: "0 auto" }}/>
+        </div>
+
+        {/* Author */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px 10px" }}>
+          <div
+            onClick={hasAuthor ? viewAuthor : undefined}
+            style={{ width: 38, height: 38, borderRadius: 999, border: "2px solid var(--ink)", background: col, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: hasAuthor ? "pointer" : "default" }}
+          >
+            {post.avatar_url
+              ? <img src={post.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 999 }}/>
+              : <IUser s={18}/>
+            }
+          </div>
+          <div style={{ flex: 1, cursor: hasAuthor ? "pointer" : "default" }} onClick={hasAuthor ? viewAuthor : undefined}>
+            <p style={{ fontWeight: 800, fontSize: 14 }}>{post.username ?? "Artista"}</p>
+            <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>
+              {post.technique ? post.technique.toUpperCase() : ""}
+              {dateStr ? `  ·  ${dateStr}` : ""}
+            </p>
+          </div>
+          <RarityBadge rarity={post.rarity ?? "Común"}/>
+          <button
+            onClick={onClose}
+            style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid rgba(20,17,15,.2)", background: "transparent", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          >✕</button>
+        </div>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div style={{ display: "flex", gap: 6, padding: "0 16px 10px", flexWrap: "wrap" }}>
+            {tags.map((t, i) => (
+              <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                {decodeTag(t)}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Image (full width) */}
+        {images.length > 0 ? (
+          <PostImages images={images}/>
+        ) : (
+          <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <span style={{ fontSize: 40, opacity: 0.4 }}>🖼</span>
+            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// SIN IMAGEN</p>
+            {post.prompt && <p className="serif" style={{ fontSize: 15, padding: "0 20px", textAlign: "center", lineHeight: 1.3, opacity: 0.7 }}>{post.prompt}</p>}
+          </div>
+        )}
+
+        {/* Reactions */}
+        <div style={{ display: "flex", gap: 8, padding: "12px 16px 16px" }}>
+          {reactions.map((b, j) => {
+            const isTry = b.type === "try";
+            const saved = isTry && trySaved;
+            return (
+              <button
+                key={j}
+                onClick={() => react(b.type)}
+                style={{
+                  flex: 1, height: 44, borderRadius: 14, border: "2px solid var(--ink)",
+                  background: saved ? "var(--mint)" : b.active ? b.col : "var(--paper-2)",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  fontWeight: 800, fontSize: 13,
+                  boxShadow: b.active ? "3px 3px 0 var(--ink)" : "none",
+                  cursor: "pointer",
+                }}
+              >
+                <b.Ico s={16}/> {saved ? "Guardado" : b.count}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ArtCard({ post, idx, onRemove }) {
   const { dispatch } = useApp();
   const [likes,    setLikes]    = useState(post.likes    ?? 0);
@@ -148,6 +254,7 @@ function ArtCard({ post, idx, onRemove }) {
   const [confirmDel, setConfirmDel] = useState(false);
   const [hidden,     setHidden]     = useState(post.hidden ?? false);
   const [reported,   setReported]   = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const menuRef = useRef(null);
 
   const isOwn = IS_LOGGED_IN && parseInt(post.author_id) === WP_USER_ID;
@@ -162,7 +269,7 @@ function ArtCard({ post, idx, onRemove }) {
       if (!was && IS_LOGGED_IN && triesLeft() > 0) {
         const tags = post.variables ?? post.tags ?? [];
         const variables = tags.map(t => ({
-          value: typeof t === "string" ? t : (t.value ?? t),
+          value: decodeTag(t),
           rarity: typeof t === "object" && t.rarity ? t.rarity : "Común",
         }));
         dispatch({ type: "SAVE_IDEA", idea: { variables, params: post.params ?? [] } });
@@ -216,6 +323,17 @@ function ArtCard({ post, idx, onRemove }) {
   return (
     <>
       {confirmDel && <DeleteConfirm onConfirm={handleDelete} onCancel={() => setConfirmDel(false)}/>}
+      {detailOpen && (
+        <ArtworkDetailModal
+          post={post}
+          col={col}
+          onClose={() => setDetailOpen(false)}
+          react={react}
+          reactions={reactions}
+          trySaved={trySaved}
+          viewAuthor={() => { setDetailOpen(false); viewAuthor(); }}
+        />
+      )}
       <div
         className="stk"
         style={{
@@ -266,22 +384,24 @@ function ArtCard({ post, idx, onRemove }) {
           <div style={{ display: "flex", gap: 6, padding: "0 14px 10px", flexWrap: "wrap" }}>
             {tags.map((t, i) => (
               <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
-                {typeof t === "string" ? t : t.value}
+                {decodeTag(t)}
               </span>
             ))}
           </div>
         )}
 
-        {/* Artwork */}
-        {images.length > 0 ? (
-          <PostImages images={images}/>
-        ) : (
-          <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {prompt && (
-              <p className="serif" style={{ fontSize: 16, padding: "12px 16px", textAlign: "center", lineHeight: 1.3 }}>{prompt}</p>
-            )}
-          </div>
-        )}
+        {/* Artwork — click opens detail modal */}
+        <div onClick={() => setDetailOpen(true)} style={{ cursor: "pointer" }}>
+          {images.length > 0 ? (
+            <PostImages images={images}/>
+          ) : (
+            <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <span style={{ fontSize: 36, opacity: 0.35 }}>🖼</span>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// SIN IMAGEN</p>
+              {prompt && <p className="serif" style={{ fontSize: 14, padding: "0 16px", textAlign: "center", lineHeight: 1.3, opacity: 0.65 }}>{prompt}</p>}
+            </div>
+          )}
+        </div>
 
         {/* Reactions */}
         <div style={{ display: "flex", gap: 8, padding: 12 }}>

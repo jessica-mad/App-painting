@@ -346,13 +346,25 @@ function inkrush_api_react( WP_REST_Request $req ) {
 ────────────────────────────────────────────────────────────── */
 
 function inkrush_api_complete_challenge() {
-    $uid        = get_current_user_id();
+    $uid       = get_current_user_id();
+    $tz        = wp_timezone();
+    $today     = ( new DateTime( 'now', $tz ) )->format( 'Y-m-d' );
+    $yesterday = ( new DateTime( 'yesterday', $tz ) )->format( 'Y-m-d' );
+
+    $last_date = get_user_meta( $uid, 'inkrush_last_challenge_date', true );
+    $streak    = (int) get_user_meta( $uid, 'inkrush_streak', true );
+
+    if ( $last_date !== $today ) {
+        $streak = ( $last_date === $yesterday ) ? $streak + 1 : 1;
+        update_user_meta( $uid, 'inkrush_streak', $streak );
+        update_user_meta( $uid, 'inkrush_last_challenge_date', $today );
+    }
+
     $challenges = (int) get_user_meta( $uid, 'inkrush_challenges_completed', true );
     update_user_meta( $uid, 'inkrush_challenges_completed', $challenges + 1 );
-    $level  = inkrush_update_user_level( $uid );
-    $streak = (int) get_user_meta( $uid, 'inkrush_streak', true );
-    update_user_meta( $uid, 'inkrush_streak', $streak + 1 );
-    return rest_ensure_response( ['success'=>true,'challenges'=>$challenges+1,'level'=>$level,'streak'=>$streak+1] );
+    $level = inkrush_update_user_level( $uid );
+
+    return rest_ensure_response( ['success'=>true,'challenges'=>$challenges+1,'level'=>$level,'streak'=>$streak] );
 }
 
 /* ──────────────────────────────────────────────────────────────

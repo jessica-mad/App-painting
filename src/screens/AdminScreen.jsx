@@ -3,7 +3,7 @@ import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { PARAMETERS, PARAM_CATEGORIES, RARITY, RARITY_COLORS, SEASONS, MUSIC_TRACKS } from "../data/parameters";
 import { RarityBadge } from "../components/RarityBadge";
-import { fetchReports, republishArtwork, deleteArtwork, saveMusicSrcs } from "../utils/api";
+import { fetchReports, republishArtwork, deleteArtwork, saveMusicSrcs, IS_ADMIN } from "../utils/api";
 import { IArrowL, IBrush, IStar, IFlag, ITrash, ICheck, IMusic } from "../components/Icons";
 
 const RARITY_OPTIONS = [RARITY.COMUN, RARITY.RARO, RARITY.EPICO, RARITY.LEGENDARIO];
@@ -250,6 +250,11 @@ export function AdminScreen() {
   const [newSeason, setNewSeason] = useState(null);
   const [filterRarity, setFilterRarity] = useState("all");
   const [filterSeason, setFilterSeason] = useState("all");
+
+  if (!IS_ADMIN) {
+    dispatch({ type: "SET_SCREEN", screen: "home" });
+    return null;
+  }
 
   const currentParams = PARAMETERS[selectedCategory] || [];
   const filtered = currentParams.filter(v => {
