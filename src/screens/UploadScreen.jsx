@@ -131,8 +131,8 @@ export function UploadScreen() {
             <div className="stripes-y" style={{ position: "absolute", inset: 0, opacity: 0.4 }}/>
             <div style={{ position: "relative" }}>
               <p className="serif" style={{ fontSize: 72, lineHeight: 1 }}>🚀</p>
-              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>¡Publicado!</h2>
-              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, color: "rgba(20,17,15,.65)" }}>Tu obra ya está en la comunidad InkRush.</p>
+              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>Publicada.</h2>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, color: "rgba(20,17,15,.65)" }}>Ahora la comunidad tiene que lidiar con tu talento.</p>
               <div className="perforated" style={{ margin: "20px 0 16px" }}/>
               <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })} className="stk" style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
                 Ver en el Feed <IArrowR s={18} stroke="var(--acid)"/>
@@ -168,8 +168,8 @@ export function UploadScreen() {
           </span>
         </div>
 
-        <h2 className="serif" style={{ fontSize: 30, marginTop: 8, lineHeight: 1 }}>Sube tu resultado</h2>
-        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// COMPARTE TU OBRA CON LA COMUNIDAD</p>
+        <h2 className="serif" style={{ fontSize: 30, marginTop: 8, lineHeight: 1 }}>Muéstranos qué has hecho</h2>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// la comunidad tiene que verlo</p>
 
         <div className="scroll" style={{ flex: 1, marginTop: 14 }}>
           {/* Photo zone */}
@@ -204,7 +204,7 @@ export function UploadScreen() {
                 <ICam s={28}/>
               </div>
               <p style={{ fontWeight: 800, fontSize: 13, position: "relative" }}>
-                {compressing ? "Procesando..." : "Toca para añadir foto"}
+                {compressing ? "Procesando..." : "Toca para añadir tu obra"}
               </p>
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>JPG · PNG · MÁXIMO 5 FOTOS</p>
             </button>
@@ -213,7 +213,7 @@ export function UploadScreen() {
           {/* Prompt tags */}
           {currentIdea && (
             <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 12, marginTop: 14 }}>
-              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// RETO COMPLETADO</p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// reto superado</p>
               <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                 {currentIdea.variables.map(v => (
                   <span key={v.value} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 800 }}>
@@ -225,7 +225,7 @@ export function UploadScreen() {
           )}
 
           {/* Technique */}
-          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 16, marginBottom: 8 }}>Técnica usada</p>
+          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 16, marginBottom: 8 }}>¿Con qué lo has hecho?</p>
           <div className="scroll" style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
             {TECHNIQUES.map(t => (
               <button
@@ -247,12 +247,12 @@ export function UploadScreen() {
 
           {/* Description */}
           <p style={{ fontWeight: 800, fontSize: 12, marginTop: 16, marginBottom: 6 }}>
-            Descripción <span className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>(OPCIONAL)</span>
+            Cuéntanos algo <span className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>(opcional)</span>
           </p>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="Cuéntanos sobre tu proceso creativo..."
+            placeholder="¿Cómo fue? ¿Qué salió mal? ¿Qué salió bien?"
             style={{ width: "100%", height: 84, border: "2px solid var(--ink)", borderRadius: 14, padding: 12, fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 12, resize: "none", outline: "none", background: "var(--paper-2)" }}
           />
 
@@ -292,7 +292,7 @@ export function UploadScreen() {
           className="stk"
           style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: (saving || compressing) ? 0.6 : 1 }}
         >
-          <IShare s={18}/> {saving ? "Publicando..." : "Publicar en la comunidad"}
+          <IShare s={18}/> {saving ? "Publicando..." : "Publicar"}
         </button>
       </div>
     </Phone>

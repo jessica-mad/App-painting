@@ -24,14 +24,14 @@ function legacyCopy(text, onDone) {
   document.body.removeChild(el);
 }
 
-const TABS_OWNER  = ["Perfil", "Editar", "Logros", "Estadísticas"];
-const TABS_GUEST  = ["Perfil", "Logros", "Estadísticas"];
+const TABS_OWNER  = ["Mi Sketchbook", "Editar", "Logros", "Estadísticas"];
+const TABS_GUEST  = ["Mi Sketchbook", "Logros", "Estadísticas"];
 
 export function ProfileScreen() {
   const { state, dispatch } = useApp();
   const { profile } = state;
   const level = getUserLevel(profile.completedChallenges);
-  const [tab, setTab] = useState(() => state.profileInitialTab ?? "Perfil");
+  const [tab, setTab] = useState(() => state.profileInitialTab ?? "Mi Sketchbook");
 
   /* edit state */
   const [editName,    setEditName]    = useState(profile.displayName);
@@ -63,7 +63,7 @@ export function ProfileScreen() {
     `${window.location.origin}${window.location.pathname.replace(/\/$/, "")}?u=${profile.username}`;
 
   useEffect(() => {
-    if (tab !== "Perfil") return;
+    if (tab !== "Mi Sketchbook") return;
     if (!IS_LOGGED_IN) return;
     setLoadingArt(true);
     fetchUserArtworks(WP_USER_ID)
@@ -185,7 +185,10 @@ export function ProfileScreen() {
                   {level.name}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.6)" }}>
-                  <IFlame s={12}/> {profile.streak} días
+                  {profile.streak > 0
+                    ? <><IFlame s={12}/> {profile.streak} días</>
+                    : "racha rota · toca arreglarlo"
+                  }
                 </span>
               </div>
             </div>
@@ -236,11 +239,11 @@ export function ProfileScreen() {
         {/* Tab content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 22px 90px" }}>
 
-          {tab === "Perfil" && (
+          {tab === "Mi Sketchbook" && (
             <div>
               {favTechs.length > 0 && (
                 <>
-                  <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Mis técnicas</p>
+                  <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Con qué trabajo</p>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
                     {favTechs.map(t => (
                       <span key={t.id} style={{ display: "inline-flex", gap: 5, alignItems: "center", padding: "5px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: t.color || "var(--sky)", fontSize: 11, fontWeight: 700 }}>
@@ -250,13 +253,13 @@ export function ProfileScreen() {
                   </div>
                 </>
               )}
-              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10 }}>Mis obras</p>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10 }}>Lo que he hecho</p>
               {loadingArt && (
                 <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1.5s ease-in-out infinite" }}>// CARGANDO...</p>
               )}
               {!loadingArt && artworks.length === 0 && (
                 <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>
-                  // TUS PUBLICACIONES APARECERÁN AQUÍ
+                  // Aún no hay nada aquí. Eso tiene solución fácil.
                 </p>
               )}
               {artworks.length > 0 && (
@@ -355,7 +358,7 @@ export function ProfileScreen() {
 
           {tab === "Logros" && (
             <div>
-              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 12 }}>Tu camino de artista</p>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 12 }}>Por dónde vas</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {LEVELS.map(lv => {
                   const unlocked = level.id >= lv.id;
@@ -370,7 +373,7 @@ export function ProfileScreen() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <p style={{ fontWeight: 800, fontSize: 13 }}>{lv.name}</p>
-                        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ RETOS</p>
+                        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ retos · {lv.desc}</p>
                       </div>
                       {unlocked
                         ? <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>{current ? "Actual" : <ICheck s={12} stroke="var(--acid)"/>}</span>
@@ -402,7 +405,7 @@ export function ProfileScreen() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
                 {[
-                  { Ico: ITimer, l: "Pomodoros",  v: profile.pomodorosCompleted, c: "var(--sky)" },
+                  { Ico: ITimer, l: "Sesiones",   v: profile.pomodorosCompleted, c: "var(--sky)" },
                   { Ico: IDice,  l: "Retos",       v: profile.completedChallenges, c: "var(--mint)" },
                 ].map((s, i) => (
                   <div key={i} className="stk-sm" style={{ background: s.c, padding: 14 }}>
@@ -415,10 +418,10 @@ export function ProfileScreen() {
               <div className="stk" style={{ background: "var(--acid)", padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <IStar s={18}/>
-                  <p style={{ fontWeight: 800, fontSize: 13 }}>Impacto en la comunidad</p>
+                  <p style={{ fontWeight: 800, fontSize: 13 }}>Tu huella en la comunidad</p>
                 </div>
                 <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.65)", marginTop: 6 }}>
-                  Has inspirado a {profile.totalInspires} artistas. ¡Sigue así!
+                  Has inspirado a {profile.totalInspires} artistas. Eso ya es algo.
                 </p>
               </div>
             </div>

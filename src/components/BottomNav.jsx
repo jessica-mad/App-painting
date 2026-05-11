@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { id: "feed",    icon: IFeed,     label: "Feed" },
   { id: "random",  icon: IPlus,     label: "Reto",   special: true },
   { id: "saved",   icon: IBookmark, label: "Guardar" },
-  { id: "profile", icon: IUser,     label: "Perfil" },
+  { id: "profile", icon: IUser,     label: "Mi Sketchbook" },
 ];
 
 export function BottomNav({ current }) {

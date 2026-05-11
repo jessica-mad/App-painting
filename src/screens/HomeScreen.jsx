@@ -24,7 +24,7 @@ export function HomeScreen() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.45)" }}>
-                // HOLA, {(profile.displayName || profile.username || "ARTISTA").toUpperCase().split(" ")[0]}
+                // hola, {(profile.displayName || profile.username || "artista").split(" ")[0].toLowerCase()}
               </p>
               <Wordmark size={26}/>
             </div>
@@ -53,7 +53,7 @@ export function HomeScreen() {
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 800, fontSize: 14, lineHeight: 1 }}>{level.name}</p>
                 <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 4, color: "rgba(20,17,15,.6)" }}>
-                  {profile.completedChallenges} retos · racha {profile.streak} días
+                  {profile.completedChallenges} retos · {profile.streak > 0 ? `${profile.streak} días seguidos` : "racha rota"}
                 </p>
               </div>
               <span className="serif" style={{ fontSize: 30, lineHeight: 1, color: "var(--ink)" }}>0{level.id}</span>
@@ -81,8 +81,8 @@ export function HomeScreen() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO DEL DÍA</span>
-                  <h3 className="serif" style={{ fontSize: 36, lineHeight: 0.95, marginTop: 12, maxWidth: 220 }}>Genera tu reto de hoy</h3>
-                  <p className="mono" style={{ fontSize: 11, fontWeight: 600, marginTop: 8 }}>{state.rollsLeft} intentos · expira 23:59</p>
+                  <h3 className="serif" style={{ fontSize: 36, lineHeight: 0.95, marginTop: 12, maxWidth: 220 }}>La hoja en blanco ya está esperando.</h3>
+                  <p className="mono" style={{ fontSize: 11, fontWeight: 600, marginTop: 8 }}>{state.rollsLeft} intentos · se acaba a las 23:59</p>
                 </div>
                 <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <IDice s={28} sw={2.4}/>
@@ -92,7 +92,7 @@ export function HomeScreen() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>RANDOMETRO 3000™</span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13 }}>
-                  Empezar <IArrowR s={16}/>
+                  Dale al Randómetro <IArrowR s={16}/>
                 </span>
               </div>
             </div>
@@ -122,7 +122,7 @@ export function HomeScreen() {
             </div>
             <div style={{ position: "relative" }}>
               <div className="stamp" style={{ background: "var(--paper-2)" }}>TEMP · {state.activeSeason || "primavera"}</div>
-              <p className="serif" style={{ fontSize: 18, marginTop: 8, lineHeight: 1.1 }}>Variables exclusivas activas. Combina para legendarios.</p>
+              <p className="serif" style={{ fontSize: 18, marginTop: 8, lineHeight: 1.1 }}>Variables de {state.activeSeason || "primavera"} activas. Úsalas bien y puede salir algo legendario.</p>
             </div>
           </div>
         </div>

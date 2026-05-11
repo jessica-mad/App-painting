@@ -122,7 +122,7 @@ export function RandomScreen() {
             </h2>
           </div>
           <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 6 }}>
-            // ACTIVA HASTA 3 SLOTS · EL MÁS ANTIGUO SALE PRIMERO (FIFO)
+            // elige hasta 3 categorías · el primero que entra, primero que sale
           </p>
         </div>
 
@@ -256,7 +256,8 @@ export function RandomScreen() {
                     Buscando reto perfecto…
                   </>
                 ) : rollsLeft > 0 ? (
-                  <><IDice s={20} stroke="var(--acid)"/> ¡RANDOMIZAR!</>
+                  <><IDice s={20} stroke="var(--acid)"/> A ver qué sale</>
+
                 ) : (
                   "Sin intentos hoy"
                 )}
@@ -267,8 +268,8 @@ export function RandomScreen() {
           {/* Tries counter */}
           <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 14, marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p style={{ fontWeight: 800, fontSize: 13 }}>Intentos restantes</p>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>// ÚSALOS CON SABIDURÍA</p>
+              <p style={{ fontWeight: 800, fontSize: 13 }}>Intentos que te quedan</p>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>// no los desperdicies</p>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               {[0, 1, 2].map(j => (
@@ -293,12 +294,12 @@ export function RandomScreen() {
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
             }}
           >
-            Ya tengo mi obra · Continuar sin sesión →
+            Ya tengo algo hecho · seguir sin sesión →
           </button>
 
           <div className="stk-sm" style={{ background: "var(--lilac)", padding: 12, marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
             <ISpark s={20}/>
-            <p style={{ fontWeight: 700, fontSize: 11, lineHeight: 1.3 }}>Épico y Legendario tienen menor probabilidad. ¡Mezcla bien para una idea más original!</p>
+            <p style={{ fontWeight: 700, fontSize: 11, lineHeight: 1.3 }}>// cuanto más raro, más tuyo va a ser el resultado</p>
           </div>
 
         </div>

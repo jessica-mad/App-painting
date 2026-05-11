@@ -282,7 +282,7 @@ function ArtworkDetailModal({ post, onClose, react, reactions, trySaved, viewAut
         ) : (
           <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
             <span style={{ fontSize: 40, opacity: 0.4 }}>🖼</span>
-            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// SIN IMAGEN</p>
+            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// sin obra todavía</p>
             {post.prompt && <p className="serif" style={{ fontSize: 15, padding: "0 20px", textAlign: "center", lineHeight: 1.3, opacity: 0.7 }}>{post.prompt}</p>}
           </div>
         )}
@@ -492,7 +492,7 @@ function ArtCard({ post, idx, onRemove, onUpdate, triesLeft, onTryUsed, countdow
           ) : (
             <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <span style={{ fontSize: 36, opacity: 0.35 }}>🖼</span>
-              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// SIN IMAGEN</p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// sin obra todavía</p>
               {prompt && <p className="serif" style={{ fontSize: 14, padding: "0 16px", textAlign: "center", lineHeight: 1.3, opacity: 0.65 }}>{prompt}</p>}
             </div>
           )}
@@ -611,7 +611,7 @@ export function FeedScreen() {
             <div style={{ textAlign: "center", padding: "60px 24px" }}>
               <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>Sin obras aún</p>
               <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
-                {filter === "Siguiendo" ? "Sigue a otros artistas para ver sus obras aquí." : "Completa tu primer reto y sube tu obra."}
+                {filter === "Siguiendo" ? "Sigue a otros artistas para ver sus obras aquí." : "Aún no hay nada aquí. Eso tiene solución fácil."}
               </p>
             </div>
           )}

@@ -56,13 +56,13 @@ export function TimerSetupScreen() {
         >
           <IArrowL s={16}/> Volver
         </button>
-        <h2 className="serif" style={{ fontSize: 28, marginTop: 8, lineHeight: 1 }}>Prepara tu sesión</h2>
-        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// ELIGE TIEMPO Y AMBIENTE MUSICAL</p>
+        <h2 className="serif" style={{ fontSize: 28, marginTop: 8, lineHeight: 1 }}>¿Cuánto tiempo tienes?</h2>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// elige duración y lo que vas a escuchar</p>
 
         <div className="scroll" style={{ flex: 1, marginTop: 16 }}>
           {/* Duration */}
           <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <ITimer s={14}/> Duración
+            <ITimer s={14}/> Tiempo
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
             {DURATIONS.map((d) => (
@@ -87,7 +87,7 @@ export function TimerSetupScreen() {
           {!hasMusicConfigured && (
             <div className="stk-sm" style={{ background: "var(--paper-2)", border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 4 }}>
               <p style={{ fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                <IMusic s={14}/> Música ambiente <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, background: "rgba(20,17,15,.1)", padding: "2px 6px", borderRadius: 4 }}>PRÓX</span>
+                <IMusic s={14}/> Música de fondo <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, background: "rgba(20,17,15,.1)", padding: "2px 6px", borderRadius: 4 }}>PRÓX</span>
               </p>
               <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.45)", marginTop: 6 }}>
                 // CONFIGURA AUDIO EN WORDPRESS ADMIN → INKRUSH → MÚSICA
@@ -99,9 +99,9 @@ export function TimerSetupScreen() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <div>
                   <p style={{ fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <IMusic s={14}/> Música ambiente
+                    <IMusic s={14}/> Música de fondo
                   </p>
-                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 2 }}>LOOP INFINITO PARA CONCENTRARSE</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 2 }}>loop infinito · para no pensar en otra cosa</p>
                 </div>
                 <button
                   onClick={() => setMusicOn(m => !m)}
@@ -205,13 +205,13 @@ export function TimerSetupScreen() {
           className="stk"
           style={{ marginTop: 14, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
         >
-          <IPlay s={18}/> ¡Iniciar sesión creativa!
+          <IPlay s={18}/> Modo concentración. Vamos.
         </button>
         <button
           onClick={() => dispatch({ type: "SET_SCREEN", screen: "upload" })}
           style={{ marginTop: 8, height: 40, background: "transparent", border: "none", fontWeight: 700, fontSize: 12, color: "rgba(20,17,15,.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
         >
-          Empezar sin sesión →
+          Empezar sin timer →
         </button>
       </div>
     </Phone>

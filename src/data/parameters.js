@@ -316,16 +316,16 @@ export const DURATIONS = [
   { label: "10 min", seconds: 10 * 60, emoji: "⚡" },
   { label: "15 min", seconds: 15 * 60, emoji: "🎯" },
   { label: "30 min", seconds: 30 * 60, emoji: "🔥" },
-  { label: "Tiempo libre", seconds: null, emoji: "∞" },
+  { label: "Sin límite", seconds: null, emoji: "∞" },
 ];
 
 // User levels
 export const LEVELS = [
-  { id: 1, name: "Nuevo Artista", minChallenges: 0, color: "#E8E8E8", emoji: "🌱" },
-  { id: 2, name: "Artista Activo", minChallenges: 5, color: "#C8F0FF", emoji: "🎨" },
-  { id: 3, name: "Creador Constante", minChallenges: 10, color: "#EFE8FF", emoji: "⭐" },
-  { id: 4, name: "Inspirador", minChallenges: 20, color: "#FFE066", emoji: "✨" },
-  { id: 5, name: "Maestro del Reto", minChallenges: 30, color: "#FF9966", emoji: "🏆" },
+  { id: 1, name: "Nuevo Artista",    minChallenges: 0,  color: "#E8E8E8", emoji: "🌱", desc: "el primer paso" },
+  { id: 2, name: "Artista Activo",   minChallenges: 5,  color: "#C8F0FF", emoji: "🎨", desc: "ya no hay vuelta atrás" },
+  { id: 3, name: "Creador Constante",minChallenges: 10, color: "#EFE8FF", emoji: "⭐", desc: "esto ya es una rutina" },
+  { id: 4, name: "Inspirador",       minChallenges: 20, color: "#FFE066", emoji: "✨", desc: "la gente te sigue" },
+  { id: 5, name: "Maestro del Reto", minChallenges: 30, color: "#FF9966", emoji: "🏆", desc: "eso ya no te lo quita nadie" },
 ];
 
 export function getUserLevel(completedChallenges) {

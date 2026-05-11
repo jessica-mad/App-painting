@@ -18,10 +18,10 @@ const VAR_COLORS = {
 };
 
 const RARITY_INFO = {
-  [RARITY.COMUN]:      { emoji: "⚪", desc: "Conceptos accesibles — ideal para empezar", pct: "50%" },
-  [RARITY.RARO]:       { emoji: "🔵", desc: "Combinación más original e inesperada",     pct: "30%" },
-  [RARITY.EPICO]:      { emoji: "🟣", desc: "Reto complejo — requiere imaginación alta",  pct: "15%" },
-  [RARITY.LEGENDARIO]: { emoji: "🌟", desc: "Extremo — solo el 5% obtiene este reto",     pct: "5%"  },
+  [RARITY.COMUN]:      { emoji: "⚪", desc: "Lo de siempre, pero siempre funciona",      pct: "50%" },
+  [RARITY.RARO]:       { emoji: "🔵", desc: "Ya empieza a ponerse interesante",          pct: "30%" },
+  [RARITY.EPICO]:      { emoji: "🟣", desc: "Difícil. El tipo de reto que se recuerda", pct: "15%" },
+  [RARITY.LEGENDARIO]: { emoji: "🌟", desc: "Solo sale si tienes suerte. Y valor.",      pct: "5%"  },
 };
 
 const GLOW_COLORS = {
@@ -102,7 +102,7 @@ export function IdeaScreen() {
           )}
         </div>
 
-        <h2 className="serif" style={{ fontSize: 36, marginTop: 6, lineHeight: 1, padding: "0 22px", flexShrink: 0 }}>Tu idea</h2>
+        <h2 className="serif" style={{ fontSize: 36, marginTop: 6, lineHeight: 1, padding: "0 22px", flexShrink: 0 }}>Tu condena creativa de hoy</h2>
 
         {/* Scrollable content */}
         <div className="scroll" style={{ flex: 1, minHeight: 0, padding: "14px 22px 8px" }}>
@@ -143,7 +143,7 @@ export function IdeaScreen() {
               <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.18 }}/>
               <div style={{ position: "relative", padding: "20px 18px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                  <span className="tag">// TU RETO</span>
+                  <span className="tag">// el Randómetro ha hablado</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {aiPrompt && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>✦ IA</span>}
                     {aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1s infinite" }}>generando...</span>}
@@ -203,7 +203,7 @@ export function IdeaScreen() {
                 ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}><IDice s={15}/></motion.div>
                 : <IDice s={15}/>
               }
-              {rollsLeft > 0 ? "No me convence, dame otro" : "Sin intentos"}
+              {rollsLeft > 0 ? "Este no. Dame otro." : "Sin intentos"}
             </button>
             <button
               onClick={saveIdea}
@@ -221,7 +221,7 @@ export function IdeaScreen() {
             className="stk"
             style={{ height: 56, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
           >
-            <IBrush s={20}/> ¡Aceptar reto!
+            <IBrush s={20}/> Venga, lo acepto
           </button>
         </div>
 
