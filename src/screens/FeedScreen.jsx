@@ -3,13 +3,13 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { fetchArtworks, addReaction, deleteArtwork, hideArtwork, reportArtwork, IS_LOGGED_IN, WP_USER_ID, IS_ADMIN } from "../utils/api";
+import { fetchArtworks, addReaction, deleteArtwork, hideArtwork, reportArtwork, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
+import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser, IArrowL, IArrowR, IDotsV, ITrash, IEyeOff, IFlag } from "../components/Icons";
 
 const TRIES_LIMIT = 5;
 function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
 function triesLeft() { return Math.max(0, TRIES_LIMIT - parseInt(localStorage.getItem(triesKey()) || "0")); }
 function useTry()    { localStorage.setItem(triesKey(), String(TRIES_LIMIT - triesLeft() + 1)); }
-import { IHeart, IInspire, IFlame, ISpark, IBookmark, IUser, IArrowL, IArrowR, IDotsV, ITrash, IEyeOff, IFlag, IX } from "../components/Icons";
 
 const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Temporada"];
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
@@ -92,52 +92,44 @@ function DeleteConfirm({ onConfirm, onCancel }) {
 
 function PostMenu({ isOwn, hidden, onDelete, onHide, onReport, onFlag, onClose }) {
   return (
-    <div
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 150 }}
-    >
+    <>
+      {/* Overlay transparente para cerrar al tocar fuera */}
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200 }}/>
+      {/* Dropdown */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          position: "absolute", top: 48, right: 14,
+          position: "absolute", top: 44, right: 12, zIndex: 201,
           background: "var(--paper-2)", border: "2px solid var(--ink)",
-          borderRadius: 14, overflow: "hidden", minWidth: 180,
+          borderRadius: 14, overflow: "hidden", minWidth: 190,
           boxShadow: "4px 4px 0 var(--ink)",
         }}
       >
         {isOwn ? (
           <>
-            <button
-              onClick={onHide}
-              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 16px", border: "none", borderBottom: "1.5px solid rgba(20,17,15,.1)", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left" }}
-            >
-              <IEyeOff s={16}/> {hidden ? "Mostrar" : "Ocultar"}
+            <button onClick={onHide}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "13px 16px", border: "none", borderBottom: "1.5px solid rgba(20,17,15,.1)", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left" }}>
+              <IEyeOff s={16}/> {hidden ? "Mostrar obra" : "Ocultar obra"}
             </button>
-            <button
-              onClick={onDelete}
-              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 16px", border: "none", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", color: "var(--rose)", textAlign: "left" }}
-            >
-              <ITrash s={16}/> Eliminar
+            <button onClick={onDelete}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "13px 16px", border: "none", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", color: "#c0392b", textAlign: "left" }}>
+              <ITrash s={16}/> Eliminar obra
             </button>
           </>
         ) : (
           <>
-            <button
-              onClick={onFlag}
-              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 16px", border: "none", borderBottom: "1.5px solid rgba(20,17,15,.1)", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left" }}
-            >
+            <button onClick={onFlag}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "13px 16px", border: "none", borderBottom: "1.5px solid rgba(20,17,15,.1)", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left" }}>
               <IFlag s={16}/> No cumple el reto
             </button>
-            <button
-              onClick={onReport}
-              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 16px", border: "none", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", color: "var(--rose)", textAlign: "left" }}
-            >
+            <button onClick={onReport}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "13px 16px", border: "none", background: "transparent", fontWeight: 700, fontSize: 13, cursor: "pointer", color: "#c0392b", textAlign: "left" }}>
               <IFlag s={16}/> Denunciar
             </button>
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -224,17 +216,6 @@ function ArtCard({ post, idx, onRemove }) {
   return (
     <>
       {confirmDel && <DeleteConfirm onConfirm={handleDelete} onCancel={() => setConfirmDel(false)}/>}
-      {menuOpen && (
-        <PostMenu
-          isOwn={isOwn}
-          hidden={hidden}
-          onDelete={() => { setMenuOpen(false); setConfirmDel(true); }}
-          onHide={handleHide}
-          onReport={() => handleReport("denuncia")}
-          onFlag={() => handleReport("no_cumple")}
-          onClose={() => setMenuOpen(false)}
-        />
-      )}
       <div
         className="stk"
         style={{
@@ -246,6 +227,17 @@ function ArtCard({ post, idx, onRemove }) {
       >
         {/* Author row */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 8px", position: "relative" }}>
+          {menuOpen && (
+            <PostMenu
+              isOwn={isOwn}
+              hidden={hidden}
+              onDelete={() => { setMenuOpen(false); setConfirmDel(true); }}
+              onHide={handleHide}
+              onReport={() => handleReport("denuncia")}
+              onFlag={() => handleReport("no_cumple")}
+              onClose={() => setMenuOpen(false)}
+            />
+          )}
           <div
             onClick={hasAuthor ? viewAuthor : undefined}
             style={{ width: 36, height: 36, borderRadius: 999, border: "2px solid var(--ink)", background: col, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: hasAuthor ? "pointer" : "default" }}
@@ -260,15 +252,13 @@ function ArtCard({ post, idx, onRemove }) {
             <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>{tech.toUpperCase()}</p>
           </div>
           <RarityBadge rarity={rarity}/>
-          {IS_LOGGED_IN && (
-            <button
-              ref={menuRef}
-              onClick={() => setMenuOpen(o => !o)}
-              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
-            >
-              <IDotsV s={18}/>
-            </button>
-          )}
+          <button
+            ref={menuRef}
+            onClick={() => setMenuOpen(o => !o)}
+            style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid rgba(20,17,15,.15)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+          >
+            <IDotsV s={20}/>
+          </button>
         </div>
 
         {/* Tags */}

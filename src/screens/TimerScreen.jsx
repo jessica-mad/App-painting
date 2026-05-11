@@ -124,16 +124,16 @@ export function TimerScreen() {
 
   /* AI keyword rain — set variables as immediate fallback, then upgrade with AI */
   useEffect(() => {
+    const GENERIC = ["pintura", "color", "trazo", "forma", "luz", "sombra", "textura", "boceto", "paleta", "composición", "detalle", "atmósfera"];
     const vars = currentIdea?.variables?.map(v => v.value) ?? [];
+    const fallback = vars.length ? vars : GENERIC;
+
+    setKeywords(fallback);
+
     if (!vars.length) return;
-
-    // Show variables immediately so the rain starts at once
-    setKeywords(vars);
-
-    // Try to enhance with AI-generated keywords
     generateAIKeywords(vars)
       .then(data => { if (data?.keywords?.length >= 3) setKeywords(data.keywords); })
-      .catch(() => {}); // Keep fallback on error
+      .catch(() => {});
   }, [currentIdea]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Guard after all hooks */
