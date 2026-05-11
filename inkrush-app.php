@@ -19,6 +19,7 @@ define( 'INKRUSH_URL',     plugin_dir_url( __FILE__ ) );
 require_once INKRUSH_DIR . 'admin/variables.php';
 require_once INKRUSH_DIR . 'admin/users.php';
 require_once INKRUSH_DIR . 'admin/settings.php';
+require_once INKRUSH_DIR . 'admin/music.php';
 require_once INKRUSH_DIR . 'admin/api.php';
 
 /* ──────────────────────────────────────────────────────────────
@@ -121,6 +122,7 @@ add_shortcode( 'inkrush_app', function() {
         'registerUrl'      => wp_registration_url(),
         'isAdmin'          => current_user_can('manage_options'),
         'rollsUsedToday'   => $user_id ? (int) get_user_meta( $user_id, 'inkrush_daily_rolls_' . date('Y-m-d'), true ) : 0,
+        'musicSrcs'        => (object) get_option( 'inkrush_music_srcs', [] ),
     ] );
 
     return '<div id="inkrush-root" style="min-height:100vh;background:#FFFDF3;"></div>';
@@ -164,6 +166,7 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'inkrush', 'Configuración', 'Configuración', 'manage_options', 'inkrush',           'inkrush_page_settings' );
     add_submenu_page( 'inkrush', 'Variables',     'Variables',     'manage_options', 'inkrush-variables', 'inkrush_page_variables' );
     add_submenu_page( 'inkrush', 'Usuarios',      'Usuarios',      'manage_options', 'inkrush-users',     'inkrush_page_users' );
+    add_submenu_page( 'inkrush', 'Música Pomodoro', '🎵 Música',   'manage_options', 'inkrush-music',     'inkrush_page_music' );
 } );
 
 /* ──────────────────────────────────────────────────────────────
