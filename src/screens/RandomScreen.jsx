@@ -4,7 +4,7 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, PARAMETERS, pickVariables } from "../data/parameters";
-import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
+import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX } from "../components/Icons";
 
 const CAT_ICONS = {
   Emociones:  IHeart,
@@ -282,24 +282,6 @@ export function RandomScreen() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Secondary CTA: skip session */}
-          <button
-            onClick={() => dispatch({ type: "SET_SCREEN", screen: "upload" })}
-            style={{
-              width: "100%", marginTop: 10, height: 44,
-              background: "transparent", border: "2px dashed rgba(20,17,15,.28)", borderRadius: 14,
-              fontWeight: 700, fontSize: 12, color: "rgba(20,17,15,.52)",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            }}
-          >
-            Ya tengo algo hecho · seguir sin sesión →
-          </button>
-
-          <div className="stk-sm" style={{ background: "var(--lilac)", padding: 12, marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
-            <ISpark s={20}/>
-            <p style={{ fontWeight: 700, fontSize: 11, lineHeight: 1.3 }}>// cuanto más raro, más tuyo va a ser el resultado</p>
           </div>
 
         </div>

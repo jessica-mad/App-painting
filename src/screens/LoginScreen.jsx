@@ -187,16 +187,18 @@ export function LoginScreen() {
             <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.6)", marginBottom: 10, minHeight: 14, transition: "opacity .3s" }}>
               {EYEBROWS[eyebrowIdx]}
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <IBrush s={20}/>
-              </div>
-              <Wordmark size={32}/>
+            <div style={{ marginBottom: 12 }}>
+              <Wordmark size={36}/>
             </div>
             <h2 className="serif" style={{ fontSize: 26, lineHeight: 1.05, maxWidth: 260 }}>
               {HEADLINES[headlineIdx]}
             </h2>
-            <p style={{ fontWeight: 800, fontSize: 13, marginTop: 6 }}>Entra.</p>
+            <p style={{ fontWeight: 600, fontSize: 12, marginTop: 8, lineHeight: 1.5, color: "rgba(20,17,15,.7)" }}>
+              Dile adiós a la hoja en blanco, deja de planear y empieza a dibujar.
+            </p>
+            <p style={{ fontWeight: 600, fontSize: 11, marginTop: 4, lineHeight: 1.4, color: "rgba(20,17,15,.55)" }}>
+              La app para eliminar los bloqueos creativos e inspirarte con una comunidad de artistas.
+            </p>
           </div>
         </div>
 

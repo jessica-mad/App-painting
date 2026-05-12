@@ -85,7 +85,7 @@ export function IdeaScreen() {
             onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
             style={{ display: "flex", gap: 6, alignItems: "center", fontWeight: 800, fontSize: 13, background: "transparent", border: "none", cursor: "pointer" }}
           >
-            <IArrowL s={16}/> Volver
+            <IArrowL s={16}/> Volver y cambiar categorías
           </button>
 
           {/* Rarity badge — glows for Épico/Legendario */}

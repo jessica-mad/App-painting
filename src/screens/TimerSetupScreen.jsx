@@ -35,10 +35,20 @@ export function TimerSetupScreen() {
   };
 
   const selectTrack = (track) => {
+    const wasPlaying = previewId !== null;
     if (previewRef.current) { previewRef.current.pause(); }
     setPreviewId(null);
     setMusic(track);
     setMusicOn(true);
+    if (wasPlaying) {
+      const src = state.musicSrcs?.[track.id];
+      if (src && previewRef.current) {
+        previewRef.current.src = src;
+        previewRef.current.currentTime = 0;
+        previewRef.current.play().catch(() => {});
+        setPreviewId(track.id);
+      }
+    }
   };
 
   const start = () => {
@@ -114,20 +124,29 @@ export function TimerSetupScreen() {
               </div>
 
               {musicOn && (
-                <div className="stk" style={{ background: "var(--ink)", color: "#fff", padding: 12, display: "flex", alignItems: "center", gap: 10, marginBottom: 12, borderRadius: 14 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(223,255,35,.18)", border: "1.5px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <IMusic s={18} stroke="var(--acid)"/>
+                <>
+                  {previewId && (
+                    <style>{`@keyframes eq-bar{0%,100%{transform:scaleY(1)}50%{transform:scaleY(0.3)}}`}</style>
+                  )}
+                  <div className="stk" style={{ background: "var(--ink)", color: "#fff", padding: 12, display: "flex", alignItems: "center", gap: 10, marginBottom: 12, borderRadius: 14 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(223,255,35,.18)", border: "1.5px solid var(--acid)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <IMusic s={18} stroke="var(--acid)"/>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 800, fontSize: 13 }}>{music.title}</p>
+                      <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.5)" }}>{music.mood?.toUpperCase()}</p>
+                    </div>
+                    <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 14 }}>
+                      {[6, 10, 4, 12, 8].map((h, j) => (
+                        <span key={j} style={{
+                          width: 2, height: h, background: "var(--acid)", borderRadius: 2,
+                          display: "inline-block", transformOrigin: "bottom",
+                          ...(previewId ? { animation: `eq-bar ${0.45 + j * 0.09}s ease-in-out ${j * 0.06}s infinite` } : {}),
+                        }}/>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 800, fontSize: 13 }}>{music.title}</p>
-                    <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,.5)" }}>{music.mood?.toUpperCase()}</p>
-                  </div>
-                  <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 14 }}>
-                    {[6, 10, 4, 12, 8].map((h, j) => (
-                      <span key={j} style={{ width: 2, height: h, background: "var(--acid)", borderRadius: 2 }}/>
-                    ))}
-                  </div>
-                </div>
+                </>
               )}
 
               <div ref={musicScrollRef} className="scroll" style={{ display: "flex", gap: 10, paddingBottom: 4 }}>
@@ -149,7 +168,7 @@ export function TimerSetupScreen() {
                         position: "relative",
                       }}
                     >
-                      <IMusic s={18}/>
+                      <IMusic s={18} style={{ marginTop: 2 }}/>
                       <div>
                         <p style={{ fontWeight: 800, fontSize: 11, lineHeight: 1.1 }}>{track.title}</p>
                         <p className="mono" style={{ fontSize: 8, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 2 }}>{track.mood?.toUpperCase()}</p>
@@ -158,7 +177,7 @@ export function TimerSetupScreen() {
                         onClick={(e) => { e.stopPropagation(); togglePreview(track); }}
                         title={isPreviewing ? "Detener" : "Preescuchar"}
                         style={{
-                          position: "absolute", bottom: 8, right: 8,
+                          position: "absolute", top: 8, right: 8,
                           width: 26, height: 26, borderRadius: 999, border: "2px solid var(--ink)",
                           background: isPreviewing ? "var(--ink)" : (isSelected ? "rgba(20,17,15,.15)" : "var(--paper-2)"),
                           display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",

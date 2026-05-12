@@ -3,7 +3,7 @@ import { BottomNav } from "../components/BottomNav";
 import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
 import { getUserLevel } from "../data/parameters";
-import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR, ITimer, IFeed, IBookmark } from "../components/Icons";
+import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR } from "../components/Icons";
 
 export function HomeScreen() {
   const { state, dispatch } = useApp();
@@ -80,29 +80,6 @@ export function HomeScreen() {
                 EMPEZAR <IArrowR s={16} stroke="var(--acid)"/>
               </button>
             </div>
-          </div>
-
-          {/* Shortcuts grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
-            {[
-              { icon: ITimer,    label: "Modo concentración", sub: "setup timer", screen: "setupTimer", bg: "var(--mint)" },
-              { icon: IFeed,     label: "Feed comunidad",     sub: "inspírate",    screen: "feed",       bg: "var(--lilac)" },
-              { icon: IBookmark, label: "Guardados",          sub: "tus retos",    screen: "saved",      bg: "var(--butter)" },
-              { icon: ISpark,    label: "Tu sketchbook",      sub: "tu perfil",    screen: "profile",    bg: "var(--rose)" },
-            ].map((s, i) => (
-              <button
-                key={i}
-                onClick={() => dispatch({ type: "SET_SCREEN", screen: s.screen })}
-                className="stk-sm"
-                style={{ background: s.bg, border: "2px solid var(--ink)", borderRadius: 16, padding: "14px 12px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8 }}
-              >
-                <s.icon s={20}/>
-                <div>
-                  <p style={{ fontWeight: 800, fontSize: 12, lineHeight: 1 }}>{s.label}</p>
-                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.sub}</p>
-                </div>
-              </button>
-            ))}
           </div>
 
           {/* Stats row */}
