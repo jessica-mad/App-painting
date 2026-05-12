@@ -179,10 +179,92 @@ add_action( 'admin_menu', function() {
 
 add_action( 'add_meta_boxes', function() {
     add_meta_box(
+        'inkrush_artwork_image', 'Imagen de la obra', 'inkrush_artwork_image_metabox',
+        'inkrush_artwork', 'side', 'high'
+    );
+    add_meta_box(
         'inkrush_artwork_meta', 'Datos de la obra', 'inkrush_artwork_metabox',
         'inkrush_artwork', 'normal', 'default'
     );
 } );
+
+function inkrush_artwork_image_metabox( $post ) {
+    $thumb_id  = get_post_thumbnail_id( $post->ID );
+    $thumb_url = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium' ) : '';
+    ?>
+    <div id="inkrush-image-preview" style="text-align:center;margin-bottom:10px;">
+        <?php if ( $thumb_url ) : ?>
+            <img src="<?php echo esc_url( $thumb_url ); ?>"
+                 style="max-width:100%;height:auto;border-radius:6px;border:1px solid #ddd;"
+                 alt="Imagen de la obra">
+        <?php else : ?>
+            <div style="background:#f0f0f0;border:2px dashed #ccc;border-radius:6px;padding:32px 16px;color:#aaa;font-size:13px;">
+                Sin imagen todavía
+            </div>
+        <?php endif; ?>
+    </div>
+    <div style="text-align:center;">
+        <?php if ( $thumb_id ) : ?>
+            <a href="<?php echo esc_url( get_edit_post_link( $thumb_id ) ); ?>"
+               target="_blank"
+               style="font-size:12px;color:#2271b1;">
+                Ver en la biblioteca
+            </a>
+            &nbsp;·&nbsp;
+        <?php endif; ?>
+        <a href="#"
+           id="inkrush-set-image"
+           style="font-size:12px;color:#2271b1;">
+            <?php echo $thumb_id ? 'Cambiar imagen' : 'Seleccionar imagen'; ?>
+        </a>
+        <?php if ( $thumb_id ) : ?>
+            &nbsp;·&nbsp;
+            <a href="#"
+               id="inkrush-remove-image"
+               style="font-size:12px;color:#b32d2e;">
+                Quitar
+            </a>
+        <?php endif; ?>
+    </div>
+    <input type="hidden" id="inkrush-thumbnail-id" name="_thumbnail_id" value="<?php echo esc_attr( $thumb_id ?: -1 ); ?>">
+    <script>
+    (function($){
+        var frame;
+        $('#inkrush-set-image').on('click', function(e){
+            e.preventDefault();
+            if ( frame ) { frame.open(); return; }
+            frame = wp.media({
+                title: 'Seleccionar imagen de la obra',
+                button: { text: 'Usar esta imagen' },
+                multiple: false
+            });
+            frame.on('select', function(){
+                var att = frame.state().get('selection').first().toJSON();
+                $('#inkrush-thumbnail-id').val(att.id);
+                var url = att.sizes && att.sizes.medium ? att.sizes.medium.url : att.url;
+                $('#inkrush-image-preview').html('<img src="' + url + '" style="max-width:100%;height:auto;border-radius:6px;border:1px solid #ddd;" alt="Imagen de la obra">');
+                $('#inkrush-set-image').text('Cambiar imagen');
+                if ( !$('#inkrush-remove-image').length ) {
+                    $('#inkrush-set-image').after(' &nbsp;·&nbsp; <a href="#" id="inkrush-remove-image" style="font-size:12px;color:#b32d2e;">Quitar</a>');
+                    $('#inkrush-remove-image').on('click', removeImage);
+                }
+            });
+            frame.open();
+        });
+
+        function removeImage(e){
+            e.preventDefault();
+            $('#inkrush-thumbnail-id').val(-1);
+            $('#inkrush-image-preview').html('<div style="background:#f0f0f0;border:2px dashed #ccc;border-radius:6px;padding:32px 16px;color:#aaa;font-size:13px;">Sin imagen todavía</div>');
+            $('#inkrush-set-image').text('Seleccionar imagen');
+            $(this).remove();
+        }
+
+        $('#inkrush-remove-image').on('click', removeImage);
+    }(jQuery));
+    </script>
+    <?php
+}
 
 function inkrush_artwork_metabox( $post ) {
     $fields = [
@@ -212,6 +294,16 @@ add_action( 'save_post_inkrush_artwork', function( $post_id ) {
     foreach ( $fields as $f ) {
         if ( isset( $_POST[ $f ] ) ) {
             update_post_meta( $post_id, $f, sanitize_text_field( $_POST[ $f ] ) );
+        }
+    }
+
+    // Sync featured image from our custom meta box
+    if ( isset( $_POST['_thumbnail_id'] ) ) {
+        $thumb_id = intval( $_POST['_thumbnail_id'] );
+        if ( $thumb_id > 0 ) {
+            set_post_thumbnail( $post_id, $thumb_id );
+        } else {
+            delete_post_thumbnail( $post_id );
         }
     }
 } );
