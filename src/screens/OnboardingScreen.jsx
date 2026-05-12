@@ -2,7 +2,12 @@ import { useState } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { TECHNIQUES } from "../data/parameters";
-import { IBrush, ICheck } from "../components/Icons";
+import { IBrush, ICheck, ITinta, IPencil, ICharcoal, IPastel, IOil, IDigital, IGouache, IMarker, IWatercolor } from "../components/Icons";
+
+const TECH_ICONS = {
+  acuarela: IWatercolor, tinta: ITinta, digital: IDigital, lapiz: IPencil,
+  oleo: IOil, manga: IBrush, pixel: IBrush, gouache: IGouache, carboncillo: ICharcoal,
+};
 
 const TECH_COLORS = {
   "acuarela": "var(--sky)", "tinta": "var(--ink)", "lapiz": "var(--paper-2)",
@@ -61,7 +66,7 @@ export function OnboardingScreen() {
                 }}
               >
                 <div style={{ width: 36, height: 36, borderRadius: 10, border: "2px solid currentColor", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <IBrush s={20} stroke={col}/>
+                  {(() => { const TechIcon = TECH_ICONS[t.id] || IBrush; return <TechIcon s={20} stroke={col}/>; })()}
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 800 }}>{t.label}</span>
                 {on && (

@@ -139,36 +139,36 @@ export function TimerSetupScreen() {
                       key={track.id}
                       onClick={() => selectTrack(track)}
                       style={{
-                        minWidth: 148, padding: 12, borderRadius: 18, flexShrink: 0,
+                        minWidth: 130, height: 88, padding: "10px 12px", borderRadius: 16, flexShrink: 0,
                         border: "2px solid var(--ink)",
                         background: isSelected ? "var(--acid)" : "var(--paper-2)",
                         boxShadow: isSelected ? "var(--shadow)" : "3px 3px 0 var(--ink)",
                         outline: isSelected ? "2px solid var(--ink)" : "none", outlineOffset: 2,
-                        cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column",
+                        cursor: "pointer", textAlign: "left",
+                        display: "flex", flexDirection: "column", justifyContent: "space-between",
+                        position: "relative",
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                        <div style={{ width: 38, height: 38, borderRadius: 10, border: "2px solid var(--ink)", background: isSelected ? "rgba(20,17,15,.1)" : "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <IMusic s={20}/>
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); togglePreview(track); }}
-                          title={isPreviewing ? "Detener" : "Preescuchar"}
-                          style={{
-                            width: 30, height: 30, borderRadius: 999, border: "2px solid var(--ink)",
-                            background: isPreviewing ? "var(--ink)" : "var(--paper-2)",
-                            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                          }}
-                        >
-                          {isPreviewing
-                            ? <IPause s={12} stroke="var(--acid)"/>
-                            : <IPlay s={12} stroke="var(--ink)"/>
-                          }
-                        </button>
+                      <IMusic s={18}/>
+                      <div>
+                        <p style={{ fontWeight: 800, fontSize: 11, lineHeight: 1.1 }}>{track.title}</p>
+                        <p className="mono" style={{ fontSize: 8, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 2 }}>{track.mood?.toUpperCase()}</p>
                       </div>
-                      <p style={{ fontWeight: 800, fontSize: 12, lineHeight: 1.1 }}>{track.title}</p>
-                      <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{track.mood?.toUpperCase()}</p>
-                      <span style={{ display: "inline-block", marginTop: 8, background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 9, fontWeight: 800, fontFamily: "JetBrains Mono" }}>∞ LOOP</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); togglePreview(track); }}
+                        title={isPreviewing ? "Detener" : "Preescuchar"}
+                        style={{
+                          position: "absolute", bottom: 8, right: 8,
+                          width: 26, height: 26, borderRadius: 999, border: "2px solid var(--ink)",
+                          background: isPreviewing ? "var(--ink)" : (isSelected ? "rgba(20,17,15,.15)" : "var(--paper-2)"),
+                          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                        }}
+                      >
+                        {isPreviewing
+                          ? <IPause s={11} stroke={isPreviewing ? "var(--acid)" : "var(--ink)"}/>
+                          : <IPlay s={11} stroke="var(--ink)"/>
+                        }
+                      </button>
                     </div>
                   );
                 })}

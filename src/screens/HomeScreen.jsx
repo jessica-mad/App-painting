@@ -3,7 +3,7 @@ import { BottomNav } from "../components/BottomNav";
 import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
 import { getUserLevel } from "../data/parameters";
-import { IUser, IBrush, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR } from "../components/Icons";
+import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR, ITimer, IFeed, IBookmark } from "../components/Icons";
 
 export function HomeScreen() {
   const { state, dispatch } = useApp();
@@ -14,10 +14,6 @@ export function HomeScreen() {
   return (
     <Phone>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
-        {/* deco */}
-        <svg style={{ position: "absolute", top: 80, right: -20, opacity: 0.06, pointerEvents: "none" }} width="120" height="120" viewBox="0 0 24 24">
-          <path d="M12 4l2.4 5.4 5.6.5-4.2 3.8 1.2 5.6L12 16l-5 3.3 1.2-5.6L4 9.9l5.6-.5z" fill="var(--ink)"/>
-        </svg>
 
         {/* Header */}
         <div style={{ padding: "8px 22px 10px" }}>
@@ -43,73 +39,84 @@ export function HomeScreen() {
         </div>
 
         <div className="scroll" style={{ flex: 1, padding: "4px 22px 90px" }}>
-          {/* Level ticket */}
-          <div className="stk" style={{ background: "var(--mint)", padding: 14, marginBottom: 14, position: "relative", overflow: "hidden", borderRadius: 18 }}>
-            <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.12 }}/>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative" }}>
-              <div style={{ width: 46, height: 46, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <IBrush s={24}/>
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 800, fontSize: 14, lineHeight: 1 }}>{level.name}</p>
-                <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 4, color: "rgba(20,17,15,.6)" }}>
-                  {profile.completedChallenges} retos · {profile.streak > 0 ? `${profile.streak} días seguidos` : "racha rota"}
-                </p>
-              </div>
-              <span className="serif" style={{ fontSize: 30, lineHeight: 1, color: "var(--ink)" }}>0{level.id}</span>
+
+          {/* Progress strip — informational, dashed border */}
+          <div style={{ border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{level.name}</p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 3 }}>
+                {profile.completedChallenges} retos · {profile.streak > 0 ? `${profile.streak} días seguidos` : "racha rota"}
+              </p>
             </div>
-            <div style={{ marginTop: 12, position: "relative" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span className="mono" style={{ fontSize: 9, fontWeight: 700 }}>NIVEL 0{level.id}</span>
-                <span className="mono" style={{ fontSize: 9, fontWeight: 700 }}>NIVEL 0{Math.min(5, level.id + 1)}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 80, height: 6, borderRadius: 999, background: "rgba(20,17,15,.1)", overflow: "hidden" }}>
+                <div style={{ width: `${pct}%`, height: "100%", background: "var(--ink)", borderRadius: 999 }}/>
               </div>
-              <div style={{ height: 8, borderRadius: 999, border: "1.5px solid var(--ink)", background: "rgba(255,255,255,.6)", overflow: "hidden", position: "relative" }}>
-                <div style={{ width: `${pct}%`, height: "100%", background: "var(--ink)" }}/>
-                <div style={{ position: "absolute", left: `${Math.max(0, pct - 2)}%`, top: -4, width: 14, height: 14, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)" }}/>
-              </div>
+              <span className="serif" style={{ fontSize: 20, lineHeight: 1, color: "var(--ink)", opacity: 0.4 }}>0{level.id}</span>
             </div>
           </div>
 
-          {/* Big CTA ticket */}
-          <button
-            onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
+          {/* Big CTA */}
+          <div
             className="stk"
-            style={{ width: "100%", background: "var(--acid)", padding: 0, marginBottom: 14, borderRadius: 22, overflow: "hidden", position: "relative", boxShadow: "var(--shadow-lg)", cursor: "pointer", textAlign: "left" }}
+            style={{ background: "var(--acid)", marginBottom: 14, borderRadius: 22, overflow: "hidden", position: "relative", boxShadow: "var(--shadow-lg)" }}
           >
             <div className="stripes-y" style={{ position: "absolute", inset: 0 }}/>
-            <div style={{ position: "relative", padding: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ position: "relative", padding: "20px 20px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
                 <div>
                   <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO DEL DÍA</span>
-                  <h3 className="serif" style={{ fontSize: 36, lineHeight: 0.95, marginTop: 12, maxWidth: 220 }}>La hoja en blanco ya está esperando.</h3>
-                  <p className="mono" style={{ fontSize: 11, fontWeight: 600, marginTop: 8 }}>{state.rollsLeft} intentos · se acaba a las 23:59</p>
+                  <h3 className="serif" style={{ fontSize: 32, lineHeight: 0.95, marginTop: 10, maxWidth: 210 }}>La hoja en blanco ya está esperando.</h3>
+                  <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{state.rollsLeft} intentos · se acaba a las 23:59</p>
                 </div>
-                <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <IDice s={28} sw={2.4}/>
+                <div style={{ width: 50, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <IDice s={26} sw={2.4}/>
                 </div>
               </div>
-              <div className="perforated" style={{ margin: "16px 0 12px" }}/>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>RANDOMETRO 3000™</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13 }}>
-                  Dale al Randómetro <IArrowR s={16}/>
-                </span>
-              </div>
+              <button
+                onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
+                style={{ width: "100%", height: 48, background: "var(--ink)", color: "var(--acid)", border: "none", borderRadius: 14, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+              >
+                EMPEZAR <IArrowR s={16} stroke="var(--acid)"/>
+              </button>
             </div>
-          </button>
+          </div>
+
+          {/* Shortcuts grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
+            {[
+              { icon: ITimer,    label: "Modo concentración", sub: "setup timer", screen: "setupTimer", bg: "var(--mint)" },
+              { icon: IFeed,     label: "Feed comunidad",     sub: "inspírate",    screen: "feed",       bg: "var(--lilac)" },
+              { icon: IBookmark, label: "Guardados",          sub: "tus retos",    screen: "saved",      bg: "var(--butter)" },
+              { icon: ISpark,    label: "Tu sketchbook",      sub: "tu perfil",    screen: "profile",    bg: "var(--rose)" },
+            ].map((s, i) => (
+              <button
+                key={i}
+                onClick={() => dispatch({ type: "SET_SCREEN", screen: s.screen })}
+                className="stk-sm"
+                style={{ background: s.bg, border: "2px solid var(--ink)", borderRadius: 16, padding: "14px 12px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8 }}
+              >
+                <s.icon s={20}/>
+                <div>
+                  <p style={{ fontWeight: 800, fontSize: 12, lineHeight: 1 }}>{s.label}</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.sub}</p>
+                </div>
+              </button>
+            ))}
+          </div>
 
           {/* Stats row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
             {[
-              { Ico: IHeart,   v: profile.totalLikes,    l: "Likes",       c: "var(--rose)" },
-              { Ico: IInspire, v: profile.totalInspires, l: "Inspiras",    c: "var(--lilac)" },
-              { Ico: IFlame,   v: profile.totalTries,    l: "Lo intentaré",c: "var(--butter)" },
+              { Ico: IHeart,   v: profile.totalLikes,    l: "Likes",        c: "var(--rose)" },
+              { Ico: IInspire, v: profile.totalInspires, l: "Inspiras",     c: "var(--lilac)" },
+              { Ico: IFlame,   v: profile.totalTries,    l: "Lo intentaré", c: "var(--butter)" },
             ].map((s, i) => (
               <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: 10, textAlign: "center" }}>
-                <div style={{ width: 30, height: 30, margin: "0 auto", borderRadius: 8, background: s.c, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <s.Ico s={16}/>
+                <div style={{ width: 28, height: 28, margin: "0 auto", borderRadius: 8, background: s.c, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <s.Ico s={14}/>
                 </div>
-                <div className="serif" style={{ fontSize: 22, lineHeight: 1, marginTop: 6 }}>{s.v}</div>
+                <div className="serif" style={{ fontSize: 20, lineHeight: 1, marginTop: 6 }}>{s.v}</div>
                 <div className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.l.toUpperCase()}</div>
               </div>
             ))}
@@ -122,7 +129,7 @@ export function HomeScreen() {
             </div>
             <div style={{ position: "relative" }}>
               <div className="stamp" style={{ background: "var(--paper-2)" }}>TEMP · {state.activeSeason || "primavera"}</div>
-              <p className="serif" style={{ fontSize: 18, marginTop: 8, lineHeight: 1.1 }}>Variables de {state.activeSeason || "primavera"} activas. Úsalas bien y puede salir algo legendario.</p>
+              <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>Variables de {state.activeSeason || "primavera"} activas. Úsalas bien y puede salir algo legendario.</p>
             </div>
           </div>
         </div>

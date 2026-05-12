@@ -1,12 +1,12 @@
 import { useApp } from "../data/store";
-import { IHome, IFeed, IPlus, IBookmark, IUser } from "./Icons";
+import { IHome, IFeed, IPlus, IBookmark, ISketchbook } from "./Icons";
 
 const NAV_ITEMS = [
-  { id: "home",    icon: IHome,     label: "Inicio" },
-  { id: "feed",    icon: IFeed,     label: "Feed" },
-  { id: "random",  icon: IPlus,     label: "Reto",   special: true },
-  { id: "saved",   icon: IBookmark, label: "Guardar" },
-  { id: "profile", icon: IUser,     label: "Mi Sketchbook" },
+  { id: "home",    icon: IHome,       label: "Inicio" },
+  { id: "feed",    icon: IFeed,       label: "Feed" },
+  { id: "random",  icon: IPlus,       label: "Reto",   special: true },
+  { id: "saved",   icon: IBookmark,   label: "Guardar" },
+  { id: "profile", icon: ISketchbook, label: "Mi Sketchbook" },
 ];
 
 export function BottomNav({ current }) {
