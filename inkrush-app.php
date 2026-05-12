@@ -65,6 +65,26 @@ function inkrush_register_cpt() {
     ] );
 }
 
+// Columna miniatura en el listado de obras
+add_filter( 'manage_inkrush_artwork_posts_columns', function( $cols ) {
+    return array_merge( [ 'inkrush_thumb' => '' ], $cols );
+} );
+add_action( 'manage_inkrush_artwork_posts_custom_column', function( $col, $post_id ) {
+    if ( $col !== 'inkrush_thumb' ) return;
+    $url = get_the_post_thumbnail_url( $post_id, 'thumbnail' );
+    if ( $url ) {
+        echo '<img src="' . esc_url( $url ) . '" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">';
+    } else {
+        echo '<div style="width:50px;height:50px;border-radius:4px;background:#eee;"></div>';
+    }
+}, 10, 2 );
+add_action( 'admin_head', function() {
+    $screen = get_current_screen();
+    if ( $screen && $screen->post_type === 'inkrush_artwork' && $screen->base === 'edit' ) {
+        echo '<style>.column-inkrush_thumb{width:60px;}</style>';
+    }
+} );
+
 /* ──────────────────────────────────────────────────────────────
    3. ROLES
 ────────────────────────────────────────────────────────────── */
