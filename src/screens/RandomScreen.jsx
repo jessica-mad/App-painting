@@ -4,7 +4,7 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, PARAMETERS, pickVariables } from "../data/parameters";
-import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX } from "../components/Icons";
+import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
 
 const CAT_ICONS = {
   Emociones:  IHeart,
