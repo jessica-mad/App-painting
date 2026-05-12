@@ -67,10 +67,10 @@ export async function completeChallenge() {
 }
 
 /* ── Registro e identidad ── */
-export async function registerUser({ email, password, displayName }) {
+export async function registerUser({ email, password, displayName, captchaToken }) {
   return apiFetch("/register", {
     method: "POST",
-    body:   JSON.stringify({ email, password, displayName }),
+    body:   JSON.stringify({ email, password, displayName, captchaToken }),
   });
 }
 

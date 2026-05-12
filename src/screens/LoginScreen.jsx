@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
 import { IS_LOGGED_IN, registerUser, loginUser } from "../utils/api";
 import { IBrush, ISpark, IStar, ILock, IArrowL, IUser, ICheck } from "../components/Icons";
+
+const RECAPTCHA_SITE_KEY = window.InkRushConfig?.recaptchaSiteKey || "";
 
 const EYEBROWS = [
   "// Empecemos antes de que cambies de idea",
@@ -18,15 +20,18 @@ const HEADLINES = [
 
 export function LoginScreen() {
   const { dispatch } = useApp();
-  const [mode, setMode]         = useState("main"); // main | login | register
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName]         = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-  const [success, setSuccess]   = useState("");
-  const [eyebrowIdx, setEyebrowIdx] = useState(0);
+  const [mode, setMode]           = useState("main"); // main | login | register
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [confirm, setConfirm]     = useState("");
+  const [name, setName]           = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
+  const [success, setSuccess]     = useState("");
+  const [eyebrowIdx, setEyebrowIdx]   = useState(0);
   const [headlineIdx, setHeadlineIdx] = useState(0);
+  const captchaRef    = useRef(null);
+  const captchaWidget = useRef(null);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -41,20 +46,44 @@ export function LoginScreen() {
     return null;
   }
 
-  const back = () => { setMode("main"); setError(""); setSuccess(""); };
+  const back = () => { setMode("main"); setError(""); setSuccess(""); setConfirm(""); };
+
+  /* ── Montar widget reCAPTCHA cuando se entra al modo register ── */
+  useEffect(() => {
+    if (mode !== "register" || !RECAPTCHA_SITE_KEY) return;
+    const mount = () => {
+      if (!captchaRef.current || captchaWidget.current !== null) return;
+      captchaWidget.current = window.grecaptcha.render(captchaRef.current, {
+        sitekey: RECAPTCHA_SITE_KEY,
+        theme: "light",
+      });
+    };
+    if (window.grecaptcha?.render) {
+      mount();
+    } else {
+      window.inkrushRecaptchaReady = mount;
+    }
+    return () => { captchaWidget.current = null; };
+  }, [mode]);
 
   /* ── Registro con email ── */
   const handleRegister = async () => {
-    if (!name.trim())          { setError("Escribe tu nombre."); return; }
-    if (!email.includes("@")) { setError("Email inválido."); return; }
-    if (password.length < 6)  { setError("Contraseña mínimo 6 caracteres."); return; }
+    if (!name.trim())              { setError("Escribe tu nombre."); return; }
+    if (!email.includes("@"))      { setError("Email inválido."); return; }
+    if (password.length < 6)       { setError("Contraseña mínimo 6 caracteres."); return; }
+    if (password !== confirm)      { setError("Las contraseñas no coinciden."); return; }
+    const captchaToken = RECAPTCHA_SITE_KEY && captchaWidget.current !== null
+      ? window.grecaptcha.getResponse(captchaWidget.current)
+      : "";
+    if (RECAPTCHA_SITE_KEY && !captchaToken) { setError("Completa el CAPTCHA."); return; }
     setError(""); setLoading(true);
     try {
-      await registerUser({ email, password, displayName: name });
+      await registerUser({ email, password, displayName: name, captchaToken });
       setSuccess("¡Cuenta creada! Entrando…");
       setTimeout(() => window.location.reload(), 1000);
     } catch (e) {
       setError(e.message || "Error al crear la cuenta.");
+      if (RECAPTCHA_SITE_KEY && captchaWidget.current !== null) window.grecaptcha.reset(captchaWidget.current);
       setLoading(false);
     }
   };
@@ -89,9 +118,10 @@ export function LoginScreen() {
 
           <div className="scroll" style={{ flex: 1, marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
             {[
-              { label: "Tu nombre artístico", val: name,     set: setName,     type: "text",     ph: "Malva Ink",  Icon: IUser },
-              { label: "Email",               val: email,    set: setEmail,    type: "email",    ph: "tu@email.com", Icon: ILock },
-              { label: "Contraseña (mín. 6)", val: password, set: setPassword, type: "password", ph: "••••••••",   Icon: ILock },
+              { label: "Tu nombre artístico", val: name,    set: setName,     type: "text",     ph: "Malva Ink",    Icon: IUser },
+              { label: "Email",               val: email,   set: setEmail,    type: "email",    ph: "tu@email.com", Icon: ILock },
+              { label: "Contraseña (mín. 6)", val: password,set: setPassword, type: "password", ph: "••••••••",     Icon: ILock },
+              { label: "Confirmar contraseña",val: confirm, set: setConfirm,  type: "password", ph: "••••••••",     Icon: ICheck },
             ].map(({ label, val, set, type, ph, Icon }) => (
               <div key={label}>
                 <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>{label}</p>
@@ -103,6 +133,13 @@ export function LoginScreen() {
                 </div>
               </div>
             ))}
+
+            {RECAPTCHA_SITE_KEY && (
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>Verificación</p>
+                <div ref={captchaRef}/>
+              </div>
+            )}
 
             {error   && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)" }}>{error}</p>}
             {success && (

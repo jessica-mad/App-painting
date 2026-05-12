@@ -386,14 +386,35 @@ function inkrush_api_complete_challenge() {
 ────────────────────────────────────────────────────────────── */
 
 function inkrush_api_register( WP_REST_Request $req ) {
-    $email    = sanitize_email( $req->get_param('email') ?? '' );
-    $password = $req->get_param('password') ?? '';
-    $name     = sanitize_text_field( $req->get_param('displayName') ?? 'Artista' );
+    $email         = sanitize_email( $req->get_param('email') ?? '' );
+    $password      = $req->get_param('password') ?? '';
+    $name          = sanitize_text_field( $req->get_param('displayName') ?? 'Artista' );
+    $captcha_token = sanitize_text_field( $req->get_param('captchaToken') ?? '' );
 
     if ( ! is_email( $email ) )
         return new WP_Error('invalid_email', 'Email inválido.', ['status'=>400]);
     if ( strlen( $password ) < 6 )
         return new WP_Error('weak_password', 'Contraseña mínimo 6 caracteres.', ['status'=>400]);
+
+    // Verify reCAPTCHA if a secret key is configured
+    $secret = get_option( 'inkrush_recaptcha_secret_key', '' );
+    if ( $secret ) {
+        if ( empty( $captcha_token ) )
+            return new WP_Error('captcha_missing', 'Completa el CAPTCHA.', ['status'=>400]);
+        $response = wp_remote_post( 'https://www.google.com/recaptcha/api/siteverify', [
+            'body' => [
+                'secret'   => $secret,
+                'response' => $captcha_token,
+                'remoteip' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ],
+        ] );
+        if ( is_wp_error( $response ) )
+            return new WP_Error('captcha_error', 'Error verificando CAPTCHA.', ['status'=>500]);
+        $data = json_decode( wp_remote_retrieve_body( $response ), true );
+        if ( empty( $data['success'] ) )
+            return new WP_Error('captcha_failed', 'CAPTCHA inválido. Inténtalo de nuevo.', ['status'=>400]);
+    }
+
     if ( email_exists( $email ) )
         return new WP_Error('email_exists', 'Este email ya está registrado.', ['status'=>409]);
 

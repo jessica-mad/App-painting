@@ -16,6 +16,17 @@ function inkrush_page_settings() {
                 delete_option( 'inkrush_anthropic_key' );
             }
         }
+        if ( isset( $_POST['recaptcha_site_key'] ) ) {
+            update_option( 'inkrush_recaptcha_site_key', sanitize_text_field( $_POST['recaptcha_site_key'] ) );
+        }
+        if ( isset( $_POST['recaptcha_secret_key'] ) ) {
+            $sec = sanitize_text_field( $_POST['recaptcha_secret_key'] );
+            if ( $sec !== '••••••••' && $sec !== '' ) {
+                update_option( 'inkrush_recaptcha_secret_key', $sec );
+            } elseif ( $sec === '' ) {
+                delete_option( 'inkrush_recaptcha_secret_key' );
+            }
+        }
         $message = '✅ Configuración guardada.';
     }
 
@@ -84,6 +95,37 @@ function inkrush_page_settings() {
                             value="<?php echo intval( $max_params ); ?>" min="1" max="5"
                             style="width:80px;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;">
                         <p class="description">Cuántos parámetros puede combinar a la vez. Por defecto: 3.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="recaptcha_site_key">🔒 reCAPTCHA — Site Key (pública)</label></th>
+                    <td>
+                        <input type="text" name="recaptcha_site_key" id="recaptcha_site_key"
+                            value="<?php echo esc_attr( get_option( 'inkrush_recaptcha_site_key', '' ) ); ?>"
+                            placeholder="6Lc..."
+                            style="width:320px;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;font-family:monospace;">
+                        <p class="description">
+                            La Site Key de Google reCAPTCHA v2 (la checkbox "No soy un robot").
+                            Consíguela en <a href="https://www.google.com/recaptcha/admin" target="_blank">google.com/recaptcha/admin</a>.
+                            Si está vacía, el CAPTCHA no aparecerá en el registro.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="recaptcha_secret_key">🔒 reCAPTCHA — Secret Key (privada)</label></th>
+                    <td>
+                        <input type="password" name="recaptcha_secret_key" id="recaptcha_secret_key"
+                            value="<?php echo get_option( 'inkrush_recaptcha_secret_key', '' ) ? '••••••••' : ''; ?>"
+                            placeholder="6Lc..."
+                            style="width:320px;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;font-family:monospace;">
+                        <p class="description">
+                            La Secret Key de Google reCAPTCHA v2. Nunca la compartas ni la pongas en el frontend.
+                            <?php if ( get_option( 'inkrush_recaptcha_secret_key', '' ) ) : ?>
+                                <strong style="color:green;">✅ Configurada.</strong>
+                            <?php else : ?>
+                                <strong style="color:darkorange;">⚠️ No configurada — el CAPTCHA no se validará en el servidor.</strong>
+                            <?php endif; ?>
+                        </p>
                     </td>
                 </tr>
                 <tr>
