@@ -178,7 +178,7 @@ export async function useTryAPI() {
 }
 
 /* ── Config de WP ── */
-export const WP_USER_ID      = cfg.userId      ?? 0;
+export const WP_USER_ID      = parseInt(cfg.userId ?? 0);
 export const IS_LOGGED_IN    = WP_USER_ID > 0;
 export const WP_LOGIN_URL    = cfg.loginUrl    ?? "/wp-login.php";
 export const WP_LOGOUT_URL   = cfg.logoutUrl   ?? "/wp-login.php?action=logout";
