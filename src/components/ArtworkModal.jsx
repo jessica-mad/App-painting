@@ -41,33 +41,71 @@ function IDotsH({ s = 20, color = "#fff" }) {
   );
 }
 
-/* ── Image carousel ── */
-export function PostImages({ images, aspectRatio = "3/4" }) {
-  const [idx, setIdx] = useState(0);
+/* ── Image carousel — arrows + counter inside, dots rendered outside ── */
+export function PostImages({ images, aspectRatio = "3/4", slide, onSlide }) {
+  const [internal, setInternal] = useState(0);
+  const cur = slide !== undefined ? Math.min(slide, images.length - 1) : Math.min(internal, images.length - 1);
+  const go = (i) => { onSlide ? onSlide(i) : setInternal(i); };
+
   if (!images?.length) return null;
-  const cur = Math.min(idx, images.length - 1);
   return (
     <div style={{ position: "relative", width: "100%", aspectRatio, background: "var(--ink)", overflow: "hidden" }}>
       <img src={images[cur]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
       {images.length > 1 && (
         <>
-          <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={cur === 0}
+          <button onClick={() => go(Math.max(0, cur - 1))} disabled={cur === 0}
             style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === 0 ? 0.3 : 1 }}>
             <IArrowL s={13}/>
           </button>
-          <button onClick={() => setIdx(i => Math.min(images.length - 1, i + 1))} disabled={cur === images.length - 1}
+          <button onClick={() => go(Math.min(images.length - 1, cur + 1))} disabled={cur === images.length - 1}
             style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === images.length - 1 ? 0.3 : 1 }}>
             <IArrowR s={13}/>
           </button>
-          <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 4 }}>
-            {images.map((_, i) => (
-              <button key={i} onClick={() => setIdx(i)} style={{ width: i === cur ? 14 : 5, height: 5, borderRadius: 999, border: "1.5px solid var(--ink)", background: i === cur ? "var(--acid)" : "rgba(255,255,255,.6)", cursor: "pointer", padding: 0, transition: "width .15s" }}/>
-            ))}
-          </div>
-          <div style={{ position: "absolute", top: 8, right: 8, background: "var(--ink)", color: "var(--acid)", borderRadius: 999, padding: "2px 7px", fontSize: 10, fontWeight: 800 }}>
-            {cur + 1}/{images.length}
+          {/* Counter pill bottom-right */}
+          <div style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(20,17,15,.75)", color: "#fff", fontFamily: "JetBrains Mono", fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 999, border: "1.5px solid var(--ink)", zIndex: 11 }}>
+            {cur + 1} / {images.length}
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+/* ── Carousel dots (rendered below the image, outside it) ── */
+function CarouselDots({ count, current, onSelect }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, padding: "10px 0 4px" }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <button key={i} onClick={() => onSelect?.(i)}
+          style={{ all: "unset", cursor: "pointer", width: i === current ? 8 : 6, height: i === current ? 8 : 6, borderRadius: 999, background: i === current ? "var(--ink)" : "rgba(20,17,15,.25)", transition: "all .15s ease" }}/>
+      ))}
+    </div>
+  );
+}
+
+/* ── Expandable caption: username (bold) + text, 2-line clamp with más/menos ── */
+function ExpandableCaption({ username, text }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    setOverflows(ref.current.scrollHeight > ref.current.clientHeight + 2);
+  }, [text, username]);
+
+  if (!text) return null;
+
+  const linkStyle = { cursor: "pointer", textDecoration: "underline", fontWeight: 700, fontSize: 13, color: "rgba(20,17,15,.6)", background: "none", border: "none", padding: 0, fontFamily: "Space Grotesk" };
+
+  return (
+    <div style={{ padding: "0 14px 14px", fontSize: 13, lineHeight: 1.45, color: "var(--ink)", fontWeight: 500 }}>
+      <p ref={ref} style={{ margin: 0, display: expanded ? "block" : "-webkit-box", WebkitLineClamp: expanded ? "unset" : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+        <b style={{ marginRight: 4 }}>{username}</b>{text}
+        {expanded && <>{" "}<button onClick={() => setExpanded(false)} style={linkStyle}>menos</button></>}
+      </p>
+      {!expanded && overflows && (
+        <button onClick={() => setExpanded(true)} style={{ ...linkStyle, marginTop: 2, display: "block" }}>... más</button>
       )}
     </div>
   );
@@ -275,6 +313,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
   const [hidden,        setHidden]        = useState(post.hidden ?? false);
   const [deleted,       setDeleted]       = useState(false);
   const [localPrompt,   setLocalPrompt]   = useState(post.prompt ?? "");
+  const [slide,         setSlide]         = useState(0);
   const menuRef = useRef(null);
 
   const tags   = post.variables ?? post.tags ?? [];
@@ -347,7 +386,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
       {/* Image area — full bleed */}
       <div style={{ position: "relative" }}>
         {images.length > 0 ? (
-          <PostImages images={images}/>
+          <PostImages images={images} slide={slide} onSlide={setSlide}/>
         ) : (
           <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontSize: 40, opacity: 0.3 }}>🖼</span>
@@ -415,6 +454,11 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
         )}
       </div>
 
+      {/* Carousel dots — between image and reactions */}
+      {images.length > 1 && (
+        <CarouselDots count={images.length} current={slide} onSelect={setSlide}/>
+      )}
+
       {/* Reactions */}
       <div style={{ display: "flex", gap: 8, padding: 12 }}>
         {reactions.map((b, j) => {
@@ -442,6 +486,9 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
           );
         })}
       </div>
+
+      {/* Caption expandible debajo de las reacciones */}
+      <ExpandableCaption username={user} text={localPrompt}/>
 
       {/* Modals (scoped inside card so backdrop is card-sized) */}
       {confirmDel && <DeleteConfirm onConfirm={handleDelete} onCancel={() => setConfirmDel(false)}/>}
