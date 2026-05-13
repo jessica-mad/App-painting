@@ -656,7 +656,8 @@ function inkrush_api_report_artwork( WP_REST_Request $req ) {
 
     /* Guardar detalle del reporte */
     $reports = json_decode( get_post_meta( $post_id, 'inkrush_reports_detail', true ) ?: '[]', true );
-    $reports[] = [ 'uid' => $uid, 'reason' => $reason, 'date' => date('c') ];
+    $text    = sanitize_textarea_field( $req->get_param('text') ?? '' );
+    $reports[] = [ 'uid' => $uid, 'reason' => $reason, 'text' => $text, 'date' => date('c') ];
     update_post_meta( $post_id, 'inkrush_reports_detail', wp_json_encode( $reports ) );
 
     /* Auto-ocultar si ≥ 5 reportes */

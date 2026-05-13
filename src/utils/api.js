@@ -129,10 +129,10 @@ export async function hideArtwork(id) {
   return apiFetch(`/artworks/${id}/hide`, { method: "POST" });
 }
 
-export async function reportArtwork(id, reason = "") {
+export async function reportArtwork(id, reason = "", text = "") {
   return apiFetch(`/artworks/${id}/report`, {
     method: "POST",
-    body:   JSON.stringify({ reason }),
+    body:   JSON.stringify({ reason, text }),
   });
 }
 

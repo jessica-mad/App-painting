@@ -1,12 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { RarityBadge } from "./RarityBadge";
 import { useApp } from "../data/store";
-import { addReaction, useTryAPI, IS_LOGGED_IN } from "../utils/api";
-import { IHeart, IInspire, IFlame, IUser, IArrowL, IArrowR } from "./Icons";
+import { addReaction, useTryAPI, deleteArtwork, hideArtwork, reportArtwork, updateArtwork, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
+import { IHeart, IInspire, IFlame, IUser, IBrush, IEyeOff, ITrash, IFlag, IArrowL, IArrowR } from "./Icons";
 
 function decodeTag(t) {
   const raw = typeof t === "string" ? t : (t.value ?? "");
   try { return decodeURIComponent(raw); } catch { return raw; }
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const d = Math.floor(diff / 86400000);
+  if (d === 0) return "hoy";
+  if (d === 1) return "ayer";
+  if (d < 7) return `hace ${d} días`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `hace ${w} sem.`;
+  const m = Math.floor(d / 30);
+  return `hace ${m} mes${m > 1 ? "es" : ""}`;
 }
 
 function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
@@ -17,26 +30,35 @@ function markLocalTry() {
 
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
-export function PostImages({ images }) {
+/* ── Horizontal three-dot icon ── */
+function IDotsH({ s = 20, color = "#fff" }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill={color}>
+      <circle cx="5" cy="12" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="19" cy="12" r="2"/>
+    </svg>
+  );
+}
+
+/* ── Image carousel ── */
+export function PostImages({ images, aspectRatio = "3/4" }) {
   const [idx, setIdx] = useState(0);
   if (!images?.length) return null;
   const cur = Math.min(idx, images.length - 1);
-
   return (
-    <div style={{ position: "relative", width: "100%", aspectRatio: "3/4", background: "var(--ink)", overflow: "hidden" }}>
+    <div style={{ position: "relative", width: "100%", aspectRatio, background: "var(--ink)", overflow: "hidden" }}>
       <img src={images[cur]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
       {images.length > 1 && (
         <>
-          <button
-            onClick={() => setIdx(i => Math.max(0, i - 1))}
-            disabled={cur === 0}
-            style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === 0 ? 0.3 : 1 }}
-          ><IArrowL s={13}/></button>
-          <button
-            onClick={() => setIdx(i => Math.min(images.length - 1, i + 1))}
-            disabled={cur === images.length - 1}
-            style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === images.length - 1 ? 0.3 : 1 }}
-          ><IArrowR s={13}/></button>
+          <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={cur === 0}
+            style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === 0 ? 0.3 : 1 }}>
+            <IArrowL s={13}/>
+          </button>
+          <button onClick={() => setIdx(i => Math.min(images.length - 1, i + 1))} disabled={cur === images.length - 1}
+            style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === images.length - 1 ? 0.3 : 1 }}>
+            <IArrowR s={13}/>
+          </button>
           <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 4 }}>
             {images.map((_, i) => (
               <button key={i} onClick={() => setIdx(i)} style={{ width: i === cur ? 14 : 5, height: 5, borderRadius: 999, border: "1.5px solid var(--ink)", background: i === cur ? "var(--acid)" : "rgba(255,255,255,.6)", cursor: "pointer", padding: 0, transition: "width .15s" }}/>
@@ -51,11 +73,192 @@ export function PostImages({ images }) {
   );
 }
 
-/* Self-contained artwork detail bottom-sheet modal.
-   Manages its own reaction state seeded from post data.
-   triesLeft/onTryUsed are optional — omit to skip try-limit enforcement. */
-export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewAuthor }) {
+/* ── Delete confirmation modal ── */
+function DeleteConfirm({ onConfirm, onCancel }) {
+  return (
+    <div onClick={onCancel} style={{ position: "absolute", inset: 0, zIndex: 50, background: "rgba(20,17,15,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
+      <div onClick={e => e.stopPropagation()} className="stk" style={{ background: "var(--paper-2)", borderRadius: 18, padding: "18px 18px 14px", width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <span style={{ width: 34, height: 34, borderRadius: 999, background: "var(--coral)", border: "2px solid var(--ink)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, flexShrink: 0 }}>!</span>
+          <p className="serif" style={{ fontSize: 22, lineHeight: 1, margin: 0 }}>¿Eliminar post?</p>
+        </div>
+        <p style={{ fontSize: 12, lineHeight: 1.45, marginTop: 6, marginBottom: 14, color: "rgba(20,17,15,.7)", fontWeight: 600 }}>
+          Esta acción es <b>permanente</b>. Perderás los likes, inspiras y comentarios asociados.
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={onCancel} style={{ flex: 1, height: 40, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--paper-2)", fontWeight: 800, fontSize: 12, cursor: "pointer", fontFamily: "Space Grotesk" }}>
+            Cancelar
+          </button>
+          <button onClick={onConfirm} style={{ flex: 1, height: 40, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--coral)", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer", boxShadow: "3px 3px 0 var(--ink)", fontFamily: "Space Grotesk" }}>
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Report form modal ── */
+const REPORT_REASONS = [
+  "Contenido ofensivo o violento",
+  "Spam o publicidad",
+  "Copia / plagio",
+  "Acoso o discurso de odio",
+  "Otro",
+];
+
+function ReportModal({ postId, onClose }) {
+  const [reason, setReason]   = useState("");
+  const [text, setText]       = useState("");
+  const [sending, setSending] = useState(false);
+  const [done, setDone]       = useState(false);
+
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const overLimit = wordCount > 150;
+
+  const send = async () => {
+    if (!reason || sending) return;
+    setSending(true);
+    try {
+      await reportArtwork(postId, reason, text.trim());
+      setDone(true);
+      setTimeout(onClose, 1400);
+    } catch {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 50, background: "rgba(20,17,15,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
+      <div onClick={e => e.stopPropagation()} className="stk" style={{ background: "var(--paper-2)", borderRadius: 18, padding: "18px 18px 14px", width: "100%" }}>
+        {done ? (
+          <div style={{ textAlign: "center", padding: "16px 0" }}>
+            <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Denuncia enviada</p>
+            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>// gracias por ayudar a mantener la comunidad</p>
+          </div>
+        ) : (
+          <>
+            <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginBottom: 14 }}>Denunciar post</p>
+
+            <p style={{ fontWeight: 800, fontSize: 11, marginBottom: 8 }}>Motivo</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+              {REPORT_REASONS.map(r => (
+                <label key={r} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+                  <input type="radio" name="reason" value={r} checked={reason === r} onChange={() => setReason(r)}
+                    style={{ accentColor: "var(--ink)", width: 16, height: 16, cursor: "pointer" }}/>
+                  {r}
+                </label>
+              ))}
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <p style={{ fontWeight: 800, fontSize: 11 }}>Detalles <span style={{ fontWeight: 600, color: "rgba(20,17,15,.45)" }}>(opcional)</span></p>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: overLimit ? "var(--coral)" : "rgba(20,17,15,.4)" }}>{wordCount} / 150 palabras</span>
+              </div>
+              <textarea
+                value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder="Cuéntanos qué está mal con este post…"
+                style={{ width: "100%", height: 72, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", boxSizing: "border-box", color: overLimit ? "var(--coral)" : "inherit" }}
+              />
+            </div>
+
+            <button
+              onClick={send}
+              disabled={!reason || overLimit || sending}
+              style={{ width: "100%", height: 44, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--coral)", color: "#fff", fontWeight: 800, fontSize: 13, cursor: !reason || overLimit ? "not-allowed" : "pointer", opacity: !reason || overLimit || sending ? 0.55 : 1, boxShadow: "3px 3px 0 var(--ink)", fontFamily: "Space Grotesk" }}>
+              {sending ? "Enviando…" : "Enviar denuncia"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Edit modal ── */
+function EditModal({ post, onClose, onSaved }) {
+  const [prompt, setPrompt] = useState(post.prompt ?? "");
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    setSaving(true);
+    try { await updateArtwork(post.id, { prompt }); onSaved({ ...post, prompt }); } catch {}
+    setSaving(false);
+    onClose();
+  };
+  return (
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 50, background: "rgba(20,17,15,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
+      <div onClick={e => e.stopPropagation()} className="stk" style={{ background: "var(--paper-2)", borderRadius: 18, padding: "20px 18px", width: "100%" }}>
+        <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginBottom: 14 }}>Editar obra</p>
+        <label style={{ fontWeight: 800, fontSize: 11, display: "block", marginBottom: 6 }}>Descripción / reto</label>
+        <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
+          style={{ width: "100%", height: 80, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", boxSizing: "border-box", marginBottom: 14 }}/>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={onClose} style={{ flex: 1, height: 40, border: "2px solid var(--ink)", borderRadius: 12, background: "var(--paper-2)", fontWeight: 800, fontSize: 12, cursor: "pointer", fontFamily: "Space Grotesk" }}>Cancelar</button>
+          <button onClick={save} disabled={saving} style={{ flex: 1, height: 40, border: "2px solid var(--ink)", borderRadius: 12, background: "var(--acid)", fontWeight: 800, fontSize: 12, cursor: "pointer", opacity: saving ? 0.6 : 1, fontFamily: "Space Grotesk" }}>{saving ? "Guardando…" : "Guardar"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Context menu ── */
+function PostMenu({ isOwn, hidden, onEdit, onHide, onDelete, onFlag, onReport, onClose }) {
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 20 }}/>
+      <div onClick={e => e.stopPropagation()} style={{
+        position: "absolute", top: 32, right: 0, zIndex: 21,
+        width: "fit-content", background: "var(--paper-2)",
+        border: "2px solid var(--ink)", borderRadius: 14,
+        boxShadow: "4px 4px 0 var(--ink)", overflow: "hidden",
+      }}>
+        {isOwn ? (
+          <>
+            <MenuRow icon={<IBrush s={15}/>} label="Editar" onClick={onEdit}/>
+            <MenuRow icon={<IEyeOff s={15}/>} label={hidden ? "Mostrar" : "Ocultar"} onClick={onHide}/>
+            <MenuRow icon={<ITrash s={15}/>} label="Eliminar" danger onClick={onDelete} last/>
+          </>
+        ) : (
+          <>
+            <MenuRow icon={<IFlag s={15}/>} label="No cumple el reto" onClick={onFlag}/>
+            <MenuRow icon={<IFlag s={15}/>} label="Denunciar" danger onClick={onReport} last/>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+function MenuRow({ icon, label, danger, onClick, last }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 16px",
+        border: "none", borderBottom: last ? "none" : "1.5px solid rgba(20,17,15,.08)",
+        background: hover ? "rgba(20,17,15,.04)" : "transparent",
+        fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left",
+        color: danger ? "var(--coral)" : "var(--ink)", whiteSpace: "nowrap",
+        fontFamily: "Space Grotesk",
+      }}>
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+/* ── Main PostCard ──
+   Used in feed (inline) and from profile grids (inside ArtworkModal bottom-sheet).
+   isOwn, onRemove, onUpdate are optional — omit them in read-only contexts.        */
+export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, triesLeft, onTryUsed, onViewAuthor }) {
   const { dispatch } = useApp();
+  const isOwn = isOwnProp ?? (IS_LOGGED_IN && parseInt(post.author_id) === WP_USER_ID);
+
   const [likes,    setLikes]    = useState(post.likes    ?? 0);
   const [inspires, setInspires] = useState(post.inspires ?? 0);
   const [tries,    setTries]    = useState(post.tries    ?? 0);
@@ -64,13 +267,23 @@ export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewA
     inspire: post.userReacted?.inspire ?? false,
     try:     post.userReacted?.try     ?? false,
   });
-  const [trySaved, setTrySaved] = useState(false);
+  const [trySaved,      setTrySaved]      = useState(false);
+  const [menuOpen,      setMenuOpen]      = useState(false);
+  const [confirmDel,    setConfirmDel]    = useState(false);
+  const [editOpen,      setEditOpen]      = useState(false);
+  const [reportOpen,    setReportOpen]    = useState(false);
+  const [hidden,        setHidden]        = useState(post.hidden ?? false);
+  const [deleted,       setDeleted]       = useState(false);
+  const [localPrompt,   setLocalPrompt]   = useState(post.prompt ?? "");
+  const menuRef = useRef(null);
 
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const tags   = post.variables ?? post.tags ?? [];
+  const user   = post.username ?? post.user ?? "Artista";
+  const tech   = post.technique ?? "";
+  const rarity = post.rarity ?? "Común";
+  const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
+  const col    = COL_CYCLE[idx % COL_CYCLE.length];
+  const hasAuthor = !!post.author_id && !!onViewAuthor;
 
   const react = (type) => {
     const was = reacted[type];
@@ -81,7 +294,6 @@ export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewA
     if (type === "try") {
       setTries(n => was ? n - 1 : n + 1);
       if (!was && IS_LOGGED_IN) {
-        const tags = post.variables ?? post.tags ?? [];
         const variables = tags.map(t => ({ value: decodeTag(t), rarity: typeof t === "object" && t.rarity ? t.rarity : "Común" }));
         dispatch({ type: "SAVE_IDEA", idea: { variables, params: post.params ?? [] } });
         useTryAPI().catch(() => {});
@@ -94,11 +306,27 @@ export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewA
     setReacted(r => ({ ...r, [type]: !was }));
   };
 
-  const tags    = post.variables ?? post.tags ?? [];
-  const images  = post.images?.length ? post.images : (post.image ? [post.image] : []);
-  const avatarBg = col ?? COL_CYCLE[(parseInt(post.author_id) || 0) % COL_CYCLE.length];
-  const hasAuthor = !!post.author_id && !!onViewAuthor;
-  const dateStr = post.date ? new Date(post.date).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : "";
+  const handleDelete = async () => {
+    try { await deleteArtwork(post.id); setDeleted(true); onRemove?.(post.id); } catch {}
+    setConfirmDel(false);
+  };
+
+  const handleHide = async () => {
+    try {
+      const res = await hideArtwork(post.id);
+      setHidden(res?.hidden ?? !hidden);
+    } catch {}
+    setMenuOpen(false);
+  };
+
+  if (deleted) {
+    return (
+      <div className="stk" style={{ background: "var(--paper-2)", borderRadius: 18, padding: "22px 18px", textAlign: "center", marginBottom: 14 }}>
+        <p className="serif" style={{ fontSize: 22, margin: 0 }}>Post eliminado</p>
+        <p className="mono" style={{ fontSize: 10, marginTop: 6, opacity: 0.5 }}>// removido permanentemente</p>
+      </div>
+    );
+  }
 
   const reactions = [
     { Ico: IHeart,   count: likes,    type: "like",    bg: "var(--rose)",   active: reacted.like },
@@ -107,93 +335,156 @@ export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewA
   ];
 
   return (
-    <div
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(20,17,15,.72)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 480, maxHeight: "94vh", overflowY: "auto", background: "var(--paper-2)", borderRadius: "22px 22px 0 0", border: "2px solid var(--ink)", borderBottom: "none" }}
-      >
-        {/* Handle */}
-        <div style={{ padding: "12px 16px 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 999, background: "rgba(20,17,15,.2)", margin: "0 auto" }}/>
-        </div>
+    <div className="stk" style={{ background: "var(--paper-2)", padding: 0, borderRadius: 18, overflow: "hidden", marginBottom: 14, boxShadow: "var(--shadow-lg)", position: "relative" }}>
 
-        {/* Author row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px 10px" }}>
+      {/* Hidden band — only owner sees this */}
+      {isOwn && hidden && (
+        <div style={{ background: "var(--coral)", color: "#fff", borderBottom: "2px solid var(--ink)", padding: "5px 14px", fontFamily: "JetBrains Mono", fontWeight: 700, fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+          <IEyeOff s={12} stroke="#fff"/> Oculto · sólo tú lo ves
+        </div>
+      )}
+
+      {/* Image area — full bleed */}
+      <div style={{ position: "relative" }}>
+        {images.length > 0 ? (
+          <PostImages images={images}/>
+        ) : (
+          <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 40, opacity: 0.3 }}>🖼</span>
+          </div>
+        )}
+
+        {/* Gradient overlay — multiply dark-to-transparent */}
+        <div aria-hidden style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: "55%",
+          background: "linear-gradient(to bottom, rgba(20,17,15,.85) 0%, rgba(20,17,15,.5) 40%, rgba(20,17,15,0) 100%)",
+          mixBlendMode: "multiply", pointerEvents: "none",
+        }}/>
+
+        {/* Absolute header: avatar · user · tech/date · rarity · menu */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10, zIndex: 10 }}>
           <div
             onClick={hasAuthor ? onViewAuthor : undefined}
-            style={{ width: 38, height: 38, borderRadius: 999, border: "2px solid var(--ink)", background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: hasAuthor ? "pointer" : "default" }}
-          >
+            style={{ width: 40, height: 40, borderRadius: 999, border: "2px solid rgba(255,255,255,.5)", background: col, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: hasAuthor ? "pointer" : "default", boxShadow: "2px 2px 0 rgba(0,0,0,.25)", overflow: "hidden" }}>
             {post.avatar_url
-              ? <img src={post.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 999 }}/>
-              : <IUser s={18}/>
+              ? <img src={post.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+              : <IUser s={20} stroke="#fff"/>
             }
           </div>
-          <div style={{ flex: 1, cursor: hasAuthor ? "pointer" : "default" }} onClick={hasAuthor ? onViewAuthor : undefined}>
-            <p style={{ fontWeight: 800, fontSize: 14 }}>{post.username ?? "Artista"}</p>
-            <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)" }}>
-              {post.technique ? post.technique.toUpperCase() : ""}
-              {dateStr ? `  ·  ${dateStr}` : ""}
+
+          <div style={{ flex: 1, minWidth: 0, paddingTop: 1, cursor: hasAuthor ? "pointer" : "default" }} onClick={hasAuthor ? onViewAuthor : undefined}>
+            <p style={{ fontWeight: 800, fontSize: 13, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,.4)", margin: 0 }}>{user}</p>
+            <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,.75)", margin: "2px 0 0", letterSpacing: "0.04em" }}>
+              {[tech, timeAgo(post.date)].filter(Boolean).join(" · ").toUpperCase()}
             </p>
           </div>
-          <RarityBadge rarity={post.rarity ?? "Común"}/>
-          <button
-            onClick={onClose}
-            style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid rgba(20,17,15,.2)", background: "transparent", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-          >✕</button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 4 }}>
+            <RarityBadge rarity={rarity}/>
+            <div ref={menuRef} style={{ position: "relative" }}>
+              <button
+                onClick={e => { e.stopPropagation(); setMenuOpen(o => !o); }}
+                style={{ all: "unset", cursor: "pointer", width: 28, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <IDotsH s={20}/>
+              </button>
+              {menuOpen && (
+                <PostMenu
+                  isOwn={isOwn}
+                  hidden={hidden}
+                  onEdit={() => { setMenuOpen(false); setEditOpen(true); }}
+                  onHide={handleHide}
+                  onDelete={() => { setMenuOpen(false); setConfirmDel(true); }}
+                  onFlag={() => { setMenuOpen(false); reportArtwork(post.id, "no_cumple").catch(() => {}); }}
+                  onReport={() => { setMenuOpen(false); setReportOpen(true); }}
+                  onClose={() => setMenuOpen(false)}
+                />
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Tags */}
+        {/* Tags anchored at bottom of image */}
         {tags.length > 0 && (
-          <div style={{ display: "flex", gap: 6, padding: "0 16px 10px", flexWrap: "wrap" }}>
+          <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", flexWrap: "wrap", gap: 6, zIndex: 10 }}>
             {tags.map((t, i) => (
-              <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+              <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700, boxShadow: "2px 2px 0 var(--ink)" }}>
                 {decodeTag(t)}
               </span>
             ))}
           </div>
         )}
+      </div>
 
-        {/* Image */}
-        {images.length > 0 ? (
-          <PostImages images={images}/>
-        ) : (
-          <div style={{ width: "100%", aspectRatio: "3/4", background: "var(--lilac)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
-            <span style={{ fontSize: 40, opacity: 0.4 }}>🖼</span>
-            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// sin obra todavía</p>
-            {post.prompt && <p className="serif" style={{ fontSize: 15, padding: "0 20px", textAlign: "center", lineHeight: 1.3, opacity: 0.7 }}>{post.prompt}</p>}
-          </div>
-        )}
+      {/* Reactions */}
+      <div style={{ display: "flex", gap: 8, padding: 12 }}>
+        {reactions.map((b, j) => {
+          const isTry = b.type === "try";
+          const saved = isTry && trySaved;
+          const blocked = isTry && !reacted.try && triesLeft !== undefined && triesLeft <= 0;
+          return (
+            <button
+              key={j}
+              onClick={() => react(b.type)}
+              disabled={blocked}
+              style={{
+                flex: 1, height: 38, borderRadius: 12, border: "2px solid var(--ink)",
+                background: saved ? "var(--mint)" : b.active ? b.bg : "var(--paper-2)",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                fontWeight: 800, fontSize: 12,
+                boxShadow: b.active ? "3px 3px 0 var(--ink)" : "none",
+                cursor: blocked ? "not-allowed" : "pointer",
+                opacity: blocked ? 0.45 : 1,
+                transition: "background .2s",
+                fontFamily: "Space Grotesk",
+              }}>
+              <b.Ico s={15}/> {saved ? "Guardado" : b.count}
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Reactions */}
-        <div style={{ display: "flex", gap: 8, padding: "12px 16px 16px" }}>
-          {reactions.map((b, j) => {
-            const isTry = b.type === "try";
-            const saved = isTry && trySaved;
-            const blocked = isTry && !reacted.try && triesLeft !== undefined && triesLeft <= 0;
-            return (
-              <button
-                key={j}
-                onClick={() => react(b.type)}
-                disabled={blocked}
-                style={{
-                  flex: 1, height: 44, borderRadius: 14, border: "2px solid var(--ink)",
-                  background: saved ? "var(--mint)" : b.active ? b.bg : "var(--paper-2)",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                  fontWeight: 800, fontSize: 13,
-                  boxShadow: b.active ? "3px 3px 0 var(--ink)" : "none",
-                  cursor: blocked ? "not-allowed" : "pointer",
-                  opacity: blocked ? 0.45 : 1,
-                  transition: "background .2s",
-                }}
-              >
-                <b.Ico s={16}/> {saved ? "Guardado" : b.count}
-              </button>
-            );
-          })}
+      {/* Modals (scoped inside card so backdrop is card-sized) */}
+      {confirmDel && <DeleteConfirm onConfirm={handleDelete} onCancel={() => setConfirmDel(false)}/>}
+      {editOpen && (
+        <EditModal
+          post={{ ...post, prompt: localPrompt }}
+          onClose={() => setEditOpen(false)}
+          onSaved={updated => { setLocalPrompt(updated.prompt ?? ""); onUpdate?.(updated); }}
+        />
+      )}
+      {reportOpen && <ReportModal postId={post.id} onClose={() => setReportOpen(false)}/>}
+    </div>
+  );
+}
+
+/* ── Bottom-sheet modal wrapper (used from profile grids) ── */
+export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewAuthor }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const idx = col ? COL_CYCLE.indexOf(col) : (parseInt(post.author_id) || 0) % COL_CYCLE.length;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(20,17,15,.72)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ width: "100%", maxWidth: 480, maxHeight: "94vh", overflowY: "auto", borderRadius: "22px 22px 0 0" }}>
+        {/* Drag handle */}
+        <div style={{ padding: "12px 0 0", display: "flex", justifyContent: "center" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 999, background: "rgba(255,255,255,.4)" }}/>
         </div>
+        <PostCard
+          post={post}
+          idx={Math.max(0, idx)}
+          triesLeft={triesLeft}
+          onTryUsed={onTryUsed}
+          onViewAuthor={onViewAuthor}
+        />
       </div>
     </div>
   );
