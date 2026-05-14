@@ -3,7 +3,7 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { getUserLevel, LEVELS, TECHNIQUES } from "../data/parameters";
-import { updateProfile, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
+import { updateProfile, checkUsername, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
 import { compressImage } from "../utils/imageUtils";
 import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock } from "../components/Icons";
 import { ArtworkModal } from "../components/ArtworkModal";
@@ -39,13 +39,16 @@ export function ProfileScreen() {
   const [editBio,     setEditBio]     = useState(profile.bio ?? "");
   const [editEmail,   setEditEmail]   = useState(profile.email ?? "");
   const [editSocials, setEditSocials] = useState(profile.socials ?? { instagram: "", tiktok: "", pinterest: "" });
+  const [editHandle,  setEditHandle]  = useState(profile.handle ?? "");
+  const [handleStatus, setHandleStatus] = useState(null); // null | "checking" | "available" | "taken" | "invalid"
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarB64,   setAvatarB64]   = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
   const [saveError,   setSaveError]   = useState(null);
   const [copied,      setCopied]      = useState(false);
-  const avatarRef = useRef(null);
+  const avatarRef   = useRef(null);
+  const handleTimer = useRef(null);
 
   useEffect(() => {
     if (state.profileInitialTab) dispatch({ type: "CLEAR_PROFILE_TAB" });
@@ -82,7 +85,23 @@ export function ProfileScreen() {
     e.target.value = "";
   };
 
+  const onHandleChange = (val) => {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20);
+    setEditHandle(clean);
+    setHandleStatus(null);
+    if (handleTimer.current) clearTimeout(handleTimer.current);
+    if (clean.length < 3) { setHandleStatus(clean.length ? "invalid" : null); return; }
+    setHandleStatus("checking");
+    handleTimer.current = setTimeout(async () => {
+      try {
+        const res = await checkUsername(clean);
+        setHandleStatus(res?.available ? "available" : "taken");
+      } catch { setHandleStatus(null); }
+    }, 500);
+  };
+
   const handleSaveProfile = async () => {
+    if (handleStatus === "taken" || handleStatus === "invalid") return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -93,6 +112,7 @@ export function ProfileScreen() {
           email: editEmail,
           socials: editSocials,
           ...(avatarB64 ? { avatar: avatarB64 } : {}),
+          ...(editHandle && editHandle !== profile.handle ? { handle: editHandle } : {}),
         });
       }
       dispatch({ type: "UPDATE_PROFILE", data: {
@@ -100,6 +120,7 @@ export function ProfileScreen() {
         bio: editBio,
         email: editEmail,
         socials: editSocials,
+        handle: editHandle || profile.handle,
         ...(avatarPreview ? { avatarUrl: avatarPreview } : {}),
       }});
       setAvatarB64(null);
@@ -288,6 +309,25 @@ export function ProfileScreen() {
               <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre artístico</label>
               <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
                 style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", marginBottom: 14 }}/>
+
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre de usuario (URL)</label>
+              <div style={{ position: "relative", marginBottom: 6 }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontWeight: 800, fontSize: 14, color: "rgba(20,17,15,.45)", fontFamily: "Space Grotesk" }}>@</span>
+                <input
+                  type="text"
+                  value={editHandle}
+                  onChange={e => onHandleChange(e.target.value)}
+                  placeholder="tuhandle"
+                  style={{ width: "100%", border: `2px solid ${handleStatus === "taken" || handleStatus === "invalid" ? "var(--coral)" : handleStatus === "available" ? "var(--mint)" : "var(--ink)"}`, borderRadius: 12, padding: "10px 12px 10px 28px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", transition: "border-color .2s" }}
+                />
+              </div>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, marginBottom: 14, color: handleStatus === "taken" || handleStatus === "invalid" ? "var(--coral)" : handleStatus === "available" ? "var(--mint)" : "rgba(20,17,15,.5)" }}>
+                {handleStatus === "checking" && "// comprobando…"}
+                {handleStatus === "available" && "// ✓ disponible"}
+                {handleStatus === "taken" && "// ✗ ya en uso"}
+                {handleStatus === "invalid" && "// mínimo 3 caracteres · solo a-z, 0-9, _"}
+                {!handleStatus && `// tu url: ${window.location.origin}/${window.InkRushConfig?.profileBase ?? "artista"}/${editHandle || (profile.handle ?? "…")}`}
+              </p>
 
               <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Biografía</label>
               <textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Cuéntanos sobre ti..."

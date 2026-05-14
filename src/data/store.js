@@ -31,6 +31,7 @@ const wpUser   = wpConfig.userId ? {
 
 /* Si hay usuario WP, saltamos tutorial/login */
 function startScreen() {
+  if (wpConfig.profileUserId) return "publicProfile";
   if (!wpUser) {
     const seenIntro = localStorage.getItem("inkrush_seen_intro");
     return seenIntro ? "login" : "intro";
@@ -56,13 +57,15 @@ const initialProfile = wpConfig.userId ? {
   pomodorosCompleted:  wpConfig.pomodoros ?? 0,
   socials:             wpConfig.socials ?? { instagram:"", tiktok:"", pinterest:"" },
   shareLink:           wpConfig.shareLink ?? "",
+  handle:              wpConfig.userHandle ?? "",
 } : {
   username: "jesska_art", displayName: "Jesska", avatar: "👩‍🎨",
+  handle: "jesska_art",
   bio: "Ilustrando ideas raras ✨",
   completedChallenges: 7, streak: 4, followers: 1240, following: 89,
   totalLikes: 239, totalInspires: 158, totalTries: 73, pomodorosCompleted: 12,
   socials: { instagram: "jesska.art", tiktok: "jesska_art", pinterest: "" },
-  shareLink: "inkrush.app/u/jesska_art",
+  shareLink: "inkrush.app/artista/jesska_art",
 };
 
 export const initialState = {
@@ -80,7 +83,7 @@ export const initialState = {
   timerConfig:      null,
   activeSeason:     wpConfig.activeSeason ?? ACTIVE_SEASON,
   profile:          initialProfile,
-  viewingUserId:    null,
+  viewingUserId:    wpConfig.profileUserId || null,
   followListUserId: null,
   followListType:   "following",
   profileInitialTab: null,

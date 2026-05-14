@@ -83,6 +83,16 @@ function CarouselDots({ count, current, onSelect }) {
   );
 }
 
+/* ── Renderiza texto con #hashtags resaltados en verde ── */
+function renderWithHashtags(text) {
+  if (!text) return null;
+  return text.split(/(#\w+)/g).map((part, i) =>
+    part.startsWith("#")
+      ? <span key={i} style={{ color: "var(--mint)", fontWeight: 700 }}>{part}</span>
+      : part
+  );
+}
+
 /* ── Expandable caption: username (bold) + text, 2-line clamp with más/menos ── */
 function ExpandableCaption({ username, text }) {
   const [expanded, setExpanded] = useState(false);
@@ -101,7 +111,7 @@ function ExpandableCaption({ username, text }) {
   return (
     <div style={{ padding: "0 14px 14px", fontSize: 13, lineHeight: 1.45, color: "var(--ink)", fontWeight: 500 }}>
       <p ref={ref} style={{ margin: 0, display: expanded ? "block" : "-webkit-box", WebkitLineClamp: expanded ? "unset" : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-        <b style={{ marginRight: 4 }}>{username}</b>{text}
+        <b style={{ marginRight: 4 }}>{username}</b>{renderWithHashtags(text)}
         {expanded && <>{" "}<button onClick={() => setExpanded(false)} style={linkStyle}>menos</button></>}
       </p>
       {!expanded && overflows && (
@@ -313,6 +323,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
   const [hidden,        setHidden]        = useState(post.hidden ?? false);
   const [deleted,       setDeleted]       = useState(false);
   const [localPrompt,   setLocalPrompt]   = useState(post.prompt ?? "");
+  const caption = post.description ?? "";
   const [slide,         setSlide]         = useState(0);
   const menuRef = useRef(null);
 
@@ -488,7 +499,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
       </div>
 
       {/* Caption expandible debajo de las reacciones */}
-      <ExpandableCaption username={user} text={localPrompt}/>
+      <ExpandableCaption username={user} text={caption}/>
 
       {/* Modals (scoped inside card so backdrop is card-sized) */}
       {confirmDel && <DeleteConfirm onConfirm={handleDelete} onCancel={() => setConfirmDel(false)}/>}

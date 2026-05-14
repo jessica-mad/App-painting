@@ -46,6 +46,18 @@ register_deactivation_hook( __FILE__, function() {
 ────────────────────────────────────────────────────────────── */
 
 add_action( 'init', 'inkrush_register_cpt' );
+
+/* ── URL bonitas de perfil: /{base}/{handle} ── */
+add_action( 'init', function () {
+    $base = get_option( 'inkrush_profile_base', 'artista' );
+    if ( ! $base ) return;
+    add_rewrite_tag( '%inkrush_user%', '([^/]+)' );
+    add_rewrite_rule(
+        '^' . preg_quote( $base, '#' ) . '/([^/]+)/?$',
+        'index.php?pagename=inkrush-app&inkrush_user=$matches[1]',
+        'top'
+    );
+} );
 function inkrush_register_cpt() {
     register_post_type( 'inkrush_artwork', [
         'labels' => [
@@ -137,7 +149,16 @@ add_shortcode( 'inkrush_app', function() {
         'totalInspires'=> $user_id ? (int) get_user_meta( $user_id, 'inkrush_inspires_received', true ) : 0,
         'followers'    => $user_id ? (int) get_user_meta( $user_id, 'inkrush_followers_count', true ) : 0,
         'following'    => $user_id ? (int) get_user_meta( $user_id, 'inkrush_following_count', true ) : 0,
-        'shareLink'    => $user ? home_url( '/inkrush-app/?u=' . $user->user_login ) : '',
+        'userHandle'   => $user_id ? ( get_user_meta( $user_id, 'inkrush_handle', true ) ?: $user->user_login ) : '',
+        'profileBase'  => get_option( 'inkrush_profile_base', 'artista' ),
+        'shareLink'    => $user_id ? home_url( '/' . get_option( 'inkrush_profile_base', 'artista' ) . '/' . ( get_user_meta( $user_id, 'inkrush_handle', true ) ?: $user->user_login ) ) : '',
+        'profileUserId' => (int) get_query_var( 'inkrush_user' )
+            ? (function() {
+                $handle = sanitize_text_field( get_query_var( 'inkrush_user' ) );
+                $users  = get_users( [ 'meta_key' => 'inkrush_handle', 'meta_value' => $handle, 'number' => 1, 'fields' => 'ID' ] );
+                return ! empty( $users ) ? (int) $users[0] : 0;
+              })()
+            : 0,
         'levelConfig'  => inkrush_get_level_config(),
         'logoutUrl'        => wp_logout_url( get_permalink() ?: home_url('/inkrush-app/') ),
         'registerUrl'      => wp_registration_url(),

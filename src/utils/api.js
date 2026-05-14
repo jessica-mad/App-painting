@@ -172,6 +172,11 @@ export async function generateAIPrompt(variables) {
   });
 }
 
+/* ── Disponibilidad de handle ── */
+export async function checkUsername(username) {
+  return apiFetch(`/check-username?username=${encodeURIComponent(username)}`);
+}
+
 /* ── "Lo intentaré" daily tries ── */
 export async function useTryAPI() {
   return apiFetch('/tries/use', { method: 'POST' });

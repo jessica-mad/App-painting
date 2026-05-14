@@ -102,6 +102,13 @@ function inkrush_register_routes() {
         'permission_callback' => fn() => current_user_can('manage_options'),
     ] );
 
+    /* ── Handle / disponibilidad de nombre ── */
+    register_rest_route( 'inkrush/v1', '/check-username', [
+        'methods'             => 'GET',
+        'callback'            => 'inkrush_api_check_username',
+        'permission_callback' => '__return_true',
+    ] );
+
     /* ── Autenticación en-app ── */
     register_rest_route( 'inkrush/v1', '/auth/login', [
         'methods'             => 'POST',
@@ -245,7 +252,9 @@ function inkrush_api_list_artworks( WP_REST_Request $req ) {
             'id'          => $post->ID,
             'author_id'   => $uid,
             'prompt'      => $post->post_title,
+            'description' => $post->post_content,
             'username'    => $author_data ? $author_data->display_name : 'Artista',
+            'handle'      => $uid ? ( get_user_meta( $uid, 'inkrush_handle', true ) ?: '' ) : '',
             'avatar_url'  => $uid ? ( get_user_meta( $uid, 'inkrush_avatar_url', true ) ?: '' ) : '',
             'technique'   => get_post_meta( $post->ID, 'inkrush_technique', true ),
             'variables'   => json_decode( get_post_meta( $post->ID, 'inkrush_variables', true ) ?: '[]', true ),
@@ -418,13 +427,16 @@ function inkrush_api_register( WP_REST_Request $req ) {
     if ( email_exists( $email ) )
         return new WP_Error('email_exists', 'Este email ya está registrado.', ['status'=>409]);
 
-    $username = sanitize_user( explode('@', $email)[0] . '_' . wp_rand(100,999) );
-    $user_id  = wp_create_user( $username, $password, $email );
+    /* Generar un handle único desde el nombre artístico */
+    $handle  = inkrush_unique_handle( inkrush_slugify_handle( $name ) );
+    $wp_login = sanitize_user( explode('@', $email)[0] . '_' . wp_rand(100,999) );
+    $user_id  = wp_create_user( $wp_login, $password, $email );
     if ( is_wp_error( $user_id ) ) return $user_id;
 
     wp_update_user( ['ID' => $user_id, 'display_name' => $name] );
     ( new WP_User( $user_id ) )->set_role( 'ilustrador' );
     update_user_meta( $user_id, 'inkrush_bio', '' );
+    update_user_meta( $user_id, 'inkrush_handle', $handle );
 
     /* Login automático */
     wp_set_auth_cookie( $user_id, false );
@@ -433,7 +445,8 @@ function inkrush_api_register( WP_REST_Request $req ) {
         'success'     => true,
         'userId'      => $user_id,
         'displayName' => $name,
-        'username'    => $username,
+        'handle'      => $handle,
+        'username'    => $wp_login,
     ] );
 }
 
@@ -488,7 +501,56 @@ function inkrush_api_update_me( WP_REST_Request $req ) {
         }
     }
 
+    if ( $req->get_param('handle') !== null ) {
+        $handle = strtolower( sanitize_user( $req->get_param('handle') ) );
+        if ( ! preg_match( '/^[a-z0-9_]{3,20}$/', $handle ) )
+            return new WP_Error( 'invalid_handle', 'Handle inválido: solo a-z, 0-9, guión bajo. Mínimo 3, máximo 20.', ['status' => 400] );
+        $taken = get_users( [ 'meta_key' => 'inkrush_handle', 'meta_value' => $handle, 'number' => 1, 'fields' => 'ID', 'exclude' => [ $uid ] ] );
+        if ( ! empty( $taken ) )
+            return new WP_Error( 'handle_taken', 'Ese nombre de usuario ya está en uso.', ['status' => 409] );
+        update_user_meta( $uid, 'inkrush_handle', $handle );
+    }
+
     return rest_ensure_response( ['success' => true] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   HELPERS DE HANDLE
+────────────────────────────────────────────────────────────── */
+
+function inkrush_slugify_handle( $name ) {
+    $slug = strtolower( $name );
+    $slug = iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $slug );
+    $slug = preg_replace( '/[^a-z0-9]+/', '_', $slug );
+    $slug = trim( $slug, '_' );
+    $slug = preg_replace( '/_{2,}/', '_', $slug );
+    return substr( $slug ?: 'artista', 0, 20 );
+}
+
+function inkrush_unique_handle( $base ) {
+    $handle = $base;
+    $i      = 2;
+    while ( ! empty( get_users( [ 'meta_key' => 'inkrush_handle', 'meta_value' => $handle, 'number' => 1, 'fields' => 'ID' ] ) ) ) {
+        $handle = substr( $base, 0, 18 ) . $i++;
+    }
+    return $handle;
+}
+
+function inkrush_api_check_username( WP_REST_Request $req ) {
+    $handle  = strtolower( sanitize_user( $req->get_param('username') ?? '' ) );
+    $uid     = get_current_user_id();
+    if ( strlen( $handle ) < 3 )
+        return rest_ensure_response( [ 'available' => false, 'error' => 'Mínimo 3 caracteres' ] );
+    if ( ! preg_match( '/^[a-z0-9_]{3,20}$/', $handle ) )
+        return rest_ensure_response( [ 'available' => false, 'error' => 'Solo a-z, 0-9, guión bajo (máx. 20)' ] );
+    $taken = get_users( [
+        'meta_key'   => 'inkrush_handle',
+        'meta_value' => $handle,
+        'number'     => 1,
+        'fields'     => 'ID',
+        'exclude'    => $uid ? [ $uid ] : [],
+    ] );
+    return rest_ensure_response( [ 'available' => empty( $taken ) ] );
 }
 
 /* ──────────────────────────────────────────────────────────────
