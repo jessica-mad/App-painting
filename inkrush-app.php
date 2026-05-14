@@ -486,6 +486,56 @@ function inkrush_user_profile_fields( WP_User $user ) {
       </tr>
 
     </table>
+
+    <?php
+    /* ── Obras publicadas por este usuario ── */
+    $artworks = get_posts( [
+        'post_type'      => 'inkrush_artwork',
+        'author'         => $uid,
+        'posts_per_page' => -1,
+        'post_status'    => [ 'publish', 'private', 'draft' ],
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ] );
+    ?>
+    <h3 style="margin-top:20px">Obras publicadas (<?php echo count( $artworks ); ?>)</h3>
+    <?php if ( empty( $artworks ) ) : ?>
+        <p style="color:#666;font-size:13px">Este usuario no ha publicado obras todavía.</p>
+    <?php else : ?>
+        <table class="widefat fixed striped" style="margin-top:8px;font-size:12px">
+          <thead>
+            <tr>
+              <th style="width:50px">ID</th>
+              <th>Reto / Prompt</th>
+              <th style="width:90px">Técnica</th>
+              <th style="width:70px">Rareza</th>
+              <th style="width:60px">Likes</th>
+              <th style="width:100px">Fecha</th>
+              <th style="width:60px">Estado</th>
+              <th style="width:60px">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ( $artworks as $aw ) :
+                $technique = get_post_meta( $aw->ID, 'inkrush_technique', true ) ?: '—';
+                $rarity    = get_post_meta( $aw->ID, 'inkrush_rarity',    true ) ?: '—';
+                $likes     = (int) get_post_meta( $aw->ID, 'inkrush_likes', true );
+                $status_label = [ 'publish' => '✅ Público', 'private' => '🔒 Privado', 'draft' => '📝 Borrador' ][ $aw->post_status ] ?? $aw->post_status;
+            ?>
+            <tr>
+              <td><strong>#<?php echo $aw->ID; ?></strong></td>
+              <td style="word-break:break-word"><?php echo esc_html( $aw->post_title ?: '(sin título)' ); ?></td>
+              <td><?php echo esc_html( $technique ); ?></td>
+              <td><?php echo esc_html( $rarity ); ?></td>
+              <td><?php echo $likes; ?></td>
+              <td><?php echo get_the_date( 'd/m/Y', $aw ); ?></td>
+              <td><?php echo $status_label; ?></td>
+              <td><a href="<?php echo get_edit_post_link( $aw->ID ); ?>">Editar</a></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+    <?php endif; ?>
     <?php
 }
 add_action( 'show_user_profile', 'inkrush_user_profile_fields' );
