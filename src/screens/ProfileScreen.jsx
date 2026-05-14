@@ -8,21 +8,25 @@ import { compressImage } from "../utils/imageUtils";
 import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock } from "../components/Icons";
 import { ArtworkModal } from "../components/ArtworkModal";
 
-function copyToClipboard(text, onDone) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(onDone).catch(() => legacyCopy(text, onDone));
-  } else {
-    legacyCopy(text, onDone);
+async function copyToClipboard(text, onDone) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      throw new Error("no clipboard api");
+    }
+  } catch {
+    try {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none";
+      document.body.appendChild(el);
+      el.focus(); el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    } catch {}
   }
-}
-function legacyCopy(text, onDone) {
-  const el = document.createElement("textarea");
-  el.value = text;
-  el.style.cssText = "position:fixed;opacity:0;top:0;left:0";
-  document.body.appendChild(el);
-  el.focus(); el.select();
-  try { document.execCommand("copy"); onDone?.(); } catch {}
-  document.body.removeChild(el);
+  onDone?.();
 }
 
 const TABS_OWNER  = ["Mi Sketchbook", "Editar", "Logros", "Estadísticas"];
