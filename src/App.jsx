@@ -1,7 +1,7 @@
 import { useReducer, useMemo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppContext, initialState, reducer } from "./data/store";
-import { IS_LOGGED_IN } from "./utils/api";
+import { IS_LOGGED_IN, fetchNotifications } from "./utils/api";
 import { TutorialScreen }       from "./screens/TutorialScreen";
 import { IntroScreen }          from "./screens/IntroScreen";
 import { LoginScreen }          from "./screens/LoginScreen";
@@ -17,7 +17,8 @@ import { ProfileScreen }        from "./screens/ProfileScreen";
 import { PublicProfileScreen }  from "./screens/PublicProfileScreen";
 import { FollowListScreen }     from "./screens/FollowListScreen";
 import { SavedScreen }          from "./screens/SavedScreen";
-import { BugReportScreen }      from "./screens/BugReportScreen";
+import { BugReportScreen }          from "./screens/BugReportScreen";
+import { NotificationsScreen }     from "./screens/NotificationsScreen";
 import { DeskHome, DeskFeed, DeskProfile, DeskLogin, DeskFlowWrapper } from "./screens/desktop/DesktopLayout";
 
 const MOBILE_SCREENS = {
@@ -37,6 +38,7 @@ const MOBILE_SCREENS = {
   followList:    FollowListScreen,
   saved:         SavedScreen,
   bugReport:     BugReportScreen,
+  notifications: NotificationsScreen,
 };
 
 /* On desktop, screens without a dedicated layout use DeskFlowWrapper to keep sidebar visible */
@@ -60,6 +62,7 @@ const DESKTOP_FLOW = {
   publicProfile: PublicProfileScreen,
   followList:    FollowListScreen,
   bugReport:     BugReportScreen,
+  notifications: NotificationsScreen,
 };
 
 function useIsDesktop() {
@@ -79,6 +82,16 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const ctx = useMemo(() => ({ state, dispatch }), [state]);
   const isDesktop = useIsDesktop();
+
+  /* Fetch unread notification count on mount */
+  useEffect(() => {
+    if (!IS_LOGGED_IN) return;
+    fetchNotifications()
+      .then(res => {
+        if (res?.unread > 0) dispatch({ type: "SET_UNREAD_NOTIFS", count: res.unread });
+      })
+      .catch(() => {});
+  }, []);
 
   /* Hard guard: if no WP session and trying to access a protected screen, force login */
   const guardedScreen = !IS_LOGGED_IN && !PUBLIC_SCREENS.has(state.screen) ? "login" : state.screen;

@@ -182,6 +182,15 @@ export async function useTryAPI() {
   return apiFetch('/tries/use', { method: 'POST' });
 }
 
+/* ── Notificaciones ── */
+export async function fetchNotifications() {
+  return apiFetch("/notifications");
+}
+
+export async function markNotificationsRead() {
+  return apiFetch("/notifications", { method: "POST" });
+}
+
 /* ── Comentarios ── */
 export async function fetchComments(artworkId) {
   return apiFetch(`/artworks/${artworkId}/comments`);

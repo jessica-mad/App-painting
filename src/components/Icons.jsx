@@ -64,6 +64,7 @@ export const IUndo       = (p) => <Icon {...p} d={<><path d="M3 10h11a6 6 0 0 1 
 export const IGrid       = (p) => <Icon {...p} d={<><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></>}/>;
 export const IList       = (p) => <Icon {...p} d={<><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6"  r="1.8" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.8" fill="currentColor" stroke="none"/></>}/>;
 export const IComment    = (p) => <Icon {...p} d={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>}/>;
+export const IBell       = (p) => <Icon {...p} d={<><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>}/>;
 
 /* Convenience bundle for spread usage */
 export const Icons = {

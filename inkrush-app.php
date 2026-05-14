@@ -33,7 +33,39 @@ function inkrush_activate() {
     inkrush_register_cpt();
     inkrush_create_page();
     inkrush_seed_default_variables();
+    inkrush_create_notifications_table();
     flush_rewrite_rules();
+}
+
+/* Create (or upgrade) the notifications table on init if missing */
+add_action( 'init', function () {
+    if ( (int) get_option( 'inkrush_notif_table_v', 0 ) < 1 ) {
+        inkrush_create_notifications_table();
+        update_option( 'inkrush_notif_table_v', 1 );
+    }
+} );
+
+function inkrush_create_notifications_table() {
+    global $wpdb;
+    $table   = $wpdb->prefix . 'inkrush_notifications';
+    $charset = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE {$table} (
+        id          bigint(20)   NOT NULL AUTO_INCREMENT,
+        user_id     bigint(20)   NOT NULL,
+        from_user_id bigint(20)  NOT NULL DEFAULT 0,
+        type        varchar(20)  NOT NULL,
+        post_id     bigint(20)   DEFAULT NULL,
+        excerpt     varchar(255) DEFAULT NULL,
+        is_read     tinyint(1)   NOT NULL DEFAULT 0,
+        created_at  datetime     NOT NULL,
+        PRIMARY KEY (id),
+        KEY user_read (user_id, is_read),
+        KEY created (created_at)
+    ) {$charset};";
+
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta( $sql );
 }
 
 register_deactivation_hook( __FILE__, function() {

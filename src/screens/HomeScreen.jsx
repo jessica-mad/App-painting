@@ -2,7 +2,7 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { getUserLevel } from "../data/parameters";
-import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR } from "../components/Icons";
+import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR, IBell } from "../components/Icons";
 
 function BugButton({ onClick }) {
   const r = 37;
@@ -34,7 +34,7 @@ function BugButton({ onClick }) {
 
 export function HomeScreen() {
   const { state, dispatch } = useApp();
-  const { profile } = state;
+  const { profile, unreadNotifs } = state;
   const level = getUserLevel(profile.completedChallenges);
   const pct = Math.min(100, Math.round((profile.completedChallenges % 10) / 10 * 100));
 
@@ -53,17 +53,32 @@ export function HomeScreen() {
                 Hola, {(profile.displayName || profile.username || "artista").split(" ")[0]} 🪶
               </h1>
             </div>
-            <button
-              onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile", profileTab: "Editar" })}
-              style={{ width: 46, height: 46, borderRadius: 999, border: "2px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 var(--ink)", position: "relative", cursor: "pointer" }}
-            >
-              <IUser s={22}/>
-              {profile.streak > 0 && (
-                <span style={{ position: "absolute", bottom: -4, right: -4, width: 18, height: 18, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800 }}>
-                  {profile.streak}
-                </span>
-              )}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Bell */}
+              <button
+                onClick={() => dispatch({ type: "SET_SCREEN", screen: "notifications" })}
+                style={{ width: 40, height: 40, borderRadius: 999, border: "2px solid var(--ink)", background: unreadNotifs > 0 ? "var(--butter)" : "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: unreadNotifs > 0 ? "3px 3px 0 var(--ink)" : "none", position: "relative", cursor: "pointer" }}
+              >
+                <IBell s={18}/>
+                {unreadNotifs > 0 && (
+                  <span style={{ position: "absolute", top: -5, right: -5, minWidth: 17, height: 17, borderRadius: 999, background: "var(--coral, #e55)", color: "#fff", border: "1.5px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, padding: "0 3px" }}>
+                    {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                  </span>
+                )}
+              </button>
+              {/* Avatar */}
+              <button
+                onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile", profileTab: "Editar" })}
+                style={{ width: 46, height: 46, borderRadius: 999, border: "2px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 var(--ink)", position: "relative", cursor: "pointer" }}
+              >
+                <IUser s={22}/>
+                {profile.streak > 0 && (
+                  <span style={{ position: "absolute", bottom: -4, right: -4, width: 18, height: 18, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800 }}>
+                    {profile.streak}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

@@ -98,6 +98,7 @@ export const initialState = {
   followListUserId: null,
   followListType:   "following",
   profileInitialTab: null,
+  unreadNotifs:     0,
 };
 
 export function reducer(state, action) {
@@ -207,6 +208,12 @@ export function reducer(state, action) {
 
     case "CLEAR_FOLLOW_LIST":
       return { ...state, followListUserId: null, followListType: "following", screen: action.returnScreen ?? "profile" };
+
+    case "SET_UNREAD_NOTIFS":
+      return { ...state, unreadNotifs: Math.max(0, action.count) };
+
+    case "CLEAR_UNREAD_NOTIFS":
+      return { ...state, unreadNotifs: 0 };
 
     default:
       return state;

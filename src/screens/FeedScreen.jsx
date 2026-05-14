@@ -3,7 +3,7 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { fetchArtworks, IS_LOGGED_IN, WP_USER_ID, WP_TRIES_LEFT, WP_TRIES_LIMIT } from "../utils/api";
-import { IFlame, IGrid, IList, IX } from "../components/Icons";
+import { IFlame, IGrid, IList, IX, IBell } from "../components/Icons";
 import { PostCard } from "../components/ArtworkModal";
 
 function filterToParams(f) {
@@ -135,7 +135,8 @@ function GalleryGrid({ posts, onOpen }) {
 }
 
 export function FeedScreen() {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
+  const unreadNotifs = state.unreadNotifs;
   const [filter, setFilter]         = useState("Para ti");
   const [posts, setPosts]           = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -181,6 +182,18 @@ export function FeedScreen() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>Feed</h2>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Bell */}
+              <button
+                onClick={() => dispatch({ type: "SET_SCREEN", screen: "notifications" })}
+                style={{ width: 34, height: 34, borderRadius: 999, border: "2px solid var(--ink)", background: unreadNotifs > 0 ? "var(--butter)" : "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", cursor: "pointer", flexShrink: 0 }}
+              >
+                <IBell s={15}/>
+                {unreadNotifs > 0 && (
+                  <span style={{ position: "absolute", top: -5, right: -5, minWidth: 15, height: 15, borderRadius: 999, background: "var(--coral, #e55)", color: "#fff", border: "1.5px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 800, padding: "0 2px" }}>
+                    {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                  </span>
+                )}
+              </button>
               {/* View toggle */}
               <div style={{ display: "flex", border: "2px solid var(--ink)", borderRadius: 10, overflow: "hidden" }}>
                 {[

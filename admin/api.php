@@ -168,11 +168,52 @@ function inkrush_register_routes() {
         'callback'            => 'inkrush_api_delete_comment',
         'permission_callback' => 'is_user_logged_in',
     ] );
+
+    /* ── Notificaciones ── */
+    register_rest_route( 'inkrush/v1', '/notifications', [
+        [ 'methods' => 'GET',  'callback' => 'inkrush_api_get_notifications',   'permission_callback' => 'is_user_logged_in' ],
+        [ 'methods' => 'POST', 'callback' => 'inkrush_api_mark_notifications_read', 'permission_callback' => 'is_user_logged_in' ],
+    ] );
 }
 
 /* ──────────────────────────────────────────────────────────────
    HELPERS
 ────────────────────────────────────────────────────────────── */
+
+/**
+ * Insert a notification row. Skips self-notifications and duplicates within 60s.
+ */
+function inkrush_push_notification( $user_id, $from_user_id, $type, $post_id = null, $excerpt = null ) {
+    global $wpdb;
+
+    $user_id      = (int) $user_id;
+    $from_user_id = (int) $from_user_id;
+    if ( ! $user_id || ! $from_user_id || $user_id === $from_user_id ) return;
+
+    $table = $wpdb->prefix . 'inkrush_notifications';
+
+    // De-duplicate: same actor + type + post within 60 seconds
+    $since = gmdate( 'Y-m-d H:i:s', time() - 60 );
+    $exists = $wpdb->get_var( $wpdb->prepare(
+        "SELECT id FROM {$table}
+         WHERE user_id = %d AND from_user_id = %d AND type = %s AND post_id <=> %s AND created_at > %s
+         LIMIT 1",
+        $user_id, $from_user_id, $type,
+        $post_id !== null ? (string) $post_id : null,
+        $since
+    ) );
+    if ( $exists ) return;
+
+    $wpdb->insert( $table, [
+        'user_id'      => $user_id,
+        'from_user_id' => $from_user_id,
+        'type'         => $type,
+        'post_id'      => $post_id,
+        'excerpt'      => $excerpt ? mb_substr( $excerpt, 0, 255 ) : null,
+        'is_read'      => 0,
+        'created_at'   => current_time( 'mysql', true ),
+    ], [ '%d', '%d', '%s', $post_id !== null ? '%d' : 'NULL', '%s', '%d', '%s' ] );
+}
 
 /**
  * Read artwork variables from post meta with backward compatibility.
@@ -397,6 +438,9 @@ function inkrush_api_react( WP_REST_Request $req ) {
             update_user_meta( $author, 'inkrush_inspires_received', $ai + 1 );
             inkrush_update_user_level( $author );
         }
+        // Notificar al autor de la obra
+        $post_author = (int) get_post_field( 'post_author', $post_id );
+        inkrush_push_notification( $post_author, $uid, $type, $post_id );
     }
     update_post_meta( $post_id, $meta_key, $count );
 
@@ -650,6 +694,11 @@ function inkrush_api_follow_user( WP_REST_Request $req ) {
 
     update_user_meta( $target, 'inkrush_followers_count', $followers );
     update_user_meta( $me, 'inkrush_following_count', $my_following );
+
+    // Notificar solo al seguir, no al dejar de seguir
+    if ( ! $already ) {
+        inkrush_push_notification( $target, $me, 'follow' );
+    }
 
     return rest_ensure_response( [ 'success'=>true, 'following'=>!$already, 'followers'=>$followers ] );
 }
@@ -1221,6 +1270,10 @@ function inkrush_api_post_comment( WP_REST_Request $req ) {
     $count = (int) get_post_meta( $post_id, 'inkrush_comment_count', true );
     update_post_meta( $post_id, 'inkrush_comment_count', $count + 1 );
 
+    // Notificar al autor de la obra
+    $post_author = (int) get_post_field( 'post_author', $post_id );
+    inkrush_push_notification( $post_author, $user->ID, 'comment', $post_id, $text );
+
     return rest_ensure_response( [
         'id'        => (int) $cid,
         'text'      => $text,
@@ -1230,6 +1283,65 @@ function inkrush_api_post_comment( WP_REST_Request $req ) {
         'date'      => current_time( 'mysql', true ),
         'isOwn'     => true,
     ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   NOTIFICACIONES
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_get_notifications( WP_REST_Request $req ) {
+    global $wpdb;
+    $me    = get_current_user_id();
+    $table = $wpdb->prefix . 'inkrush_notifications';
+
+    $rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT * FROM {$table} WHERE user_id = %d ORDER BY created_at DESC LIMIT 50",
+        $me
+    ), ARRAY_A );
+
+    $unread = 0;
+    $notifs = [];
+    foreach ( $rows as $r ) {
+        if ( ! (int) $r['is_read'] ) $unread++;
+
+        $from_user = get_userdata( (int) $r['from_user_id'] );
+        $handle    = get_user_meta( (int) $r['from_user_id'], 'inkrush_handle', true );
+        $from_name = $from_user ? ( $from_user->display_name ?: $from_user->user_login ) : 'Alguien';
+
+        $thumb = null;
+        if ( $r['post_id'] ) {
+            $att_ids  = json_decode( get_post_meta( (int) $r['post_id'], 'inkrush_image_ids', true ) ?: '[]', true );
+            $thumb    = ! empty( $att_ids )
+                ? wp_get_attachment_image_url( $att_ids[0], 'thumbnail' )
+                : get_the_post_thumbnail_url( (int) $r['post_id'], 'thumbnail' );
+        }
+
+        $notifs[] = [
+            'id'         => (int) $r['id'],
+            'type'       => $r['type'],
+            'is_read'    => (bool) (int) $r['is_read'],
+            'excerpt'    => $r['excerpt'],
+            'created_at' => $r['created_at'],
+            'post_id'    => $r['post_id'] ? (int) $r['post_id'] : null,
+            'thumb'      => $thumb ?: null,
+            'from' => [
+                'id'     => (int) $r['from_user_id'],
+                'name'   => $from_name,
+                'handle' => $handle ?: null,
+                'avatar' => $from_user ? get_avatar_url( $from_user->ID, ['size' => 48] ) : null,
+            ],
+        ];
+    }
+
+    return rest_ensure_response( [ 'notifications' => $notifs, 'unread' => $unread ] );
+}
+
+function inkrush_api_mark_notifications_read() {
+    global $wpdb;
+    $me    = get_current_user_id();
+    $table = $wpdb->prefix . 'inkrush_notifications';
+    $wpdb->update( $table, [ 'is_read' => 1 ], [ 'user_id' => $me ], [ '%d' ], [ '%d' ] );
+    return rest_ensure_response( [ 'success' => true ] );
 }
 
 function inkrush_api_delete_comment( WP_REST_Request $req ) {
