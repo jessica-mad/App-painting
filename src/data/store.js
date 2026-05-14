@@ -31,7 +31,7 @@ const wpUser   = wpConfig.userId ? {
 
 /* Si hay usuario WP, saltamos tutorial/login */
 function startScreen() {
-  if (wpConfig.profileUserId) return "publicProfile";
+  if (parseInt(wpConfig.profileUserId)) return "publicProfile";
   if (!wpUser) {
     const seenIntro = localStorage.getItem("inkrush_seen_intro");
     return seenIntro ? "login" : "intro";
@@ -83,7 +83,7 @@ export const initialState = {
   timerConfig:      null,
   activeSeason:     wpConfig.activeSeason ?? ACTIVE_SEASON,
   profile:          initialProfile,
-  viewingUserId:    wpConfig.profileUserId || null,
+  viewingUserId:    parseInt(wpConfig.profileUserId) || null,
   followListUserId: null,
   followListType:   "following",
   profileInitialTab: null,
