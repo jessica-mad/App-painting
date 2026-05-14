@@ -1,6 +1,5 @@
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
-import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
 import { getUserLevel } from "../data/parameters";
 import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR } from "../components/Icons";
@@ -16,13 +15,15 @@ export function HomeScreen() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
 
         {/* Header */}
-        <div style={{ padding: "8px 22px 10px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.45)" }}>
-                // hola, {(profile.displayName || profile.username || "artista").split(" ")[0].toLowerCase()}
+        <div style={{ padding: "14px 22px 12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>
+                // día {profile.streak} de racha · {level.name.toLowerCase()}
               </p>
-              <Wordmark size={26}/>
+              <h1 className="serif" style={{ fontSize: 30, lineHeight: 1, marginTop: 4 }}>
+                Hola, {(profile.displayName || profile.username || "artista").split(" ")[0]} 🪶
+              </h1>
             </div>
             <button
               onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile", profileTab: "Editar" })}
@@ -67,7 +68,7 @@ export function HomeScreen() {
                 <div>
                   <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO DEL DÍA</span>
                   <h3 className="serif" style={{ fontSize: 32, lineHeight: 0.95, marginTop: 10, maxWidth: 210 }}>La hoja en blanco ya está esperando.</h3>
-                  <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{state.rollsLeft} intentos · se acaba a las 23:59</p>
+                  <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{state.rollsLeft} intentos · recarga en 23h 41m</p>
                 </div>
                 <div style={{ width: 50, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <IDice s={26} sw={2.4}/>
