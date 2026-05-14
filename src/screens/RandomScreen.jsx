@@ -386,14 +386,14 @@ export function RandomScreen() {
 
           {/* Arcade cabinet */}
           <div style={{ position: "relative", width: "100%" }}>
-            {/* Machine body — narrowed right to leave room for lever */}
+            {/* Machine body — 22px right gap so lever ball overlaps machine edge */}
             <div style={{
               background: "var(--ink)",
               borderRadius: 26,
               boxShadow: "var(--shadow-lg)",
               padding: "16px 14px",
               position: "relative",
-              marginRight: 46,
+              marginRight: 22,
             }}>
 
               {/* Top hood: LEDs + title */}
