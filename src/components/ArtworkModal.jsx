@@ -307,7 +307,7 @@ function MenuRow({ icon, label, danger, onClick, last }) {
 }
 
 /* ── Single comment row ── */
-function CommentItem({ comment, artworkId, onDeleted }) {
+function CommentItem({ comment, artworkId, onDeleted, onViewUser }) {
   const [deleting, setDeleting] = useState(false);
   const [gone,     setGone]     = useState(false);
 
@@ -345,7 +345,10 @@ function CommentItem({ comment, artworkId, onDeleted }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-          <span style={{ fontWeight: 800, fontSize: 12 }}>{comment.author}</span>
+          <span
+            style={{ fontWeight: 800, fontSize: 12, cursor: onViewUser && comment.author_id ? "pointer" : "default", textDecoration: onViewUser && comment.author_id ? "underline" : "none" }}
+            onClick={onViewUser && comment.author_id ? () => onViewUser(comment.author_id) : undefined}
+          >{comment.author}</span>
           <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{timeAgoC(comment.date)}</span>
         </div>
         <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 500, lineHeight: 1.4, wordBreak: "break-word" }}>{comment.text}</p>
@@ -364,7 +367,7 @@ function CommentItem({ comment, artworkId, onDeleted }) {
 }
 
 /* ── Comments section (collapsible in list, expanded in modal) ── */
-function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false }) {
+function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onViewUser }) {
   const [open,     setOpen]     = useState(defaultOpen);
   const [comments, setComments] = useState([]);
   const [count,    setCount]    = useState(initialCount);
@@ -449,7 +452,7 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false }) {
           {loaded && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: comments.length > 0 ? 14 : 0 }}>
               {comments.map(c => (
-                <CommentItem key={c.id} comment={c} artworkId={artworkId} onDeleted={onDeleted}/>
+                <CommentItem key={c.id} comment={c} artworkId={artworkId} onDeleted={onDeleted} onViewUser={onViewUser}/>
               ))}
               {comments.length === 0 && (
                 <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.35)", textAlign: "center", margin: "4px 0 12px" }}>
@@ -503,6 +506,16 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false }) {
 export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, triesLeft, onTryUsed, onViewAuthor, commentsOpen = false }) {
   const { dispatch } = useApp();
   const isOwn = isOwnProp ?? (IS_LOGGED_IN && parseInt(post.author_id) === WP_USER_ID);
+
+  const viewUser = (userId) => {
+    if (!userId) return;
+    const uid = parseInt(userId);
+    if (IS_LOGGED_IN && uid === WP_USER_ID) {
+      dispatch({ type: "SET_SCREEN", screen: "profile" });
+    } else {
+      dispatch({ type: "VIEW_USER", userId: uid });
+    }
+  };
 
   const [likes,    setLikes]    = useState(post.likes    ?? 0);
   const [inspires, setInspires] = useState(post.inspires ?? 0);
@@ -711,6 +724,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
           artworkId={post.id}
           initialCount={post.comment_count ?? 0}
           defaultOpen={commentsOpen}
+          onViewUser={viewUser}
         />
       )}
 

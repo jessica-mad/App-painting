@@ -214,6 +214,23 @@ export async function deleteComment(artworkId, commentId) {
   return apiFetch(`/artworks/${artworkId}/comments/${commentId}`, { method: "DELETE" });
 }
 
+/* ── Recuperar contraseña ── */
+export async function forgotPassword(email) {
+  return apiFetch('/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+/* ── Búsqueda ── */
+export async function searchUsers(q) {
+  return apiFetch(`/search/users?q=${encodeURIComponent(q)}`);
+}
+
+export async function searchPosts(q) {
+  return apiFetch(`/search/posts?q=${encodeURIComponent(q)}`);
+}
+
 /* ── Bug reports ── */
 export async function submitBugReport({ title, description, expected, files, deviceInfo }) {
   const fd = new FormData();

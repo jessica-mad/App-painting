@@ -1,13 +1,15 @@
+import { useState, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
+import { ArtworkModal } from "../components/ArtworkModal";
 import { useApp } from "../data/store";
 import { getUserLevel } from "../data/parameters";
-import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR, IBell } from "../components/Icons";
+import { searchUsers, searchPosts, WP_TRIES_LEFT, WP_TRIES_LIMIT, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
+import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR, IBell, ISearch, IX } from "../components/Icons";
 
 function BugButton({ onClick }) {
   const r = 37;
   const cx = 44, cy = 44;
-  const circumference = 2 * Math.PI * r;
   const text = "REPORTAR ERRORES · Y BUGS · ";
   return (
     <button
@@ -32,11 +34,66 @@ function BugButton({ onClick }) {
   );
 }
 
+const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
+
 export function HomeScreen() {
   const { state, dispatch } = useApp();
   const { profile, unreadNotifs } = state;
   const level = getUserLevel(profile.completedChallenges);
   const pct = Math.min(100, Math.round((profile.completedChallenges % 10) / 10 * 100));
+
+  /* ── Search state ── */
+  const [searchQ, setSearchQ]           = useState("");
+  const [searchMode, setSearchMode]     = useState(null); // null | "posts" | "users"
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching]       = useState(false);
+  const [activeArtwork, setActiveArtwork] = useState(null);
+  const [triesLeft, setTriesLeft]       = useState(WP_TRIES_LEFT);
+  const searchTimer = useRef(null);
+
+  const handleSearchInput = (val) => {
+    setSearchQ(val);
+    clearTimeout(searchTimer.current);
+    const q = val.trim();
+    const mode = q.startsWith("#") ? "posts" : q.startsWith("@") ? "users" : null;
+    if (!mode || q.length < 3) {
+      setSearchMode(null);
+      setSearchResults([]);
+      return;
+    }
+    setSearchMode(mode);
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const term = q.slice(1);
+        if (mode === "posts") {
+          const res = await searchPosts(term);
+          setSearchResults(res?.artworks ?? []);
+        } else {
+          const res = await searchUsers(term);
+          setSearchResults(res?.users ?? []);
+        }
+      } catch {}
+      setSearching(false);
+    }, 350);
+  };
+
+  const clearSearch = () => {
+    setSearchQ("");
+    setSearchMode(null);
+    setSearchResults([]);
+    clearTimeout(searchTimer.current);
+  };
+
+  const viewUser = (userId) => {
+    if (!userId) return;
+    const uid = parseInt(userId);
+    if (IS_LOGGED_IN && uid === WP_USER_ID) {
+      dispatch({ type: "SET_SCREEN", screen: "profile" });
+    } else {
+      dispatch({ type: "VIEW_USER", userId: uid });
+    }
+  };
 
   return (
     <Phone>
@@ -84,84 +141,178 @@ export function HomeScreen() {
 
         <div className="scroll" style={{ flex: 1, padding: "4px 22px 90px" }}>
 
-          {/* Progress strip — informational, dashed border */}
-          <div style={{ border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{level.name}</p>
-              <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 3 }}>
-                {profile.completedChallenges} retos · {profile.streak > 0 ? `${profile.streak} días seguidos` : "racha rota"}
+          {/* Search bar */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, height: 44, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: "0 14px", boxShadow: searchQ ? "3px 3px 0 var(--ink)" : "none" }}>
+              <ISearch s={15}/>
+              <input
+                value={searchQ}
+                onChange={e => handleSearchInput(e.target.value)}
+                placeholder="Busca #hashtag o @usuario"
+                style={{ flex: 1, border: "none", background: "transparent", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, outline: "none", color: "var(--ink)" }}
+              />
+              {searchQ && (
+                <button onClick={clearSearch} style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", opacity: 0.5 }}>
+                  <IX s={14}/>
+                </button>
+              )}
+            </div>
+            {searchMode && (
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)", marginTop: 5 }}>
+                {searchMode === "posts" ? "// buscando posts con ese hashtag" : "// buscando cuentas por nombre o @"}
               </p>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 80, height: 6, borderRadius: 999, background: "rgba(20,17,15,.1)", overflow: "hidden" }}>
-                <div style={{ width: `${pct}%`, height: "100%", background: "var(--ink)", borderRadius: 999 }}/>
-              </div>
-              <span className="serif" style={{ fontSize: 20, lineHeight: 1, color: "var(--ink)", opacity: 0.4 }}>0{level.id}</span>
-            </div>
+            )}
           </div>
 
-          {/* Big CTA */}
-          <div
-            className="stk"
-            style={{ background: "var(--acid)", marginBottom: 14, borderRadius: 22, overflow: "hidden", position: "relative", boxShadow: "var(--shadow-lg)" }}
-          >
-            <div className="stripes-y" style={{ position: "absolute", inset: 0 }}/>
-            <div style={{ position: "relative", padding: "20px 20px 16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-                <div>
-                  <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO DEL DÍA</span>
-                  <h3 className="serif" style={{ fontSize: 32, lineHeight: 0.95, marginTop: 10, maxWidth: 210 }}>La hoja en blanco ya está esperando.</h3>
-                  <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{state.rollsLeft} intentos · recarga en 23h 41m</p>
+          {/* Search results */}
+          {searchMode && (
+            <div style={{ marginBottom: 14 }}>
+              {searching && (
+                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", marginBottom: 10 }}>
+                  // buscando...
+                </p>
+              )}
+              {!searching && searchResults.length === 0 && searchQ.length >= 3 && (
+                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.35)", textAlign: "center", padding: "20px 0" }}>
+                  // sin resultados para "{searchQ}"
+                </p>
+              )}
+              {searchMode === "users" && searchResults.map((u, i) => (
+                <div
+                  key={u.id ?? i}
+                  onClick={() => viewUser(u.id)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", marginBottom: 8, cursor: "pointer", boxShadow: "2px 2px 0 var(--ink)" }}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 999, border: "2px solid var(--ink)", background: COL_CYCLE[i % COL_CYCLE.length], overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {u.avatarUrl
+                      ? <img src={u.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+                      : <IUser s={18}/>
+                    }
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 800, fontSize: 13, margin: 0, lineHeight: 1.2 }}>{u.displayName}</p>
+                    {u.handle && <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.45)", margin: "2px 0 0" }}>@{u.handle}</p>}
+                  </div>
+                  <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.35)", flexShrink: 0 }}>
+                    {u.completedChallenges} retos
+                  </span>
                 </div>
-                <div style={{ width: 50, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <IDice s={26} sw={2.4}/>
+              ))}
+              {searchMode === "posts" && searchResults.map((post, i) => {
+                const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
+                return (
+                  <div
+                    key={post.id ?? i}
+                    onClick={() => setActiveArtwork(post)}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", marginBottom: 8, cursor: "pointer", boxShadow: "2px 2px 0 var(--ink)" }}
+                  >
+                    <div style={{ width: 50, height: 50, borderRadius: 10, border: "2px solid var(--ink)", background: images.length ? "var(--ink)" : COL_CYCLE[i % COL_CYCLE.length], overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {images.length > 0
+                        ? <img src={images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+                        : <span style={{ fontSize: 22, opacity: 0.4 }}>🖼</span>
+                      }
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 800, fontSize: 13, margin: 0, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.prompt || post.description || "Sin título"}</p>
+                      <p style={{ fontWeight: 600, fontSize: 11, color: "rgba(20,17,15,.5)", margin: "2px 0 0" }}>{post.username}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Normal content (hidden while searching) */}
+          {!searchMode && (
+            <>
+              {/* Progress strip */}
+              <div style={{ border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{level.name}</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 3 }}>
+                    {profile.completedChallenges} retos · {profile.streak > 0 ? `${profile.streak} días seguidos` : "racha rota"}
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 80, height: 6, borderRadius: 999, background: "rgba(20,17,15,.1)", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: "var(--ink)", borderRadius: 999 }}/>
+                  </div>
+                  <span className="serif" style={{ fontSize: 20, lineHeight: 1, color: "var(--ink)", opacity: 0.4 }}>0{level.id}</span>
                 </div>
               </div>
-              <button
-                onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
-                style={{ width: "100%", height: 48, background: "var(--ink)", color: "var(--acid)", border: "none", borderRadius: 14, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
-              >
-                EMPEZAR <IArrowR s={16} stroke="var(--acid)"/>
-              </button>
-            </div>
-          </div>
 
-          {/* Stats row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
-            {[
-              { Ico: IHeart,   v: profile.totalLikes,    l: "Likes",        c: "var(--rose)" },
-              { Ico: IInspire, v: profile.totalInspires, l: "Inspiras",     c: "var(--lilac)" },
-              { Ico: IFlame,   v: profile.totalTries,    l: "Lo intentaré", c: "var(--butter)" },
-            ].map((s, i) => (
-              <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: 10, textAlign: "center" }}>
-                <div style={{ width: 28, height: 28, margin: "0 auto", borderRadius: 8, background: s.c, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <s.Ico s={14}/>
+              {/* Big CTA */}
+              <div className="stk" style={{ background: "var(--acid)", marginBottom: 14, borderRadius: 22, overflow: "hidden", position: "relative", boxShadow: "var(--shadow-lg)" }}>
+                <div className="stripes-y" style={{ position: "absolute", inset: 0 }}/>
+                <div style={{ position: "relative", padding: "20px 20px 16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                    <div>
+                      <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO DEL DÍA</span>
+                      <h3 className="serif" style={{ fontSize: 32, lineHeight: 0.95, marginTop: 10, maxWidth: 210 }}>La hoja en blanco ya está esperando.</h3>
+                      <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{state.rollsLeft} intentos · recarga en 23h 41m</p>
+                    </div>
+                    <div style={{ width: 50, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <IDice s={26} sw={2.4}/>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
+                    style={{ width: "100%", height: 48, background: "var(--ink)", color: "var(--acid)", border: "none", borderRadius: 14, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+                  >
+                    EMPEZAR <IArrowR s={16} stroke="var(--acid)"/>
+                  </button>
                 </div>
-                <div className="serif" style={{ fontSize: 20, lineHeight: 1, marginTop: 6 }}>{s.v}</div>
-                <div className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.l.toUpperCase()}</div>
               </div>
-            ))}
-          </div>
 
-          {/* Season banner */}
-          <div className="stk" style={{ background: "var(--sky)", padding: 14, position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: -10, right: -10, opacity: 0.3 }}>
-              <ISpark s={80} stroke="var(--ink-blue)"/>
-            </div>
-            <div style={{ position: "relative" }}>
-              <div className="stamp" style={{ background: "var(--paper-2)" }}>TEMP · {state.activeSeason || "primavera"}</div>
-              <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>Variables de {state.activeSeason || "primavera"} activas. Úsalas bien y puede salir algo legendario.</p>
-            </div>
-          </div>
+              {/* Stats row */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
+                {[
+                  { Ico: IHeart,   v: profile.totalLikes,    l: "Likes",        c: "var(--rose)" },
+                  { Ico: IInspire, v: profile.totalInspires, l: "Inspiras",     c: "var(--lilac)" },
+                  { Ico: IFlame,   v: profile.totalTries,    l: "Lo intentaré", c: "var(--butter)" },
+                ].map((s, i) => (
+                  <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: 10, textAlign: "center" }}>
+                    <div style={{ width: 28, height: 28, margin: "0 auto", borderRadius: 8, background: s.c, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <s.Ico s={14}/>
+                    </div>
+                    <div className="serif" style={{ fontSize: 20, lineHeight: 1, marginTop: 6 }}>{s.v}</div>
+                    <div className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.l.toUpperCase()}</div>
+                  </div>
+                ))}
+              </div>
 
-          {/* Bug report button */}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 8 }}>
-            <BugButton onClick={() => dispatch({ type: "SET_SCREEN", screen: "bugReport" })}/>
-          </div>
+              {/* Season banner */}
+              <div className="stk" style={{ background: "var(--sky)", padding: 14, position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: -10, right: -10, opacity: 0.3 }}>
+                  <ISpark s={80} stroke="var(--ink-blue)"/>
+                </div>
+                <div style={{ position: "relative" }}>
+                  <div className="stamp" style={{ background: "var(--paper-2)" }}>TEMP · {state.activeSeason || "primavera"}</div>
+                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>Variables de {state.activeSeason || "primavera"} activas. Úsalas bien y puede salir algo legendario.</p>
+                </div>
+              </div>
+
+              {/* Bug report button */}
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 8 }}>
+                <BugButton onClick={() => dispatch({ type: "SET_SCREEN", screen: "bugReport" })}/>
+              </div>
+            </>
+          )}
         </div>
 
         <BottomNav current="home"/>
       </div>
+
+      {/* Artwork modal from search */}
+      {activeArtwork && (
+        <ArtworkModal
+          post={activeArtwork}
+          onClose={() => setActiveArtwork(null)}
+          triesLeft={triesLeft}
+          onTryUsed={(serverLeft) => setTriesLeft(t => typeof serverLeft === "number" ? serverLeft : Math.max(0, t - 1))}
+          onViewAuthor={activeArtwork.author_id ? () => { setActiveArtwork(null); viewUser(activeArtwork.author_id); } : undefined}
+        />
+      )}
     </Phone>
   );
 }

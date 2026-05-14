@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
-import { IS_LOGGED_IN, registerUser, loginUser } from "../utils/api";
+import { IS_LOGGED_IN, registerUser, loginUser, forgotPassword } from "../utils/api";
 import { IBrush, ISpark, IStar, ILock, IArrowL, IUser, ICheck } from "../components/Icons";
 
 const RECAPTCHA_SITE_KEY = window.InkRushConfig?.recaptchaSiteKey || "";
@@ -20,7 +20,7 @@ const HEADLINES = [
 
 export function LoginScreen() {
   const { dispatch } = useApp();
-  const [mode, setMode]           = useState("main"); // main | login | register
+  const [mode, setMode]           = useState("main"); // main | login | register | forgot
   const [email, setEmail]         = useState("");
   const [password, setPassword]   = useState("");
   const [confirm, setConfirm]     = useState("");
@@ -86,6 +86,15 @@ export function LoginScreen() {
       if (RECAPTCHA_SITE_KEY && captchaWidget.current !== null) window.grecaptcha.reset(captchaWidget.current);
       setLoading(false);
     }
+  };
+
+  /* ── Recuperar contraseña ── */
+  const handleForgot = async () => {
+    if (!email.includes("@")) { setError("Email inválido."); return; }
+    setError(""); setLoading(true);
+    try { await forgotPassword(email); } catch {}
+    setSuccess("Si ese email está registrado, recibirás un enlace en breve.");
+    setLoading(false);
   };
 
   /* ── Login en-app ── */
@@ -162,6 +171,43 @@ export function LoginScreen() {
     );
   }
 
+  /* ── Recuperar contraseña ── */
+  if (mode === "forgot") {
+    return (
+      <Phone>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
+          <button onClick={back} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
+            <IArrowL s={16}/> Volver
+          </button>
+          <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>Recuperar contraseña</h2>
+          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// TE ENVIAREMOS UN ENLACE</p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
+            <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>Email</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: "0 14px" }}>
+              <IUser s={16}/>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com"
+                onKeyDown={handleKey(handleForgot)}
+                style={{ flex: 1, border: "none", background: "transparent", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 14, outline: "none" }}/>
+            </div>
+
+            {error   && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)" }}>{error}</p>}
+            {success && (
+              <div className="stk-sm" style={{ background: "var(--mint)", padding: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <ICheck s={16}/> <span style={{ fontWeight: 800, fontSize: 12 }}>{success}</span>
+              </div>
+            )}
+          </div>
+
+          <button onClick={handleForgot} disabled={loading || !!success} className="stk"
+            style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", marginTop: "auto", cursor: "pointer", opacity: loading || success ? 0.6 : 1 }}>
+            <ILock s={18}/> {loading ? "Enviando…" : "Enviar enlace"}
+          </button>
+        </div>
+      </Phone>
+    );
+  }
+
   /* ── Login ── */
   if (mode === "login") {
     return (
@@ -202,7 +248,11 @@ export function LoginScreen() {
             <ILock s={18}/> {loading ? "Entrando…" : "Entrar"}
           </button>
 
-          <button onClick={() => { setMode("register"); setError(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 800, color: "rgba(20,17,15,.55)", cursor: "pointer", textDecoration: "underline", marginTop: 12, textAlign: "center" }}>
+          <button onClick={() => { setMode("forgot"); setError(""); setSuccess(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 700, color: "rgba(20,17,15,.5)", cursor: "pointer", marginTop: 10, textAlign: "center" }}>
+            ¿Olvidaste tu contraseña?
+          </button>
+
+          <button onClick={() => { setMode("register"); setError(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 800, color: "rgba(20,17,15,.55)", cursor: "pointer", textDecoration: "underline", marginTop: 4, textAlign: "center" }}>
             ¿No tienes cuenta? Crear cuenta gratis
           </button>
         </div>
