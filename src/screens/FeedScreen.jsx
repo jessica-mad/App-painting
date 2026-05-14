@@ -275,7 +275,7 @@ export function FeedScreen() {
                 onRemove={removePost}
                 onUpdate={updatePost}
                 triesLeft={triesLeft}
-                onTryUsed={() => setTriesLeft(t => Math.max(0, t - 1))}
+                onTryUsed={(serverLeft) => setTriesLeft(t => typeof serverLeft === "number" ? serverLeft : Math.max(0, t - 1))}
                 onViewAuthor={viewAuthorOf(post)}
               />
             ))}
@@ -302,7 +302,7 @@ export function FeedScreen() {
           idx={galleryPost.idx}
           onClose={() => setGalleryPost(null)}
           triesLeft={triesLeft}
-          onTryUsed={() => setTriesLeft(t => Math.max(0, t - 1))}
+          onTryUsed={(serverLeft) => setTriesLeft(t => typeof serverLeft === "number" ? serverLeft : Math.max(0, t - 1))}
           onRemove={(id) => { removePost(id); setGalleryPost(null); }}
           onUpdate={updatePost}
           onViewAuthor={viewAuthorOf(galleryPost.post)}

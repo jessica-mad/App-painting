@@ -1041,24 +1041,44 @@ function inkrush_get_tries_limit( $user_id ) {
     return 3;                            // Nivel 1
 }
 
-function inkrush_api_use_try() {
-    $uid     = get_current_user_id();
-    $tz      = wp_timezone();
-    $today   = ( new DateTime( 'now', $tz ) )->format( 'Y-m-d' );
-    $key     = 'inkrush_daily_tries_' . $today;
-    $used    = (int) get_user_meta( $uid, $key, true );
-    $limit   = inkrush_get_tries_limit( $uid );
+function inkrush_api_use_try( WP_REST_Request $req ) {
+    global $wpdb;
+
+    $uid   = get_current_user_id();
+    $tz    = wp_timezone();
+    $today = ( new DateTime( 'now', $tz ) )->format( 'Y-m-d' );
+    $now   = ( new DateTime( 'now', $tz ) )->setTimezone( new DateTimeZone('UTC') )->format( 'Y-m-d H:i:s' );
+    $table = $wpdb->prefix . 'inkrush_tries_log';
+    $limit = inkrush_get_tries_limit( $uid );
+
+    // Count entries for today from the log table (source of truth)
+    $used = inkrush_count_tries_today( $uid );
 
     if ( $used >= $limit ) {
         return new WP_Error( 'tries_exhausted', 'Sin intentos disponibles hoy.', [ 'status' => 429 ] );
     }
 
-    update_user_meta( $uid, $key, $used + 1 );
+    // Store the variables obtained in this try (for the log)
+    $variables_raw = $req->get_json_params()['variables'] ?? null;
+    $variables_json = $variables_raw ? wp_json_encode( $variables_raw, JSON_UNESCAPED_UNICODE ) : null;
+
+    $wpdb->insert( $table, [
+        'user_id'    => $uid,
+        'variables'  => $variables_json,
+        'try_date'   => $today,
+        'created_at' => $now,
+    ], [ '%d', '%s', '%s', '%s' ] );
+
+    $new_used = $used + 1;
+
+    // Cleanup entries older than 2 days (runs on each try, cheap query)
+    inkrush_cleanup_old_tries();
+
     return rest_ensure_response( [
         'success' => true,
-        'used'    => $used + 1,
+        'used'    => $new_used,
         'limit'   => $limit,
-        'left'    => $limit - $used - 1,
+        'left'    => $limit - $new_used,
     ] );
 }
 

@@ -34,15 +34,16 @@ function inkrush_activate() {
     inkrush_create_page();
     inkrush_seed_default_variables();
     inkrush_create_notifications_table();
+    inkrush_create_tries_table();
     flush_rewrite_rules();
 }
 
-/* Create (or upgrade) the notifications table on init if missing */
+/* Create (or upgrade) custom tables on init if schema version is outdated */
 add_action( 'init', function () {
-    if ( (int) get_option( 'inkrush_notif_table_v', 0 ) < 1 ) {
-        inkrush_create_notifications_table();
-        update_option( 'inkrush_notif_table_v', 1 );
-    }
+    $v = (int) get_option( 'inkrush_db_schema_v', 0 );
+    if ( $v < 1 ) { inkrush_create_notifications_table(); }
+    if ( $v < 2 ) { inkrush_create_tries_table(); }
+    if ( $v < 2 ) { update_option( 'inkrush_db_schema_v', 2 ); }
 } );
 
 function inkrush_create_notifications_table() {
@@ -62,6 +63,26 @@ function inkrush_create_notifications_table() {
         PRIMARY KEY (id),
         KEY user_read (user_id, is_read),
         KEY created (created_at)
+    ) {$charset};";
+
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta( $sql );
+}
+
+function inkrush_create_tries_table() {
+    global $wpdb;
+    $table   = $wpdb->prefix . 'inkrush_tries_log';
+    $charset = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE {$table} (
+        id         bigint(20) NOT NULL AUTO_INCREMENT,
+        user_id    bigint(20) NOT NULL,
+        variables  text       DEFAULT NULL,
+        try_date   date       NOT NULL,
+        created_at datetime   NOT NULL,
+        PRIMARY KEY (id),
+        KEY user_date (user_id, try_date),
+        KEY try_date  (try_date)
     ) {$charset};";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -229,8 +250,8 @@ add_shortcode( 'inkrush_app', function() {
         'isAdmin'          => current_user_can('manage_options'),
         'rollsUsedToday'   => $user_id ? (int) get_user_meta( $user_id, 'inkrush_daily_rolls_' . date('Y-m-d'), true ) : 0,
         'musicSrcs'        => (object) get_option( 'inkrush_music_srcs', [] ),
-        'triesLimit'       => $user_id ? inkrush_get_tries_limit( $user_id ) : 3,
-        'triesUsedToday'     => $user_id ? (int) get_user_meta( $user_id, 'inkrush_daily_tries_' . ( new DateTime( 'now', wp_timezone() ) )->format( 'Y-m-d' ), true ) : 0,
+        'triesLimit'     => $user_id ? inkrush_get_tries_limit( $user_id ) : 3,
+        'triesUsedToday' => $user_id ? inkrush_count_tries_today( $user_id ) : 0,
         'recaptchaSiteKey'   => get_option( 'inkrush_recaptcha_site_key', '' ),
     ] );
 
@@ -609,3 +630,21 @@ function inkrush_save_user_profile_fields( $uid ) {
 }
 add_action( 'personal_options_update',  'inkrush_save_user_profile_fields' );
 add_action( 'edit_user_profile_update', 'inkrush_save_user_profile_fields' );
+
+/* ── Intentos diarios: helpers compartidos ── */
+function inkrush_count_tries_today( $user_id ) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'inkrush_tries_log';
+    $today = ( new DateTime( 'now', wp_timezone() ) )->format( 'Y-m-d' );
+    return (int) $wpdb->get_var( $wpdb->prepare(
+        "SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND try_date = %s",
+        (int) $user_id, $today
+    ) );
+}
+
+function inkrush_cleanup_old_tries() {
+    global $wpdb;
+    $table   = $wpdb->prefix . 'inkrush_tries_log';
+    $cutoff  = ( new DateTime( 'now', wp_timezone() ) )->modify( '-2 days' )->format( 'Y-m-d' );
+    $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE try_date < %s", $cutoff ) );
+}

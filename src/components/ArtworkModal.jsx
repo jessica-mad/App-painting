@@ -547,7 +547,10 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
         if (IS_LOGGED_IN) {
           const variables = tags.map(t => ({ value: decodeTag(t), rarity: typeof t === "object" && t.rarity ? t.rarity : "Común" }));
           dispatch({ type: "SAVE_IDEA", idea: { variables, params: post.params ?? [] } });
-          useTryAPI().catch(() => {});
+          // Send variables to server log; sync triesLeft from authoritative server count
+          useTryAPI(variables)
+            .then(res => { if (typeof res?.left === "number") onTryUsed?.(res.left); })
+            .catch(() => {});
         }
         setTrySaved(true);
         setTimeout(() => setTrySaved(false), 1800);

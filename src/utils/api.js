@@ -182,8 +182,11 @@ export async function checkUsername(username) {
 }
 
 /* ── "Lo intentaré" daily tries ── */
-export async function useTryAPI() {
-  return apiFetch('/tries/use', { method: 'POST' });
+export async function useTryAPI(variables = null) {
+  return apiFetch('/tries/use', {
+    method: 'POST',
+    body:   JSON.stringify({ variables }),
+  });
 }
 
 /* ── Notificaciones ── */
