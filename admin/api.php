@@ -593,10 +593,14 @@ function inkrush_api_get_user( WP_REST_Request $req ) {
     $is_following = $me ? (bool) get_user_meta( $me, "inkrush_following_{$uid}", true ) : false;
 
     $challenges = (int) get_user_meta( $uid, 'inkrush_challenges_completed', true );
+    $handle     = get_user_meta( $uid, 'inkrush_handle', true ) ?: '';
+    $base       = get_option( 'inkrush_profile_base', 'artista' );
     return rest_ensure_response( [
         'userId'              => $uid,
         'username'            => $user->user_login,
         'displayName'         => $user->display_name,
+        'handle'              => $handle,
+        'shareLink'           => $handle ? home_url( "/{$base}/{$handle}" ) : '',
         'bio'                 => get_user_meta( $uid, 'inkrush_bio', true ) ?: '',
         'avatarUrl'           => get_user_meta( $uid, 'inkrush_avatar_url', true ) ?: get_avatar_url( $uid, ['size'=>96] ),
         'level'               => (int) get_user_meta( $uid, 'inkrush_level', true ) ?: 1,
@@ -604,6 +608,9 @@ function inkrush_api_get_user( WP_REST_Request $req ) {
         'streak'              => (int) get_user_meta( $uid, 'inkrush_streak', true ),
         'followers'           => (int) get_user_meta( $uid, 'inkrush_followers_count', true ),
         'following'           => (int) get_user_meta( $uid, 'inkrush_following_count', true ),
+        'totalLikes'          => (int) get_user_meta( $uid, 'inkrush_total_likes', true ),
+        'totalInspires'       => (int) get_user_meta( $uid, 'inkrush_inspires_received', true ),
+        'socials'             => get_user_meta( $uid, 'inkrush_socials', true ) ?: [ 'instagram' => '', 'tiktok' => '', 'pinterest' => '' ],
         'isFollowing'         => $is_following,
     ] );
 }

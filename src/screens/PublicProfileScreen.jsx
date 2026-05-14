@@ -3,21 +3,37 @@ import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { fetchUserProfile, fetchUserArtworks, followUser, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
 import { getUserLevel } from "../data/parameters";
-import { IUser, IFlame, IBrush, IArrowL, ICheck } from "../components/Icons";
+import { IUser, IFlame, IBrush, IArrowL, ICheck, ILink, ICopy, IHeart, IInspire } from "../components/Icons";
 import { ArtworkModal } from "../components/ArtworkModal";
 
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
+
+async function copyText(text) {
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+    else {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.cssText = "position:fixed;top:-9999px;opacity:0";
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+  } catch {}
+}
 
 export function PublicProfileScreen() {
   const { state, dispatch } = useApp();
   const userId = state.viewingUserId;
 
-  const [profile,      setProfile]      = useState(null);
-  const [artworks,     setArtworks]     = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [following,    setFollowing]    = useState(false);
-  const [followLoading,setFollowLoading]= useState(false);
-  const [activeArt,    setActiveArt]    = useState(null);
+  const [profile,       setProfile]       = useState(null);
+  const [artworks,      setArtworks]      = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [following,     setFollowing]     = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [activeArt,     setActiveArt]     = useState(null);
+  const [copied,        setCopied]        = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -39,26 +55,35 @@ export function PublicProfileScreen() {
     setFollowLoading(true);
     try {
       const res = await followUser(userId);
-      setFollowing(res?.following ?? !following);
-      if (profile) {
-        setProfile(p => ({
-          ...p,
-          followers: (p.followers ?? 0) + (following ? -1 : 1),
-        }));
-      }
-    } catch { /* ignore */ }
+      const nowFollowing = res?.following ?? !following;
+      setFollowing(nowFollowing);
+      setProfile(p => p ? ({
+        ...p,
+        followers: Math.max(0, (p.followers ?? 0) + (nowFollowing ? 1 : -1)),
+      }) : p);
+    } catch {}
     finally { setFollowLoading(false); }
+  };
+
+  const handleCopy = async () => {
+    if (!profile?.shareLink) return;
+    await copyText(profile.shareLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
   };
 
   const goBack = () => dispatch({ type: "CLEAR_VIEW_USER" });
 
-  const level = profile ? getUserLevel(profile.completedChallenges ?? 0) : null;
+  const level    = profile ? getUserLevel(profile.completedChallenges ?? 0) : null;
   const avatarSrc = profile?.avatarUrl || null;
-  const col = COL_CYCLE[(userId ?? 0) % COL_CYCLE.length];
+  const col      = COL_CYCLE[(userId ?? 0) % COL_CYCLE.length];
+  const handle   = profile?.handle || profile?.username || "artista";
+  const isOwnProfile = IS_LOGGED_IN && parseInt(userId) === WP_USER_ID;
 
   return (
     <Phone>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
         {/* Header */}
         <div style={{ padding: "10px 18px 8px", flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
           <button
@@ -85,12 +110,14 @@ export function PublicProfileScreen() {
         )}
 
         {!loading && profile && (
-          <div className="scroll" style={{ flex: 1, padding: "0 0 20px", position: "relative" }}>
+          <div className="scroll" style={{ flex: 1, padding: "0 0 24px", position: "relative" }}>
             {activeArt && <ArtworkModal post={activeArt} onClose={() => setActiveArt(null)}/>}
-            {/* Profile hero */}
+
+            {/* ── Profile hero ── */}
             <div style={{ background: "var(--lilac)", padding: "20px 18px", position: "relative", overflow: "hidden" }} className="grain-soft">
               <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.12 }}/>
               <div style={{ position: "relative" }}>
+
                 {/* Avatar + name */}
                 <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
                   <div style={{
@@ -104,18 +131,25 @@ export function PublicProfileScreen() {
                       : <IUser s={34}/>
                     }
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>
-                      @{(profile.username ?? profile.display_name ?? "artista").toUpperCase()}
+                      @{handle.toLowerCase()}
                     </p>
                     <h2 className="serif" style={{ fontSize: 24, lineHeight: 1, marginTop: 2 }}>
-                      {profile.displayName ?? profile.display_name ?? "Artista"}
+                      {profile.displayName || profile.display_name || "Artista"}
                     </h2>
-                    {level && (
-                      <span style={{ display: "inline-block", marginTop: 4, background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>
-                        {level.name}
-                      </span>
-                    )}
+                    <div style={{ display: "flex", gap: 6, marginTop: 5, flexWrap: "wrap", alignItems: "center" }}>
+                      {level && (
+                        <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>
+                          {level.name}
+                        </span>
+                      )}
+                      {(profile.streak ?? 0) > 0 && (
+                        <span style={{ background: "var(--butter)", border: "1.5px solid var(--ink)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", gap: 3 }}>
+                          <IFlame s={10}/> {profile.streak}d
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -126,26 +160,62 @@ export function PublicProfileScreen() {
                   </p>
                 )}
 
+                {/* Socials */}
+                {(profile.socials?.instagram || profile.socials?.tiktok || profile.socials?.pinterest) && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                    {profile.socials?.instagram && (
+                      <span className="mono" style={{ fontSize: 10, fontWeight: 700, background: "rgba(20,17,15,.1)", padding: "3px 8px", borderRadius: 999 }}>
+                        IG @{profile.socials.instagram.replace(/^@/, "")}
+                      </span>
+                    )}
+                    {profile.socials?.tiktok && (
+                      <span className="mono" style={{ fontSize: 10, fontWeight: 700, background: "rgba(20,17,15,.1)", padding: "3px 8px", borderRadius: 999 }}>
+                        TT @{profile.socials.tiktok.replace(/^@/, "")}
+                      </span>
+                    )}
+                    {profile.socials?.pinterest && (
+                      <span className="mono" style={{ fontSize: 10, fontWeight: 700, background: "rgba(20,17,15,.1)", padding: "3px 8px", borderRadius: 999 }}>
+                        PIN @{profile.socials.pinterest.replace(/^@/, "")}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Share URL */}
+                {profile.shareLink && (
+                  <button
+                    onClick={handleCopy}
+                    style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, background: "rgba(20,17,15,.08)", border: "1.5px solid rgba(20,17,15,.2)", borderRadius: 999, padding: "4px 10px", cursor: "pointer", maxWidth: "100%", overflow: "hidden" }}
+                  >
+                    {copied ? <ICheck s={12}/> : <ICopy s={12}/>}
+                    <span className="mono" style={{ fontSize: 9, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "rgba(20,17,15,.7)" }}>
+                      {copied ? "¡Copiado!" : profile.shareLink.replace(/^https?:\/\//, "")}
+                    </span>
+                  </button>
+                )}
+
                 {/* Stats */}
-                <div style={{ display: "flex", gap: 0, marginTop: 14, borderTop: "2px solid var(--ink)", paddingTop: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 0, marginTop: 14, borderTop: "2px solid var(--ink)", paddingTop: 12 }}>
                   {[
-                    { l: "Retos",      v: profile.completedChallenges ?? 0, click: null },
-                    { l: "Seguidores", v: profile.followers ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "followers" }) },
-                    { l: "Siguiendo",  v: profile.following ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "following" }) },
+                    { l: "Retos",    v: profile.completedChallenges ?? 0, click: null },
+                    { l: "Seguid.",  v: profile.followers ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "followers" }) },
+                    { l: "Siguiendo",v: profile.following ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "following" }) },
+                    { l: "Likes",    v: profile.totalLikes ?? 0,          click: null },
+                    { l: "Inspiras", v: profile.totalInspires ?? 0,       click: null },
                   ].map((s, i) => (
                     <div
                       key={i}
                       onClick={s.click ?? undefined}
-                      style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1.5px solid rgba(20,17,15,.2)" : "none", cursor: s.click ? "pointer" : "default" }}
+                      style={{ textAlign: "center", borderRight: i < 4 ? "1.5px solid rgba(20,17,15,.15)" : "none", cursor: s.click ? "pointer" : "default", padding: "0 2px" }}
                     >
-                      <p className="serif" style={{ fontSize: 24, lineHeight: 1, textDecoration: s.click ? "underline" : "none" }}>{s.v}</p>
-                      <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 2 }}>{s.l.toUpperCase()}</p>
+                      <p className="serif" style={{ fontSize: 20, lineHeight: 1, textDecoration: s.click ? "underline" : "none" }}>{s.v}</p>
+                      <p className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{s.l.toUpperCase()}</p>
                     </div>
                   ))}
                 </div>
 
-                {/* Follow button — only show if logged in and not own profile */}
-                {IS_LOGGED_IN && parseInt(userId) !== WP_USER_ID && (
+                {/* Follow / Edit button */}
+                {!isOwnProfile && IS_LOGGED_IN && (
                   <button
                     onClick={handleFollow}
                     disabled={followLoading}
@@ -161,13 +231,22 @@ export function PublicProfileScreen() {
                       opacity: followLoading ? 0.6 : 1,
                     }}
                   >
-                    {following ? <><ICheck s={15}/> Siguiendo</> : `+ Seguir`}
+                    {following ? <><ICheck s={15}/> Siguiendo</> : "+ Seguir"}
+                  </button>
+                )}
+                {isOwnProfile && (
+                  <button
+                    onClick={() => dispatch({ type: "SET_SCREEN", screen: "profile", profileTab: "Editar" })}
+                    className="stk"
+                    style={{ width: "100%", height: 46, marginTop: 14, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}
+                  >
+                    Editar perfil
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Artworks grid — Instagram 3-col */}
+            {/* ── Artworks grid ── */}
             <div style={{ marginTop: 2 }}>
               <div style={{ padding: "10px 14px 6px" }}>
                 <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>
@@ -196,8 +275,8 @@ export function PublicProfileScreen() {
                       >
                         {img
                           ? <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}/>
-                          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <p className="serif" style={{ fontSize: 9, padding: 6, textAlign: "center", lineHeight: 1.2 }}>{aw.prompt}</p>
+                          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 6 }}>
+                              <p className="serif" style={{ fontSize: 9, textAlign: "center", lineHeight: 1.2 }}>{aw.prompt}</p>
                             </div>
                         }
                       </div>
