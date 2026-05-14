@@ -150,6 +150,13 @@ function inkrush_register_routes() {
         'callback'            => 'inkrush_api_use_roll',
         'permission_callback' => 'is_user_logged_in',
     ] );
+
+    /* ── Bug reports ── */
+    register_rest_route( 'inkrush/v1', '/bug-reports', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_submit_bug_report',
+        'permission_callback' => '__return_true',
+    ] );
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -1039,4 +1046,71 @@ function inkrush_api_ai_prompt( WP_REST_Request $req ) {
     $prompt = trim( $data['content'][0]['text'] ?? '' );
 
     return rest_ensure_response( [ 'prompt' => $prompt ?: null ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   BUG REPORTS
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_submit_bug_report( WP_REST_Request $req ) {
+    $title       = sanitize_text_field( $req->get_param('title') ?? '' );
+    $description = sanitize_textarea_field( $req->get_param('description') ?? '' );
+    $expected    = sanitize_textarea_field( $req->get_param('expected') ?? '' );
+    $device_raw  = $req->get_param('device_info') ?? '{}';
+    $device      = wp_json_encode( json_decode( $device_raw, true ) ?: [] );
+
+    if ( empty( $title ) || empty( $description ) ) {
+        return new WP_Error( 'missing_fields', 'Título y descripción son requeridos.', [ 'status' => 400 ] );
+    }
+
+    $post_id = wp_insert_post( [
+        'post_type'    => 'inkrush_bug',
+        'post_title'   => $title,
+        'post_content' => $description,
+        'post_excerpt' => $expected,
+        'post_status'  => 'private',
+        'post_author'  => get_current_user_id(),
+    ] );
+
+    if ( is_wp_error( $post_id ) ) {
+        return new WP_Error( 'insert_failed', 'No se pudo guardar el reporte.', [ 'status' => 500 ] );
+    }
+
+    update_post_meta( $post_id, 'device_info', $device );
+
+    /* Attach uploaded files */
+    if ( ! function_exists( 'media_handle_upload' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+    }
+    $attachment_ids = [];
+    $files = $_FILES ?? [];
+    foreach ( $files as $key => $file ) {
+        if ( strpos( $key, 'file_' ) !== 0 ) continue;
+        if ( $file['error'] !== UPLOAD_ERR_OK ) continue;
+        $att_id = media_handle_upload( $key, $post_id );
+        if ( ! is_wp_error( $att_id ) ) {
+            $attachment_ids[] = $att_id;
+        }
+    }
+    if ( $attachment_ids ) {
+        update_post_meta( $post_id, 'attachments', $attachment_ids );
+    }
+
+    /* Email admin */
+    $admin_email = get_option( 'admin_email' );
+    $user        = wp_get_current_user();
+    $user_label  = $user && $user->ID ? $user->display_name . ' (' . $user->user_email . ')' : 'Anónimo';
+    $subject     = "[InkRush Bug] {$title}";
+    $body        = "Nuevo reporte de bug\n\n"
+        . "Usuario: {$user_label}\n"
+        . "Título: {$title}\n\n"
+        . "Descripción:\n{$description}\n\n"
+        . ( $expected ? "Comportamiento esperado:\n{$expected}\n\n" : '' )
+        . "Dispositivo: {$device}\n\n"
+        . "Ver reporte: " . admin_url( "post.php?post={$post_id}&action=edit" );
+    wp_mail( $admin_email, $subject, $body );
+
+    return rest_ensure_response( [ 'success' => true, 'id' => $post_id ] );
 }

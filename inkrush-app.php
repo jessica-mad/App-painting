@@ -75,6 +75,22 @@ function inkrush_register_cpt() {
         'capability_type' => 'post',
         'map_meta_cap'  => true,
     ] );
+
+    register_post_type( 'inkrush_bug', [
+        'labels' => [
+            'name'          => 'Bug Reports',
+            'singular_name' => 'Bug Report',
+            'add_new_item'  => 'Añadir reporte',
+            'edit_item'     => 'Ver reporte',
+        ],
+        'public'          => false,
+        'show_ui'         => true,
+        'show_in_menu'    => 'inkrush',
+        'show_in_rest'    => false,
+        'supports'        => [ 'title', 'editor', 'excerpt', 'author', 'custom-fields' ],
+        'capability_type' => 'post',
+        'map_meta_cap'    => true,
+    ] );
 }
 
 // Columna miniatura en el listado de obras

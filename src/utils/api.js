@@ -182,6 +182,17 @@ export async function useTryAPI() {
   return apiFetch('/tries/use', { method: 'POST' });
 }
 
+/* ── Bug reports ── */
+export async function submitBugReport({ title, description, expected, files, deviceInfo }) {
+  const fd = new FormData();
+  fd.append("title", title);
+  fd.append("description", description);
+  fd.append("expected", expected ?? "");
+  fd.append("device_info", JSON.stringify(deviceInfo));
+  files.forEach((f, i) => fd.append(`file_${i}`, f, f.name));
+  return apiFetch("/bug-reports", { method: "POST", body: fd });
+}
+
 /* ── Config de WP ── */
 export const WP_USER_ID      = parseInt(cfg.userId ?? 0);
 export const IS_LOGGED_IN    = WP_USER_ID > 0;

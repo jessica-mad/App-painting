@@ -366,6 +366,13 @@ export function ProfileScreen() {
               </button>
 
               <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+                <button
+                  onClick={() => dispatch({ type: "SET_SCREEN", screen: "bugReport" })}
+                  className="stk-sm"
+                  style={{ width: "100%", height: 44, background: "var(--paper-2)", border: "2px solid rgba(20,17,15,.25)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                >
+                  🐛 Reportar un bug
+                </button>
                 <button onClick={handleLogout} className="stk-sm"
                   style={{ width: "100%", height: 48, background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
                   Cerrar sesión

@@ -4,6 +4,34 @@ import { useApp } from "../data/store";
 import { getUserLevel } from "../data/parameters";
 import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR } from "../components/Icons";
 
+function BugButton({ onClick }) {
+  const r = 37;
+  const cx = 44, cy = 44;
+  const circumference = 2 * Math.PI * r;
+  const text = "REPORTAR ERRORES · Y BUGS · ";
+  return (
+    <button
+      onClick={onClick}
+      title="Reportar un bug"
+      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, width: 88, height: 88, position: "relative", flexShrink: 0 }}
+    >
+      <svg width="88" height="88" viewBox="0 0 88 88" className="spin-slow" style={{ position: "absolute", inset: 0 }}>
+        <defs>
+          <path id="bugCircle" d={`M ${cx},${cy} m -${r},0 a ${r},${r} 0 1,1 ${r*2},0 a ${r},${r} 0 1,1 -${r*2},0`}/>
+        </defs>
+        <text style={{ fontSize: 7.5, fontWeight: 800, fill: "var(--ink)", letterSpacing: 1.2, fontFamily: "monospace" }}>
+          <textPath href="#bugCircle" startOffset="0%">{text}</textPath>
+        </text>
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 44, height: 44, borderRadius: 999, background: "var(--paper-2)", border: "2.5px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "2px 2px 0 var(--ink)", fontSize: 22 }}>
+          🐛
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export function HomeScreen() {
   const { state, dispatch } = useApp();
   const { profile } = state;
@@ -109,6 +137,11 @@ export function HomeScreen() {
               <div className="stamp" style={{ background: "var(--paper-2)" }}>TEMP · {state.activeSeason || "primavera"}</div>
               <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>Variables de {state.activeSeason || "primavera"} activas. Úsalas bien y puede salir algo legendario.</p>
             </div>
+          </div>
+
+          {/* Bug report button */}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 8 }}>
+            <BugButton onClick={() => dispatch({ type: "SET_SCREEN", screen: "bugReport" })}/>
           </div>
         </div>
 
