@@ -5,7 +5,7 @@ import { useApp } from "../data/store";
 import { getUserLevel, LEVELS, TECHNIQUES } from "../data/parameters";
 import { updateProfile, checkUsername, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
 import { compressImage } from "../utils/imageUtils";
-import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock } from "../components/Icons";
+import { IUser, IBrush, IFlame, ILink, ICopy, IHeart, IInspire, ITimer, IDice, IStar, ICheck, ILock, IBell } from "../components/Icons";
 import { ArtworkModal } from "../components/ArtworkModal";
 
 async function copyToClipboard(text, onDone) {
@@ -158,6 +158,34 @@ export function ProfileScreen() {
         {/* Hero */}
         <div style={{ background: "var(--lilac)", borderBottom: "2px solid var(--ink)", padding: "12px 22px 14px", position: "relative", overflow: "hidden", flexShrink: 0 }} className="grain-soft">
           <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.1 }}/>
+
+          {/* Bell button — top right */}
+          <button
+            onClick={() => dispatch({ type: "SET_SCREEN", screen: "notifications" })}
+            style={{
+              position: "absolute", top: 12, right: 16, zIndex: 10,
+              width: 36, height: 36, borderRadius: 999,
+              border: "2px solid var(--ink)",
+              background: state.unreadNotifs > 0 ? "var(--butter)" : "rgba(20,17,15,.08)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", boxShadow: state.unreadNotifs > 0 ? "2px 2px 0 var(--ink)" : "none",
+            }}
+          >
+            <IBell s={16}/>
+            {state.unreadNotifs > 0 && (
+              <span style={{
+                position: "absolute", top: -5, right: -5,
+                minWidth: 16, height: 16, borderRadius: 999,
+                background: "var(--coral, #e55)", color: "#fff",
+                border: "1.5px solid var(--ink)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 8, fontWeight: 800, padding: "0 3px",
+              }}>
+                {state.unreadNotifs > 99 ? "99+" : state.unreadNotifs}
+              </span>
+            )}
+          </button>
+
           <div style={{ display: "flex", gap: 14, position: "relative" }}>
             <div style={{ position: "relative" }}>
               <div style={{ width: 76, height: 76, borderRadius: 999, border: "3px solid var(--ink)", background: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "4px 4px 0 var(--ink)", overflow: "hidden" }}>
