@@ -387,3 +387,143 @@ add_action( 'save_post_inkrush_artwork', function( $post_id ) {
         }
     }
 } );
+
+/* ──────────────────────────────────────────────────────────────
+   6. PERFIL DE USUARIO EN WP-ADMIN
+   Muestra y permite editar los datos de InkRush desde
+   /wp-admin/user-edit.php y /wp-admin/profile.php
+────────────────────────────────────────────────────────────── */
+
+function inkrush_user_profile_fields( WP_User $user ) {
+    $uid        = $user->ID;
+    $handle     = get_user_meta( $uid, 'inkrush_handle',               true ) ?: '';
+    $bio        = get_user_meta( $uid, 'inkrush_bio',                  true ) ?: '';
+    $avatar_url = get_user_meta( $uid, 'inkrush_avatar_url',           true ) ?: '';
+    $level      = (int) get_user_meta( $uid, 'inkrush_level',          true ) ?: 1;
+    $challenges = (int) get_user_meta( $uid, 'inkrush_challenges_completed', true );
+    $streak     = (int) get_user_meta( $uid, 'inkrush_streak',         true );
+    $followers  = (int) get_user_meta( $uid, 'inkrush_followers_count',true );
+    $following  = (int) get_user_meta( $uid, 'inkrush_following_count',true );
+    $likes      = (int) get_user_meta( $uid, 'inkrush_total_likes',    true );
+    $inspires   = (int) get_user_meta( $uid, 'inkrush_inspires_received', true );
+    $socials    = get_user_meta( $uid, 'inkrush_socials', true ) ?: [ 'instagram' => '', 'tiktok' => '', 'pinterest' => '' ];
+    $base       = get_option( 'inkrush_profile_base', 'artista' );
+    $share_link = $handle ? home_url( "/{$base}/{$handle}" ) : '—';
+    wp_nonce_field( 'inkrush_save_user_meta', 'inkrush_user_nonce' );
+    ?>
+    <h2 style="border-top:1px solid #ddd;padding-top:20px;margin-top:20px">InkRush</h2>
+    <table class="form-table" role="presentation">
+
+      <tr>
+        <th><label for="inkrush_handle">Handle</label></th>
+        <td>
+          <input type="text" id="inkrush_handle" name="inkrush_handle"
+                 value="<?php echo esc_attr( $handle ); ?>"
+                 class="regular-text" placeholder="mi_handle" pattern="[a-z0-9_]{3,20}"/>
+          <p class="description">Solo minúsculas, números y guión bajo. 3–20 caracteres.<br>
+          URL del perfil: <strong><?php echo esc_html( $share_link ); ?></strong></p>
+        </td>
+      </tr>
+
+      <tr>
+        <th><label for="inkrush_bio">Bio</label></th>
+        <td>
+          <textarea id="inkrush_bio" name="inkrush_bio" rows="3" class="large-text"><?php echo esc_textarea( $bio ); ?></textarea>
+        </td>
+      </tr>
+
+      <tr>
+        <th>Avatar URL</th>
+        <td>
+          <?php if ( $avatar_url ) : ?>
+            <img src="<?php echo esc_url( $avatar_url ); ?>" style="width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid #ccc;" /><br>
+          <?php endif; ?>
+          <input type="url" name="inkrush_avatar_url" value="<?php echo esc_attr( $avatar_url ); ?>" class="large-text" placeholder="https://..."/>
+          <p class="description">Se actualiza automáticamente cuando el usuario sube foto desde la app.</p>
+        </td>
+      </tr>
+
+      <tr>
+        <th>Redes sociales</th>
+        <td>
+          <p><label>Instagram &nbsp;<input type="text" name="inkrush_socials[instagram]" value="<?php echo esc_attr( $socials['instagram'] ?? '' ); ?>" placeholder="sin @" class="regular-text"/></label></p>
+          <p><label>TikTok &nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="inkrush_socials[tiktok]"    value="<?php echo esc_attr( $socials['tiktok']    ?? '' ); ?>" placeholder="sin @" class="regular-text"/></label></p>
+          <p><label>Pinterest &nbsp;<input type="text" name="inkrush_socials[pinterest]" value="<?php echo esc_attr( $socials['pinterest'] ?? '' ); ?>" placeholder="sin @" class="regular-text"/></label></p>
+        </td>
+      </tr>
+
+      <tr>
+        <th>Estadísticas</th>
+        <td>
+          <table style="border-collapse:collapse;font-size:13px">
+            <tr>
+              <td style="padding:4px 16px 4px 0;color:#666">Nivel</td>
+              <td style="padding:4px 16px 4px 0;font-weight:600"><?php echo (int) $level; ?></td>
+              <td style="padding:4px 16px 4px 0;color:#666">Retos completados</td>
+              <td style="font-weight:600"><?php echo $challenges; ?></td>
+            </tr>
+            <tr>
+              <td style="padding:4px 16px 4px 0;color:#666">Racha actual</td>
+              <td style="padding:4px 16px 4px 0;font-weight:600"><?php echo $streak; ?> días</td>
+              <td style="padding:4px 16px 4px 0;color:#666">Seguidores / Siguiendo</td>
+              <td style="font-weight:600"><?php echo $followers; ?> / <?php echo $following; ?></td>
+            </tr>
+            <tr>
+              <td style="padding:4px 16px 4px 0;color:#666">Likes recibidos</td>
+              <td style="padding:4px 16px 4px 0;font-weight:600"><?php echo $likes; ?></td>
+              <td style="padding:4px 16px 4px 0;color:#666">Inspiras recibidas</td>
+              <td style="font-weight:600"><?php echo $inspires; ?></td>
+            </tr>
+          </table>
+          <p class="description" style="margin-top:8px">Estos valores los gestiona la app automáticamente.</p>
+
+          <p style="margin-top:12px">
+            <label>Retos completados (ajuste manual) &nbsp;
+              <input type="number" name="inkrush_challenges_completed" value="<?php echo $challenges; ?>" min="0" style="width:80px"/>
+            </label>
+          </p>
+        </td>
+      </tr>
+
+    </table>
+    <?php
+}
+add_action( 'show_user_profile', 'inkrush_user_profile_fields' );
+add_action( 'edit_user_profile', 'inkrush_user_profile_fields' );
+
+function inkrush_save_user_profile_fields( $uid ) {
+    if ( ! current_user_can( 'edit_user', $uid ) ) return;
+    if ( ! isset( $_POST['inkrush_user_nonce'] ) || ! wp_verify_nonce( $_POST['inkrush_user_nonce'], 'inkrush_save_user_meta' ) ) return;
+
+    /* Handle — validate format */
+    if ( isset( $_POST['inkrush_handle'] ) ) {
+        $handle = strtolower( sanitize_text_field( $_POST['inkrush_handle'] ) );
+        if ( preg_match( '/^[a-z0-9_]{3,20}$/', $handle ) ) {
+            $taken = get_users( [ 'meta_key' => 'inkrush_handle', 'meta_value' => $handle, 'number' => 1, 'fields' => 'ID', 'exclude' => [ $uid ] ] );
+            if ( empty( $taken ) ) {
+                update_user_meta( $uid, 'inkrush_handle', $handle );
+            }
+        }
+    }
+
+    if ( isset( $_POST['inkrush_bio'] ) ) {
+        update_user_meta( $uid, 'inkrush_bio', sanitize_textarea_field( $_POST['inkrush_bio'] ) );
+    }
+
+    if ( isset( $_POST['inkrush_avatar_url'] ) ) {
+        update_user_meta( $uid, 'inkrush_avatar_url', esc_url_raw( $_POST['inkrush_avatar_url'] ) );
+    }
+
+    if ( isset( $_POST['inkrush_socials'] ) && is_array( $_POST['inkrush_socials'] ) ) {
+        $socials = array_map( 'sanitize_text_field', $_POST['inkrush_socials'] );
+        update_user_meta( $uid, 'inkrush_socials', $socials );
+    }
+
+    if ( isset( $_POST['inkrush_challenges_completed'] ) && current_user_can( 'manage_options' ) ) {
+        $challenges = max( 0, (int) $_POST['inkrush_challenges_completed'] );
+        update_user_meta( $uid, 'inkrush_challenges_completed', $challenges );
+        inkrush_update_user_level( $uid );
+    }
+}
+add_action( 'personal_options_update',  'inkrush_save_user_profile_fields' );
+add_action( 'edit_user_profile_update', 'inkrush_save_user_profile_fields' );
