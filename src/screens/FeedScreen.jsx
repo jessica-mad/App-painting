@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { fetchArtworks, IS_LOGGED_IN, WP_USER_ID, WP_TRIES_LEFT, WP_TRIES_LIMIT } from "../utils/api";
-import { IFlame } from "../components/Icons";
+import { IFlame, IGrid, IList, IX } from "../components/Icons";
 import { PostCard } from "../components/ArtworkModal";
 
 function filterToParams(f) {
@@ -38,13 +38,109 @@ function useCountdown() {
 }
 
 const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana"];
+const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
+
+/* ── Gallery modal overlay ── */
+function GalleryModal({ post, idx, onClose, triesLeft, onTryUsed, onRemove, onUpdate, onViewAuthor }) {
+  /* Close on backdrop click */
+  const backdropRef = useRef(null);
+  const handleBackdrop = (e) => { if (e.target === backdropRef.current) onClose(); };
+
+  /* Lock body scroll while open */
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  return (
+    <div
+      ref={backdropRef}
+      onClick={handleBackdrop}
+      style={{
+        position: "fixed", inset: 0, zIndex: 400,
+        background: "rgba(20,17,15,.82)",
+        overflowY: "auto", padding: "16px 16px 40px",
+        display: "flex", flexDirection: "column", alignItems: "center",
+      }}
+    >
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        style={{
+          alignSelf: "flex-end", marginBottom: 10,
+          width: 36, height: 36, borderRadius: 999,
+          background: "rgba(255,255,255,.15)", border: "2px solid rgba(255,255,255,.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#fff", cursor: "pointer", flexShrink: 0,
+        }}
+      >
+        <IX s={16} stroke="#fff"/>
+      </button>
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        <PostCard
+          post={post}
+          idx={idx}
+          onRemove={(id) => { onRemove(id); onClose(); }}
+          onUpdate={onUpdate}
+          triesLeft={triesLeft}
+          onTryUsed={onTryUsed}
+          onViewAuthor={onViewAuthor}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Gallery grid ── */
+function GalleryGrid({ posts, onOpen }) {
+  if (posts.length === 0) return null;
+  return (
+    <div style={{
+      display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6,
+      padding: "8px 14px 90px",
+    }}>
+      {posts.map((post, i) => {
+        const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
+        return (
+          <div
+            key={post.id ?? i}
+            onClick={() => onOpen(post, i)}
+            style={{
+              borderRadius: 14, border: "2px solid var(--ink)",
+              overflow: "hidden", cursor: "pointer",
+              aspectRatio: "3/4", position: "relative",
+              background: images.length ? "var(--ink)" : COL_CYCLE[i % COL_CYCLE.length],
+              boxShadow: "3px 3px 0 var(--ink)",
+            }}
+          >
+            {images.length > 0 ? (
+              <img
+                src={images[0]} alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+            ) : (
+              <div style={{
+                width: "100%", height: "100%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <span style={{ fontSize: 28, opacity: 0.3 }}>🖼</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function FeedScreen() {
   const { dispatch } = useApp();
-  const [filter, setFilter]     = useState("Para ti");
-  const [posts, setPosts]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [triesLeft, setTriesLeft] = useState(() => IS_LOGGED_IN ? WP_TRIES_LEFT : localTriesLeft());
+  const [filter, setFilter]         = useState("Para ti");
+  const [posts, setPosts]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [triesLeft, setTriesLeft]   = useState(() => IS_LOGGED_IN ? WP_TRIES_LEFT : localTriesLeft());
+  const [view, setView]             = useState(() => localStorage.getItem("inkrush_feed_view") || "list");
+  const [galleryPost, setGalleryPost] = useState(null); // { post, idx }
   const countdown = useCountdown();
 
   useEffect(() => {
@@ -56,8 +152,13 @@ export function FeedScreen() {
       .finally(() => setLoading(false));
   }, [filter]);
 
-  const removePost = (id) => setPosts(ps => ps.filter(p => p.id !== id));
-  const updatePost = (updated) => setPosts(ps => ps.map(p => p.id === updated.id ? { ...p, ...updated } : p));
+  const changeView = (v) => {
+    setView(v);
+    localStorage.setItem("inkrush_feed_view", v);
+  };
+
+  const removePost  = (id) => { setPosts(ps => ps.filter(p => p.id !== id)); };
+  const updatePost  = (updated) => setPosts(ps => ps.map(p => p.id === updated.id ? { ...p, ...updated } : p));
 
   const viewAuthorOf = (post) => {
     if (!post.author_id) return undefined;
@@ -79,18 +180,44 @@ export function FeedScreen() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>Feed</h2>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {triesLeft === 0 && (
-                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.45)" }}>
-                  reset {countdown}
-                </span>
-              )}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, background: triesLeft === 0 ? "rgba(20,17,15,.08)" : "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 999, padding: "4px 12px" }}>
-                <IFlame s={14}/>
-                <span style={{ fontWeight: 800, fontSize: 13, color: triesLeft === 0 ? "rgba(20,17,15,.4)" : "var(--ink)" }}>{triesLeft}</span>
+              {/* View toggle */}
+              <div style={{ display: "flex", border: "2px solid var(--ink)", borderRadius: 10, overflow: "hidden" }}>
+                {[
+                  { id: "list", Icon: IList,  title: "Vista lista" },
+                  { id: "grid", Icon: IGrid,  title: "Vista galería" },
+                ].map(({ id, Icon, title }) => (
+                  <button
+                    key={id}
+                    title={title}
+                    onClick={() => changeView(id)}
+                    style={{
+                      width: 34, height: 30,
+                      background: view === id ? "var(--ink)" : "var(--paper-2)",
+                      color:      view === id ? "var(--acid)" : "var(--ink)",
+                      border: "none", borderRight: id === "list" ? "1.5px solid var(--ink)" : "none",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Icon s={15}/>
+                  </button>
+                ))}
+              </div>
+
+              {/* Tries counter */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, background: triesLeft === 0 ? "rgba(20,17,15,.08)" : "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 999, padding: "4px 10px" }}>
+                <IFlame s={13}/>
+                <span style={{ fontWeight: 800, fontSize: 12, color: triesLeft === 0 ? "rgba(20,17,15,.4)" : "var(--ink)" }}>{triesLeft}</span>
                 <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>/{WP_TRIES_LIMIT}</span>
               </div>
             </div>
           </div>
+
+          {triesLeft === 0 && (
+            <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.45)", marginTop: 3 }}>
+              reset {countdown}
+            </p>
+          )}
 
           {/* Filters */}
           <div className="scroll" style={{ display: "flex", gap: 8, marginTop: 10, paddingBottom: 4 }}>
@@ -108,34 +235,65 @@ export function FeedScreen() {
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "8px 18px 90px" }}>
-          {loading && (
-            <p className="mono" style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)", padding: "40px 0" }}>// CARGANDO...</p>
-          )}
-          {!loading && posts.length === 0 && (
-            <div style={{ textAlign: "center", padding: "60px 24px" }}>
-              <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>Sin obras aún</p>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
-                {filter === "Siguiendo" ? "Sigue a otros artistas para ver sus obras aquí." : "Aún no hay nada aquí. Eso tiene solución fácil."}
-              </p>
-            </div>
-          )}
-          {posts.map((post, i) => (
-            <PostCard
-              key={post.id ?? i}
-              post={post}
-              idx={i}
-              onRemove={removePost}
-              onUpdate={updatePost}
-              triesLeft={triesLeft}
-              onTryUsed={() => setTriesLeft(t => Math.max(0, t - 1))}
-              onViewAuthor={viewAuthorOf(post)}
+        {/* Content */}
+        {loading && (
+          <p className="mono" style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)", padding: "40px 0" }}>
+            // CARGANDO...
+          </p>
+        )}
+        {!loading && posts.length === 0 && (
+          <div style={{ textAlign: "center", padding: "60px 24px" }}>
+            <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>Sin obras aún</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
+              {filter === "Siguiendo" ? "Sigue a otros artistas para ver sus obras aquí." : "Aún no hay nada aquí. Eso tiene solución fácil."}
+            </p>
+          </div>
+        )}
+
+        {/* List view */}
+        {!loading && view === "list" && posts.length > 0 && (
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px 18px 90px" }}>
+            {posts.map((post, i) => (
+              <PostCard
+                key={post.id ?? i}
+                post={post}
+                idx={i}
+                onRemove={removePost}
+                onUpdate={updatePost}
+                triesLeft={triesLeft}
+                onTryUsed={() => setTriesLeft(t => Math.max(0, t - 1))}
+                onViewAuthor={viewAuthorOf(post)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Gallery view */}
+        {!loading && view === "grid" && posts.length > 0 && (
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            <GalleryGrid
+              posts={posts}
+              onOpen={(post, idx) => setGalleryPost({ post, idx })}
             />
-          ))}
-        </div>
+          </div>
+        )}
 
         <BottomNav current="feed"/>
       </div>
+
+      {/* Gallery modal */}
+      {galleryPost && (
+        <GalleryModal
+          post={galleryPost.post}
+          idx={galleryPost.idx}
+          onClose={() => setGalleryPost(null)}
+          triesLeft={triesLeft}
+          onTryUsed={() => setTriesLeft(t => Math.max(0, t - 1))}
+          onRemove={(id) => { removePost(id); setGalleryPost(null); }}
+          onUpdate={updatePost}
+          onViewAuthor={viewAuthorOf(galleryPost.post)}
+        />
+      )}
     </Phone>
   );
 }

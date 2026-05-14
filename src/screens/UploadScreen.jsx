@@ -443,6 +443,13 @@ export function UploadScreen() {
         >
           <IShare s={18}/> {saving ? "Publicando..." : "Publicar"}
         </button>
+        <button
+          onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
+          disabled={saving}
+          style={{ marginTop: 8, height: 44, background: "transparent", border: "2px solid rgba(20,17,15,.25)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.4 : 1 }}
+        >
+          Cancelar
+        </button>
       </div>
     </Phone>
   );
