@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { RarityBadge } from "./RarityBadge";
 import { useApp } from "../data/store";
 import { addReaction, useTryAPI, deleteArtwork, hideArtwork, reportArtwork, updateArtwork, fetchComments, postComment, deleteComment, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
-import { IHeart, IInspire, IFlame, IUser, IBrush, IEyeOff, ITrash, IFlag, IArrowL, IArrowR, IComment, ITrash as ITrashIcon } from "./Icons";
+import { IHeart, IInspire, IFlame, IUser, IBrush, IEyeOff, ITrash, IFlag, IArrowL, IArrowR, IComment, ITrash as ITrashIcon, IX } from "./Icons";
 
 function decodeTag(t) {
   const raw = typeof t === "string" ? t : (t.value ?? "");
@@ -728,27 +728,47 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
   );
 }
 
-/* ── Bottom-sheet modal wrapper (used from profile grids) ── */
+/* ── Overlay modal wrapper (used from profile grids and notifications) ── */
 export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewAuthor }) {
+  const backdropRef = useRef(null);
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
   }, [onClose]);
 
   const idx = col ? COL_CYCLE.indexOf(col) : (parseInt(post.author_id) || 0) % COL_CYCLE.length;
 
   return (
     <div
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(20,17,15,.72)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 480, maxHeight: "94vh", overflowY: "auto", borderRadius: "22px 22px 0 0" }}>
-        {/* Drag handle */}
-        <div style={{ padding: "12px 0 0", display: "flex", justifyContent: "center" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 999, background: "rgba(255,255,255,.4)" }}/>
-        </div>
+      ref={backdropRef}
+      onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 500,
+        background: "rgba(20,17,15,.82)",
+        overflowY: "auto", padding: "16px 16px 40px",
+        display: "flex", flexDirection: "column", alignItems: "center",
+      }}
+    >
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        style={{
+          alignSelf: "flex-end", marginBottom: 10,
+          width: 36, height: 36, borderRadius: 999,
+          background: "rgba(255,255,255,.15)", border: "2px solid rgba(255,255,255,.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#fff", cursor: "pointer", flexShrink: 0,
+        }}
+      >
+        <IX s={16} stroke="#fff"/>
+      </button>
+      <div style={{ width: "100%", maxWidth: 420 }}>
         <PostCard
           post={post}
           idx={Math.max(0, idx)}
