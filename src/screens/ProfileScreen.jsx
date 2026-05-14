@@ -211,8 +211,8 @@ export function ProfileScreen() {
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: 14 }}>
             {[
               { l: "Retos",      v: profile.completedChallenges, onClick: null },
-              { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: state.user?.id ?? 0, listType: "followers" }) : null },
-              { l: "Siguiendo",  v: profile.following, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: state.user?.id ?? 0, listType: "following" }) : null },
+              { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: WP_USER_ID, listType: "followers" }) : null },
+              { l: "Siguiendo",  v: profile.following, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: WP_USER_ID, listType: "following" }) : null },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: "center", cursor: s.onClick ? "pointer" : "default" }} onClick={s.onClick ?? undefined}>
                 <p className="serif" style={{ fontSize: 22, lineHeight: 1, textDecoration: s.onClick ? "underline" : "none" }}>{s.v}</p>

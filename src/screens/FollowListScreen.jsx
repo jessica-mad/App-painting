@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
-import { fetchUserFollowing, fetchUserFollowers } from "../utils/api";
+import { fetchUserFollowing, fetchUserFollowers, followUser, WP_USER_ID } from "../utils/api";
 import { getUserLevel } from "../data/parameters";
-import { IUser, IArrowL, IBrush } from "../components/Icons";
+import { IUser, IArrowL, IBrush, ICheck } from "../components/Icons";
 
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
@@ -12,9 +12,12 @@ export function FollowListScreen() {
   const userId      = state.followListUserId;
   const listType    = state.followListType ?? "following";
   const returnScreen = state.viewingUserId ? "publicProfile" : "profile";
+  const isOwn       = parseInt(userId) === WP_USER_ID;
+  const canUnfollow = isOwn && listType === "following";
 
-  const [users,   setUsers]   = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [users,      setUsers]      = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [unfollowing, setUnfollowing] = useState({}); // userId → true while in-flight
 
   useEffect(() => {
     if (!userId) return;
@@ -26,8 +29,19 @@ export function FollowListScreen() {
       .finally(() => setLoading(false));
   }, [userId, listType]);
 
-  const goBack  = () => dispatch({ type: "CLEAR_FOLLOW_LIST", returnScreen });
+  const goBack   = () => dispatch({ type: "CLEAR_FOLLOW_LIST", returnScreen });
   const viewUser = (id) => dispatch({ type: "VIEW_USER", userId: id });
+
+  const handleUnfollow = async (targetId, e) => {
+    e.stopPropagation();
+    if (unfollowing[targetId]) return;
+    setUnfollowing(s => ({ ...s, [targetId]: true }));
+    try {
+      await followUser(targetId);
+      setUsers(us => us.filter(u => parseInt(u.id) !== parseInt(targetId)));
+    } catch {}
+    setUnfollowing(s => { const n = { ...s }; delete n[targetId]; return n; });
+  };
 
   const title = listType === "followers" ? "Seguidores" : "Siguiendo";
 
@@ -69,9 +83,10 @@ export function FollowListScreen() {
           )}
 
           {users.map((u, i) => {
-            const level = getUserLevel(u.completedChallenges ?? 0);
+            const level     = getUserLevel(u.completedChallenges ?? 0);
             const avatarSrc = u.avatarUrl || null;
-            const col = COL_CYCLE[i % COL_CYCLE.length];
+            const col       = COL_CYCLE[i % COL_CYCLE.length];
+            const busy      = unfollowing[u.id];
             return (
               <div
                 key={u.id ?? i}
@@ -113,7 +128,27 @@ export function FollowListScreen() {
                   </div>
                 </div>
 
-                <span style={{ fontSize: 16, color: "rgba(20,17,15,.3)" }}>→</span>
+                {canUnfollow ? (
+                  <button
+                    onClick={(e) => handleUnfollow(u.id, e)}
+                    disabled={busy}
+                    style={{
+                      height: 32, padding: "0 12px", borderRadius: 10,
+                      border: "2px solid var(--ink)",
+                      background: "var(--paper-2)",
+                      fontWeight: 800, fontSize: 11,
+                      display: "flex", alignItems: "center", gap: 5,
+                      cursor: busy ? "default" : "pointer",
+                      opacity: busy ? 0.45 : 1,
+                      flexShrink: 0,
+                      fontFamily: "Space Grotesk",
+                    }}
+                  >
+                    <ICheck s={12}/> Siguiendo
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 16, color: "rgba(20,17,15,.3)" }}>→</span>
+                )}
               </div>
             );
           })}
