@@ -6,7 +6,13 @@ import { IHeart, IInspire, IFlame, IUser, IBrush, IEyeOff, ITrash, IFlag, IArrow
 
 function decodeTag(t) {
   const raw = typeof t === "string" ? t : (t.value ?? "");
-  try { return decodeURIComponent(raw); } catch { return raw; }
+  // Fix \uXXXX sequences stored literally (WP stripslashes strips the backslash)
+  return raw
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/u([0-9a-fA-F]{2}[89a-fA-F][0-9a-fA-F])/g, (match, h) => {
+      const code = parseInt(h, 16);
+      return code >= 0x80 ? String.fromCharCode(code) : match;
+    });
 }
 
 function timeAgo(dateStr) {

@@ -160,6 +160,26 @@ function inkrush_register_routes() {
 }
 
 /* ──────────────────────────────────────────────────────────────
+   HELPERS
+────────────────────────────────────────────────────────────── */
+
+/**
+ * Read artwork variables from post meta with backward compatibility.
+ * Old artworks stored a JSON string (wp_json_encode without UNESCAPED_UNICODE),
+ * which WP's stripslashes damaged into literal "u00f1" sequences.
+ * New artworks store a PHP-serialized array directly.
+ */
+function inkrush_get_post_variables( $post_id ) {
+    $raw = get_post_meta( $post_id, 'inkrush_variables', true );
+    if ( is_array( $raw ) ) return $raw;
+    if ( empty( $raw ) ) return [];
+    // Legacy JSON string — decode
+    $decoded = json_decode( $raw, true );
+    if ( is_array( $decoded ) ) return $decoded;
+    return [];
+}
+
+/* ──────────────────────────────────────────────────────────────
    PARÁMETROS
 ────────────────────────────────────────────────────────────── */
 
@@ -264,7 +284,7 @@ function inkrush_api_list_artworks( WP_REST_Request $req ) {
             'handle'      => $uid ? ( get_user_meta( $uid, 'inkrush_handle', true ) ?: '' ) : '',
             'avatar_url'  => $uid ? ( get_user_meta( $uid, 'inkrush_avatar_url', true ) ?: '' ) : '',
             'technique'   => get_post_meta( $post->ID, 'inkrush_technique', true ),
-            'variables'   => json_decode( get_post_meta( $post->ID, 'inkrush_variables', true ) ?: '[]', true ),
+            'variables'   => inkrush_get_post_variables( $post->ID ),
             'rarity'      => get_post_meta( $post->ID, 'inkrush_rarity', true ) ?: 'Común',
             'likes'       => (int) get_post_meta( $post->ID, 'inkrush_likes', true ),
             'inspires'    => (int) get_post_meta( $post->ID, 'inkrush_inspires', true ),
@@ -310,8 +330,8 @@ function inkrush_api_create_artwork( WP_REST_Request $req ) {
 
     update_post_meta( $post_id, 'inkrush_technique', $technique );
     update_post_meta( $post_id, 'inkrush_rarity',    $rarity );
-    update_post_meta( $post_id, 'inkrush_variables',  wp_json_encode( (array) $variables ) );
-    update_post_meta( $post_id, 'inkrush_params',     wp_json_encode( (array) $params ) );
+    update_post_meta( $post_id, 'inkrush_variables', array_values( (array) $variables ) );
+    update_post_meta( $post_id, 'inkrush_params',   array_values( (array) $params ) );
     update_post_meta( $post_id, 'inkrush_likes',     0 );
     update_post_meta( $post_id, 'inkrush_inspires',  0 );
     update_post_meta( $post_id, 'inkrush_tries',     0 );

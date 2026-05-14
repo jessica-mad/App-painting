@@ -72,8 +72,17 @@ export const initialState = {
   screen:           startScreen(),
   user:             wpUser,
   favoriteTechniques: JSON.parse(localStorage.getItem("inkrush_techniques") || "[]"),
-  savedIdeas:       JSON.parse(localStorage.getItem("inkrush_saved") || "[]")
-    .map(idea => idea._id ? idea : { ...idea, _id: Math.random().toString(36).slice(2) }),
+  savedIdeas:       (() => {
+    const raw = JSON.parse(localStorage.getItem("inkrush_saved") || "[]")
+      .map(idea => idea._id ? idea : { ...idea, _id: Math.random().toString(36).slice(2) });
+    const seen = new Set();
+    return raw.filter(idea => {
+      const key = JSON.stringify((idea.variables ?? []).map(v => (typeof v === "string" ? v : v.value)).sort());
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 5);
+  })(),
   displacedIdea:    null,
   selectedParams:   ["Emociones", "Animales", "Eventos"],
   /* idea = { variables: [...], params: [...] } — guarda los params usados */

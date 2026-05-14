@@ -437,9 +437,9 @@ export function UploadScreen() {
         )}
         <button
           onClick={publish}
-          disabled={saving}
+          disabled={saving || images.length === 0}
           className="stk"
-          style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer", opacity: saving ? 0.6 : 1 }}
+          style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: saving || images.length === 0 ? "not-allowed" : "pointer", opacity: saving || images.length === 0 ? 0.45 : 1 }}
         >
           <IShare s={18}/> {saving ? "Publicando..." : "Publicar"}
         </button>

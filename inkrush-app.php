@@ -143,6 +143,22 @@ add_shortcode( 'inkrush_app', function() {
     $user_id = get_current_user_id();
     $user    = $user_id ? get_userdata( $user_id ) : null;
 
+    /* Auto-generate a clean handle for users who don't have one yet */
+    if ( $user_id && empty( get_user_meta( $user_id, 'inkrush_handle', true ) ) ) {
+        $name = $user->display_name ?: $user->user_login;
+        $slug = strtolower( $name );
+        $slug = function_exists( 'iconv' ) ? iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $slug ) : $slug;
+        $slug = preg_replace( '/[^a-z0-9]+/', '_', $slug );
+        $slug = trim( preg_replace( '/_{2,}/', '_', $slug ), '_' );
+        $slug = substr( $slug ?: 'artista', 0, 18 );
+        $handle = $slug;
+        $i = 2;
+        while ( ! empty( get_users( [ 'meta_key' => 'inkrush_handle', 'meta_value' => $handle, 'number' => 1, 'fields' => 'ID', 'exclude' => [ $user_id ] ] ) ) ) {
+            $handle = substr( $slug, 0, 15 ) . '_' . $i++;
+        }
+        update_user_meta( $user_id, 'inkrush_handle', $handle );
+    }
+
     wp_localize_script( 'inkrush-app', 'InkRushConfig', [
         'apiUrl'       => esc_url( rest_url( 'inkrush/v1' ) ),
         'nonce'        => wp_create_nonce( 'wp_rest' ),
