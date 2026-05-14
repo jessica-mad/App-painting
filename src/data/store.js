@@ -22,7 +22,7 @@ function getLocalRolls(maxRolls) {
 function saveLocalRolls(rolls) {
   localStorage.setItem("inkrush_daily_rolls", JSON.stringify({ date: new Date().toDateString(), rolls }));
 }
-const wpUser   = wpConfig.userId ? {
+const wpUser   = parseInt(wpConfig.userId) ? {
   id:       wpConfig.userId,
   name:     wpConfig.userName ?? "Artista",
   avatar:   wpConfig.userAvatar ?? "👩‍🎨",
