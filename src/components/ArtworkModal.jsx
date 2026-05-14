@@ -350,12 +350,14 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
     if (type === "inspire") setInspires(n => was ? n - 1 : n + 1);
     if (type === "try") {
       setTries(n => was ? n - 1 : n + 1);
-      if (!was && IS_LOGGED_IN) {
-        const variables = tags.map(t => ({ value: decodeTag(t), rarity: typeof t === "object" && t.rarity ? t.rarity : "Común" }));
-        dispatch({ type: "SAVE_IDEA", idea: { variables, params: post.params ?? [] } });
-        useTryAPI().catch(() => {});
+      if (!was) {
         markLocalTry();
         onTryUsed?.();
+        if (IS_LOGGED_IN) {
+          const variables = tags.map(t => ({ value: decodeTag(t), rarity: typeof t === "object" && t.rarity ? t.rarity : "Común" }));
+          dispatch({ type: "SAVE_IDEA", idea: { variables, params: post.params ?? [] } });
+          useTryAPI().catch(() => {});
+        }
         setTrySaved(true);
         setTimeout(() => setTrySaved(false), 1800);
       }

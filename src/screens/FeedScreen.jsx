@@ -138,7 +138,9 @@ export function FeedScreen() {
   const [filter, setFilter]         = useState("Para ti");
   const [posts, setPosts]           = useState([]);
   const [loading, setLoading]       = useState(true);
-  const [triesLeft, setTriesLeft]   = useState(() => IS_LOGGED_IN ? WP_TRIES_LEFT : localTriesLeft());
+  const [triesLeft, setTriesLeft]   = useState(() => IS_LOGGED_IN
+    ? Math.min(WP_TRIES_LEFT, localTriesLeft())
+    : localTriesLeft());
   const [view, setView]             = useState(() => localStorage.getItem("inkrush_feed_view") || "list");
   const [galleryPost, setGalleryPost] = useState(null); // { post, idx }
   const countdown = useCountdown();
