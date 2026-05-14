@@ -101,6 +101,10 @@ export async function resetRollsAdmin(userId) {
   });
 }
 
+export async function fetchArtwork(id) {
+  return apiFetch(`/artworks/${id}`);
+}
+
 export async function fetchUserArtworks(userId, page = 1) {
   return apiFetch(`/artworks?author=${userId}&page=${page}`);
 }

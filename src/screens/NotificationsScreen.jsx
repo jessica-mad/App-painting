@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
-import { fetchNotifications, markNotificationsRead, IS_LOGGED_IN } from "../utils/api";
+import { fetchNotifications, markNotificationsRead, fetchArtwork, IS_LOGGED_IN } from "../utils/api";
 import { IArrowL, IUser, IBell, IHeart, IInspire, IFlame, IComment } from "../components/Icons";
+import { ArtworkModal } from "../components/ArtworkModal";
 
 const TYPE_META = {
   like:    { icon: IHeart,   color: "var(--rose)",   label: (n) => `${n} le dio like a tu obra` },
@@ -26,20 +27,37 @@ function timeAgo(dateStr) {
   return `${Math.floor(d / 7)}sem`;
 }
 
-function NotifRow({ notif, onViewUser }) {
-  const meta   = TYPE_META[notif.type] ?? TYPE_META.like;
-  const IcoFn  = meta.icon;
-  const isRead = notif.is_read;
+const ARTWORK_TYPES = new Set(["like", "inspire", "try", "comment"]);
+
+function NotifRow({ notif, onViewUser, onOpenArtwork }) {
+  const meta     = TYPE_META[notif.type] ?? TYPE_META.like;
+  const IcoFn    = meta.icon;
+  const isRead   = notif.is_read;
+  const isArtwork = ARTWORK_TYPES.has(notif.type) && notif.post_id;
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = () => {
+    if (notif.type === "follow") { onViewUser(notif.from.id); return; }
+    if (isArtwork) {
+      setLoading(true);
+      fetchArtwork(notif.post_id)
+        .then(res => { if (res?.artwork) onOpenArtwork(res.artwork); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+  };
 
   return (
     <div
-      onClick={notif.type === "follow" ? () => onViewUser(notif.from.id) : undefined}
+      onClick={handleClick}
       style={{
         display: "flex", alignItems: "center", gap: 12, padding: "12px 18px",
         background: isRead ? "transparent" : "rgba(20,17,15,.035)",
         borderBottom: "1px solid rgba(20,17,15,.07)",
-        cursor: notif.type === "follow" ? "pointer" : "default",
+        cursor: notif.type === "follow" || isArtwork ? "pointer" : "default",
         position: "relative",
+        opacity: loading ? 0.6 : 1,
+        transition: "opacity .15s",
       }}
     >
       {/* Unread dot */}
@@ -107,9 +125,10 @@ function NotifRow({ notif, onViewUser }) {
 
 export function NotificationsScreen() {
   const { dispatch } = useApp();
-  const [notifs,  setNotifs]  = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [empty,   setEmpty]   = useState(false);
+  const [notifs,       setNotifs]       = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [empty,        setEmpty]        = useState(false);
+  const [activeArtwork, setActiveArtwork] = useState(null);
 
   useEffect(() => {
     if (!IS_LOGGED_IN) return;
@@ -128,8 +147,12 @@ export function NotificationsScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const goBack  = () => dispatch({ type: "SET_SCREEN", screen: "home" });
+  const goBack   = () => dispatch({ type: "SET_SCREEN", screen: "home" });
   const viewUser = (uid) => dispatch({ type: "VIEW_USER", userId: uid });
+  const viewAuthorOf = (post) => {
+    if (!post?.author_id) return undefined;
+    return () => dispatch({ type: "VIEW_USER", userId: post.author_id });
+  };
 
   return (
     <Phone>
@@ -167,10 +190,18 @@ export function NotificationsScreen() {
             </div>
           )}
 
+          {activeArtwork && (
+            <ArtworkModal
+              post={activeArtwork}
+              onClose={() => setActiveArtwork(null)}
+              onViewAuthor={viewAuthorOf(activeArtwork)}
+            />
+          )}
+
           {!loading && notifs.length > 0 && (
             <div>
               {notifs.map(n => (
-                <NotifRow key={n.id} notif={n} onViewUser={viewUser}/>
+                <NotifRow key={n.id} notif={n} onViewUser={viewUser} onOpenArtwork={setActiveArtwork}/>
               ))}
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.3)", textAlign: "center", padding: "18px 0" }}>
                 // últimas 50 notificaciones
