@@ -85,6 +85,7 @@ function GalleryModal({ post, idx, onClose, triesLeft, onTryUsed, onRemove, onUp
           triesLeft={triesLeft}
           onTryUsed={onTryUsed}
           onViewAuthor={onViewAuthor}
+          commentsOpen
         />
       </div>
     </div>

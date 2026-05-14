@@ -182,6 +182,22 @@ export async function useTryAPI() {
   return apiFetch('/tries/use', { method: 'POST' });
 }
 
+/* ── Comentarios ── */
+export async function fetchComments(artworkId) {
+  return apiFetch(`/artworks/${artworkId}/comments`);
+}
+
+export async function postComment(artworkId, text) {
+  return apiFetch(`/artworks/${artworkId}/comments`, {
+    method: "POST",
+    body:   JSON.stringify({ text }),
+  });
+}
+
+export async function deleteComment(artworkId, commentId) {
+  return apiFetch(`/artworks/${artworkId}/comments/${commentId}`, { method: "DELETE" });
+}
+
 /* ── Bug reports ── */
 export async function submitBugReport({ title, description, expected, files, deviceInfo }) {
   const fd = new FormData();

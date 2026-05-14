@@ -157,6 +157,17 @@ function inkrush_register_routes() {
         'callback'            => 'inkrush_api_submit_bug_report',
         'permission_callback' => '__return_true',
     ] );
+
+    /* ── Comentarios de obras ── */
+    register_rest_route( 'inkrush/v1', '/artworks/(?P<id>\d+)/comments', [
+        [ 'methods' => 'GET',  'callback' => 'inkrush_api_list_comments',  'permission_callback' => '__return_true' ],
+        [ 'methods' => 'POST', 'callback' => 'inkrush_api_post_comment',   'permission_callback' => 'is_user_logged_in' ],
+    ] );
+    register_rest_route( 'inkrush/v1', '/artworks/(?P<id>\d+)/comments/(?P<comment_id>\d+)', [
+        'methods'             => 'DELETE',
+        'callback'            => 'inkrush_api_delete_comment',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -286,10 +297,11 @@ function inkrush_api_list_artworks( WP_REST_Request $req ) {
             'technique'   => get_post_meta( $post->ID, 'inkrush_technique', true ),
             'variables'   => inkrush_get_post_variables( $post->ID ),
             'rarity'      => get_post_meta( $post->ID, 'inkrush_rarity', true ) ?: 'Común',
-            'likes'       => (int) get_post_meta( $post->ID, 'inkrush_likes', true ),
-            'inspires'    => (int) get_post_meta( $post->ID, 'inkrush_inspires', true ),
-            'tries'       => (int) get_post_meta( $post->ID, 'inkrush_tries', true ),
-            'userReacted' => $user_reacted,
+            'likes'         => (int) get_post_meta( $post->ID, 'inkrush_likes', true ),
+            'inspires'      => (int) get_post_meta( $post->ID, 'inkrush_inspires', true ),
+            'tries'         => (int) get_post_meta( $post->ID, 'inkrush_tries', true ),
+            'comment_count' => (int) get_post_meta( $post->ID, 'inkrush_comment_count', true ),
+            'userReacted'   => $user_reacted,
             'hidden'      => (bool) get_post_meta( $post->ID, 'inkrush_hidden', true ),
             'reports'     => (int) get_post_meta( $post->ID, 'inkrush_reports', true ),
             'image'       => get_the_post_thumbnail_url( $post->ID, 'large' ) ?: '',
@@ -1140,4 +1152,104 @@ function inkrush_api_submit_bug_report( WP_REST_Request $req ) {
     wp_mail( $admin_email, $subject, $body );
 
     return rest_ensure_response( [ 'success' => true, 'id' => $post_id ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   COMENTARIOS
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_list_comments( WP_REST_Request $req ) {
+    $post_id = (int) $req['id'];
+    $post    = get_post( $post_id );
+    if ( ! $post || $post->post_type !== 'inkrush_artwork' ) {
+        return new WP_Error( 'not_found', 'Obra no encontrada.', [ 'status' => 404 ] );
+    }
+
+    $comments = get_comments( [
+        'post_id'  => $post_id,
+        'type'     => 'inkrush',
+        'status'   => 'approve',
+        'number'   => 50,
+        'order'    => 'ASC',
+        'orderby'  => 'comment_date',
+    ] );
+
+    $me = get_current_user_id();
+    $data = array_map( function( $c ) use ( $me ) {
+        $uid = (int) $c->user_id;
+        return [
+            'id'        => (int) $c->comment_ID,
+            'text'      => $c->comment_content,
+            'author'    => $c->comment_author,
+            'author_id' => $uid,
+            'avatar'    => get_avatar_url( $uid ?: $c->comment_author_email, [ 'size' => 40 ] ),
+            'date'      => $c->comment_date_gmt,
+            'isOwn'     => $me > 0 && $me === $uid,
+        ];
+    }, $comments );
+
+    return rest_ensure_response( [ 'comments' => $data ] );
+}
+
+function inkrush_api_post_comment( WP_REST_Request $req ) {
+    $post_id = (int) $req['id'];
+    $post    = get_post( $post_id );
+    if ( ! $post || $post->post_type !== 'inkrush_artwork' ) {
+        return new WP_Error( 'not_found', 'Obra no encontrada.', [ 'status' => 404 ] );
+    }
+
+    $text = sanitize_textarea_field( $req->get_json_params()['text'] ?? '' );
+    if ( strlen( $text ) < 1 || strlen( $text ) > 500 ) {
+        return new WP_Error( 'invalid_text', 'El comentario debe tener entre 1 y 500 caracteres.', [ 'status' => 400 ] );
+    }
+
+    $user   = wp_get_current_user();
+    $cid    = wp_insert_comment( [
+        'comment_post_ID'      => $post_id,
+        'comment_content'      => $text,
+        'comment_type'         => 'inkrush',
+        'comment_approved'     => 1,
+        'user_id'              => $user->ID,
+        'comment_author'       => $user->display_name,
+        'comment_author_email' => $user->user_email,
+    ] );
+
+    if ( ! $cid || is_wp_error( $cid ) ) {
+        return new WP_Error( 'insert_failed', 'No se pudo guardar el comentario.', [ 'status' => 500 ] );
+    }
+
+    $count = (int) get_post_meta( $post_id, 'inkrush_comment_count', true );
+    update_post_meta( $post_id, 'inkrush_comment_count', $count + 1 );
+
+    return rest_ensure_response( [
+        'id'        => (int) $cid,
+        'text'      => $text,
+        'author'    => $user->display_name,
+        'author_id' => $user->ID,
+        'avatar'    => get_avatar_url( $user->ID, [ 'size' => 40 ] ),
+        'date'      => current_time( 'mysql', true ),
+        'isOwn'     => true,
+    ] );
+}
+
+function inkrush_api_delete_comment( WP_REST_Request $req ) {
+    $post_id    = (int) $req['id'];
+    $comment_id = (int) $req['comment_id'];
+    $comment    = get_comment( $comment_id );
+
+    if ( ! $comment || (int) $comment->comment_post_ID !== $post_id ) {
+        return new WP_Error( 'not_found', 'Comentario no encontrado.', [ 'status' => 404 ] );
+    }
+
+    $me = get_current_user_id();
+    if ( (int) $comment->user_id !== $me && ! current_user_can( 'manage_options' ) ) {
+        return new WP_Error( 'forbidden', 'No puedes eliminar este comentario.', [ 'status' => 403 ] );
+    }
+
+    wp_delete_comment( $comment_id, true );
+
+    $count = max( 0, (int) get_post_meta( $post_id, 'inkrush_comment_count', true ) - 1 );
+    update_post_meta( $post_id, 'inkrush_comment_count', $count );
+
+    return rest_ensure_response( [ 'success' => true ] );
 }

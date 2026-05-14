@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { RarityBadge } from "./RarityBadge";
 import { useApp } from "../data/store";
-import { addReaction, useTryAPI, deleteArtwork, hideArtwork, reportArtwork, updateArtwork, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
-import { IHeart, IInspire, IFlame, IUser, IBrush, IEyeOff, ITrash, IFlag, IArrowL, IArrowR } from "./Icons";
+import { addReaction, useTryAPI, deleteArtwork, hideArtwork, reportArtwork, updateArtwork, fetchComments, postComment, deleteComment, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
+import { IHeart, IInspire, IFlame, IUser, IBrush, IEyeOff, ITrash, IFlag, IArrowL, IArrowR, IComment, ITrash as ITrashIcon } from "./Icons";
 
 function decodeTag(t) {
   const raw = typeof t === "string" ? t : (t.value ?? "");
@@ -306,10 +306,201 @@ function MenuRow({ icon, label, danger, onClick, last }) {
   );
 }
 
+/* ── Single comment row ── */
+function CommentItem({ comment, artworkId, onDeleted }) {
+  const [deleting, setDeleting] = useState(false);
+  const [gone,     setGone]     = useState(false);
+
+  if (gone) return null;
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteComment(artworkId, comment.id);
+      setGone(true);
+      onDeleted?.(comment.id);
+    } catch {
+      setDeleting(false);
+    }
+  };
+
+  function timeAgoC(dateStr) {
+    if (!dateStr) return "";
+    const diff = Date.now() - new Date(dateStr + "Z").getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return "ahora";
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    return `${Math.floor(h / 24)}d`;
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+      <div style={{ width: 30, height: 30, borderRadius: 999, border: "1.5px solid var(--ink)", background: "var(--lilac)", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {comment.avatar
+          ? <img src={comment.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}/>
+          : <IUser s={14}/>
+        }
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+          <span style={{ fontWeight: 800, fontSize: 12 }}>{comment.author}</span>
+          <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{timeAgoC(comment.date)}</span>
+        </div>
+        <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 500, lineHeight: 1.4, wordBreak: "break-word" }}>{comment.text}</p>
+      </div>
+      {comment.isOwn && (
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          title="Eliminar"
+          style={{ all: "unset", cursor: "pointer", opacity: deleting ? 0.4 : 0.5, padding: "2px 4px", flexShrink: 0 }}>
+          <ITrashIcon s={13}/>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── Comments section (collapsible in list, expanded in modal) ── */
+function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false }) {
+  const [open,     setOpen]     = useState(defaultOpen);
+  const [comments, setComments] = useState([]);
+  const [count,    setCount]    = useState(initialCount);
+  const [loaded,   setLoaded]   = useState(false);
+  const [loading,  setLoading]  = useState(false);
+  const [text,     setText]     = useState("");
+  const [posting,  setPosting]  = useState(false);
+  const inputRef = useRef(null);
+
+  const load = async () => {
+    if (loaded || loading) return;
+    setLoading(true);
+    try {
+      const res = await fetchComments(artworkId);
+      if (res?.comments) {
+        setComments(res.comments);
+        setCount(res.comments.length);
+        setLoaded(true);
+      }
+    } catch {}
+    setLoading(false);
+  };
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next) load();
+  };
+
+  useEffect(() => {
+    if (defaultOpen) load();
+  }, []);
+
+  const submit = async () => {
+    const trimmed = text.trim();
+    if (!trimmed || posting) return;
+    setPosting(true);
+    try {
+      const c = await postComment(artworkId, trimmed);
+      if (c?.id) {
+        setComments(cs => [...cs, c]);
+        setCount(n => n + 1);
+        setText("");
+      }
+    } catch {}
+    setPosting(false);
+  };
+
+  const onDeleted = (id) => {
+    setCount(n => Math.max(0, n - 1));
+  };
+
+  const handleKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
+  };
+
+  return (
+    <div style={{ borderTop: "1.5px solid rgba(20,17,15,.1)", marginTop: 2 }}>
+      {/* Toggle chip */}
+      <button
+        onClick={toggle}
+        style={{
+          all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          padding: "10px 14px", width: "100%", boxSizing: "border-box",
+        }}>
+        <IComment s={14}/>
+        <span style={{ fontWeight: 700, fontSize: 12 }}>
+          {count > 0 ? `${count} comentario${count === 1 ? "" : "s"}` : "Comentarios"}
+        </span>
+        <span style={{ marginLeft: "auto", fontSize: 11, color: "rgba(20,17,15,.45)", fontWeight: 700 }}>
+          {open ? "▲" : "▼"}
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ padding: "0 14px 14px" }}>
+          {loading && (
+            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", marginBottom: 10 }}>// cargando...</p>
+          )}
+
+          {/* Comment list */}
+          {loaded && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: comments.length > 0 ? 14 : 0 }}>
+              {comments.map(c => (
+                <CommentItem key={c.id} comment={c} artworkId={artworkId} onDeleted={onDeleted}/>
+              ))}
+              {comments.length === 0 && (
+                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.35)", textAlign: "center", margin: "4px 0 12px" }}>
+                  // sin comentarios aún
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Input */}
+          {IS_LOGGED_IN && (
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+              <textarea
+                ref={inputRef}
+                value={text}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={handleKey}
+                placeholder="Añade un comentario…"
+                rows={1}
+                style={{
+                  flex: 1, border: "2px solid var(--ink)", borderRadius: 12, padding: "8px 12px",
+                  fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none",
+                  outline: "none", background: "var(--paper-2)", boxSizing: "border-box",
+                  lineHeight: 1.4, minHeight: 38, maxHeight: 90, overflowY: "auto",
+                }}
+              />
+              <button
+                onClick={submit}
+                disabled={!text.trim() || posting}
+                style={{
+                  height: 38, padding: "0 14px", borderRadius: 12, border: "2px solid var(--ink)",
+                  background: text.trim() ? "var(--ink)" : "var(--paper-2)",
+                  color: text.trim() ? "var(--acid)" : "rgba(20,17,15,.3)",
+                  fontWeight: 800, fontSize: 12, cursor: text.trim() ? "pointer" : "not-allowed",
+                  flexShrink: 0, fontFamily: "Space Grotesk",
+                  transition: "background .15s",
+                }}>
+                {posting ? "…" : "OK"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main PostCard ──
    Used in feed (inline) and from profile grids (inside ArtworkModal bottom-sheet).
    isOwn, onRemove, onUpdate are optional — omit them in read-only contexts.        */
-export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, triesLeft, onTryUsed, onViewAuthor }) {
+export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, triesLeft, onTryUsed, onViewAuthor, commentsOpen = false }) {
   const { dispatch } = useApp();
   const isOwn = isOwnProp ?? (IS_LOGGED_IN && parseInt(post.author_id) === WP_USER_ID);
 
@@ -511,6 +702,15 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
       {/* Caption expandible debajo de las reacciones */}
       <ExpandableCaption username={user} text={caption}/>
 
+      {/* Comentarios */}
+      {post.id && (
+        <CommentsSection
+          artworkId={post.id}
+          initialCount={post.comment_count ?? 0}
+          defaultOpen={commentsOpen}
+        />
+      )}
+
       {/* Modals (scoped inside card so backdrop is card-sized) */}
       {confirmDel && <DeleteConfirm onConfirm={handleDelete} onCancel={() => setConfirmDel(false)}/>}
       {editOpen && (
@@ -552,6 +752,7 @@ export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewA
           triesLeft={triesLeft}
           onTryUsed={onTryUsed}
           onViewAuthor={onViewAuthor}
+          commentsOpen
         />
       </div>
     </div>
