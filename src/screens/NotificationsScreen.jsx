@@ -3,15 +3,16 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { fetchNotifications, markNotificationsRead, fetchArtwork, IS_LOGGED_IN } from "../utils/api";
-import { IArrowL, IUser, IBell, IHeart, IInspire, IFlame, IComment } from "../components/Icons";
+import { IArrowL, IUser, IBell, IHeart, IInspire, IFlame, IComment, IBrush } from "../components/Icons";
 import { ArtworkModal } from "../components/ArtworkModal";
 
 const TYPE_META = {
-  like:    { icon: IHeart,   color: "var(--rose)",   label: (n) => `${n} le dio like a tu obra` },
-  inspire: { icon: IInspire, color: "var(--lilac)",  label: (n) => `${n} se inspiró con tu obra` },
-  try:     { icon: IFlame,   color: "var(--butter)", label: (n) => `${n} va a intentar tu reto` },
-  comment: { icon: IComment, color: "var(--sky)",    label: (n) => `${n} comentó en tu obra` },
-  follow:  { icon: IUser,    color: "var(--mint)",   label: (n) => `${n} empezó a seguirte` },
+  like:     { icon: IHeart,   color: "var(--rose)",   label: (n) => `${n} le dio like a tu obra` },
+  inspire:  { icon: IInspire, color: "var(--lilac)",  label: (n) => `${n} se inspiró con tu obra` },
+  try:      { icon: IFlame,   color: "var(--butter)", label: (n) => `${n} va a intentar tu reto` },
+  comment:  { icon: IComment, color: "var(--sky)",    label: (n) => `${n} comentó en tu obra` },
+  follow:   { icon: IUser,    color: "var(--mint)",   label: (n) => `${n} empezó a seguirte` },
+  new_post: { icon: IBrush,   color: "var(--acid)",   label: (n) => `${n} publicó una nueva obra` },
 };
 
 function timeAgo(dateStr) {
@@ -27,7 +28,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(d / 7)}sem`;
 }
 
-const ARTWORK_TYPES = new Set(["like", "inspire", "try", "comment"]);
+const ARTWORK_TYPES = new Set(["like", "inspire", "try", "comment", "new_post"]);
 
 function NotifRow({ notif, onViewUser, onOpenArtwork }) {
   const meta     = TYPE_META[notif.type] ?? TYPE_META.like;
@@ -95,13 +96,13 @@ function NotifRow({ notif, onViewUser, onOpenArtwork }) {
         <p style={{ fontSize: 13, fontWeight: isRead ? 500 : 700, lineHeight: 1.3, margin: 0 }}>
           {meta.label(notif.from.name)}
         </p>
-        {notif.type === "comment" && notif.excerpt && (
+        {notif.excerpt && (
           <p style={{
             fontSize: 12, fontWeight: 500, color: "rgba(20,17,15,.55)",
-            marginTop: 2, margin: "3px 0 0",
+            margin: "3px 0 0",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            "{notif.excerpt}"
+            {notif.type === "comment" ? `"${notif.excerpt}"` : notif.excerpt}
           </p>
         )}
         <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.38)", marginTop: 3 }}>

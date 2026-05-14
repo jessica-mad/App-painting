@@ -408,6 +408,17 @@ function inkrush_api_create_artwork( WP_REST_Request $req ) {
     update_user_meta( $uid, 'inkrush_challenges_completed', $current + 1 );
     inkrush_update_user_level( $uid );
 
+    // Notificar a todos los seguidores del autor
+    $followers = get_users( [
+        'meta_key'   => "inkrush_following_{$uid}",
+        'meta_value' => '1',
+        'fields'     => 'ID',
+        'number'     => 500,
+    ] );
+    foreach ( $followers as $follower_id ) {
+        inkrush_push_notification( (int) $follower_id, $uid, 'new_post', $post_id, $prompt ?: null );
+    }
+
     return rest_ensure_response( ['success'=>true, 'id'=>$post_id] );
 }
 
