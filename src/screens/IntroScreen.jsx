@@ -5,7 +5,7 @@ import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
 import { IDice, ITimer, IHeart, IBrush, IStar, IArrowR } from "../components/Icons";
 
-const SLIDES = [
+export const SLIDES = [
   {
     bg:    "var(--acid)",
     Icon:  IBrush,

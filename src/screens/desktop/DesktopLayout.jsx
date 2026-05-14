@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { SLIDES } from "../IntroScreen";
 import { Wordmark } from "../../components/Wordmark";
 import { RarityBadge } from "../../components/RarityBadge";
 import { useApp } from "../../data/store";
@@ -750,6 +752,118 @@ export function DeskProfile() {
   );
 }
 
+/* ─── Desktop marketing slideshow panel ─── */
+function DeskMarketingPanel() {
+  const [idx, setIdx] = useState(0);
+  const timerRef = useRef(null);
+  const slide = SLIDES[idx];
+
+  function resetTimer() {
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setIdx(i => (i + 1) % SLIDES.length), 4600);
+  }
+
+  useEffect(() => {
+    resetTimer();
+    return () => clearInterval(timerRef.current);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const goTo = (i) => { setIdx(i); resetTimer(); };
+
+  return (
+    <div
+      style={{ background: slide.bg, transition: "background 0.45s ease", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", padding: "40px 52px 40px" }}
+      className="grain-soft"
+    >
+      <div className="stripes-y" style={{ position: "absolute", inset: 0, opacity: 0.35 }}/>
+      <div className="halftone"  style={{ position: "absolute", inset: 0, opacity: 0.1 }}/>
+      <div style={{ position: "absolute", top: 32, right: 48, color: "rgba(20,17,15,.15)", pointerEvents: "none" }}><IStar s={44}/></div>
+
+      {/* Wordmark */}
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <Wordmark size={40}/>
+        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 4 }}>// PARA ARTISTAS</p>
+      </div>
+
+      {/* Slide content */}
+      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ type: "spring", stiffness: 320, damping: 30 }}
+            style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}
+          >
+            {/* Tag */}
+            <span className="tag" style={{
+              background: "var(--ink)", color: slide.bg,
+              padding: "4px 10px", borderRadius: 4, alignSelf: "flex-start", fontSize: 11,
+            }}>
+              {slide.tag}
+            </span>
+
+            {/* Icon + stamp */}
+            <div style={{ marginTop: 32, position: "relative", alignSelf: "flex-start" }}>
+              <div style={{
+                width: 148, height: 148, borderRadius: 36,
+                border: "3px solid var(--ink)", background: "var(--paper-2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "10px 10px 0 var(--ink)", transform: "rotate(-4deg)",
+              }}>
+                <slide.Icon s={78} sw={1.8}/>
+              </div>
+              <div className="stamp" style={{
+                position: "absolute", top: -10, right: -36,
+                background: "var(--ink)", color: slide.bg, borderColor: slide.bg,
+                transform: "rotate(5deg)", whiteSpace: "nowrap",
+              }}>
+                ★ {slide.stamp}
+              </div>
+            </div>
+
+            {/* Text */}
+            <h2 className="serif" style={{ fontSize: 52, lineHeight: 0.95, marginTop: 30, maxWidth: 500 }}>
+              {slide.title}
+            </h2>
+            <p style={{ fontSize: 16, fontWeight: 600, marginTop: 16, lineHeight: 1.45, color: "rgba(20,17,15,.68)", maxWidth: 460 }}>
+              {slide.body}
+            </p>
+
+            {/* Step number ghost */}
+            <p className="mono" style={{
+              fontSize: 130, fontWeight: 800, lineHeight: 1,
+              color: "rgba(20,17,15,.06)", letterSpacing: "-0.04em",
+              position: "absolute", bottom: -30, right: -8,
+              userSelect: "none", pointerEvents: "none",
+            }}>
+              0{idx + 1}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Dot navigation */}
+      <div style={{ position: "relative", flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
+        {SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            style={{
+              height: 8, borderRadius: 999, border: "1.5px solid var(--ink)",
+              width: i === idx ? 28 : 8,
+              background: i === idx ? "var(--ink)" : "rgba(20,17,15,.2)",
+              transition: "width .25s, background .25s",
+              padding: 0, cursor: "pointer",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Desktop Login ─── */
 export function DeskLogin() {
   const goLogin    = () => { window.location.href = `${WP_LOGIN_URL}?redirect_to=${encodeURIComponent(window.location.href)}`; };
@@ -757,42 +871,8 @@ export function DeskLogin() {
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100vh", background: "var(--paper)", overflow: "hidden" }}>
-      {/* Left — marketing */}
-      <div style={{ background: "var(--acid)", padding: 48, position: "relative", overflow: "hidden" }} className="grain-soft">
-        <div className="stripes-y" style={{ position: "absolute", inset: 0 }}/>
-        <div style={{ position: "absolute", top: 30, right: 40, color: "rgba(20,17,15,.18)" }}><ISpark s={48}/></div>
-        <div style={{ position: "absolute", bottom: 40, left: 40, color: "rgba(20,17,15,.15)" }}><IStar s={36}/></div>
-        <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
-          <Wordmark size={42}/>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <span className="stamp" style={{ background: "var(--coral)", color: "#fff", borderColor: "#fff", alignSelf: "flex-start" }}>★ Para artistas reales</span>
-            <h1 className="serif" style={{ fontSize: 72, lineHeight: 0.95, marginTop: 18, maxWidth: 540 }}>Por fin, completa tus sketchbooks.</h1>
-            <p style={{ fontSize: 16, fontWeight: 600, marginTop: 18, maxWidth: 460, lineHeight: 1.4 }}>Retos creativos aleatorios, timer Pomodoro y una comunidad que dibuja — no scrollea. Captura tu inspiración antes de que desaparezca.</p>
-            <div style={{ display: "flex", gap: 8, marginTop: 26, flexWrap: "wrap" }}>
-              {[
-                { Icon: IDice,  l: "Randómetro" },
-                { Icon: ITimer, l: "Pomodoro" },
-                { Icon: IHeart, l: "Comunidad real" },
-              ].map(({ Icon, l }, i) => (
-                <span key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: "6px 12px", borderRadius: 999, border: "2px solid var(--ink)", fontSize: 12, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  <Icon s={14}/> {l}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-            <div>
-              <p className="serif" style={{ fontSize: 36, lineHeight: 1 }}>+∞</p>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>IDEAS POSIBLES</p>
-            </div>
-            <div style={{ width: 2, height: 36, background: "var(--ink)", opacity: 0.4 }}/>
-            <div>
-              <p className="serif" style={{ fontSize: 36, lineHeight: 1 }}>0</p>
-              <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>EXCUSAS ACEPTADAS</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Left — marketing slides */}
+      <DeskMarketingPanel/>
 
       {/* Right — form */}
       <div style={{ padding: 48, display: "flex", flexDirection: "column", justifyContent: "center", background: "var(--paper-2)" }}>
