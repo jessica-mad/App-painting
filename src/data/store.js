@@ -72,7 +72,9 @@ export const initialState = {
   screen:           startScreen(),
   user:             wpUser,
   favoriteTechniques: JSON.parse(localStorage.getItem("inkrush_techniques") || "[]"),
-  savedIdeas:       JSON.parse(localStorage.getItem("inkrush_saved") || "[]"),
+  savedIdeas:       JSON.parse(localStorage.getItem("inkrush_saved") || "[]")
+    .map(idea => idea._id ? idea : { ...idea, _id: Math.random().toString(36).slice(2) }),
+  displacedIdea:    null,
   selectedParams:   ["Emociones", "Animales", "Eventos"],
   /* idea = { variables: [...], params: [...] } — guarda los params usados */
   currentIdea:      null,
@@ -146,16 +148,41 @@ export function reducer(state, action) {
       return { ...state, profile: { ...state.profile, ...action.data } };
 
     case "SAVE_IDEA": {
+      const MAX = 5;
       const ideaKey = (idea) =>
         JSON.stringify((idea.variables ?? []).map(v => (typeof v === "string" ? v : v.value)).sort());
       if (state.savedIdeas.some(s => ideaKey(s) === ideaKey(action.idea))) return state;
-      const newSaved = [...state.savedIdeas, action.idea];
+      const withId = { ...action.idea, _id: Math.random().toString(36).slice(2) };
+      const prepended = [withId, ...state.savedIdeas];
+      const displaced = prepended.length > MAX ? prepended[MAX] : null;
+      const newSaved = prepended.slice(0, MAX);
       localStorage.setItem("inkrush_saved", JSON.stringify(newSaved));
-      return { ...state, savedIdeas: newSaved };
+      return { ...state, savedIdeas: newSaved, displacedIdea: displaced };
+    }
+
+    case "UNDO_SAVE": {
+      if (!state.displacedIdea) return { ...state, displacedIdea: null };
+      const restored = [...state.savedIdeas, state.displacedIdea];
+      localStorage.setItem("inkrush_saved", JSON.stringify(restored));
+      return { ...state, savedIdeas: restored, displacedIdea: null };
+    }
+
+    case "CLEAR_DISPLACED":
+      return { ...state, displacedIdea: null };
+
+    case "SET_SAVED_IDEAS": {
+      localStorage.setItem("inkrush_saved", JSON.stringify(action.ideas));
+      return { ...state, savedIdeas: action.ideas };
     }
 
     case "REMOVE_IDEA": {
       const filtered = state.savedIdeas.filter((_, i) => i !== action.index);
+      localStorage.setItem("inkrush_saved", JSON.stringify(filtered));
+      return { ...state, savedIdeas: filtered };
+    }
+
+    case "REMOVE_IDEA_BY_ID": {
+      const filtered = state.savedIdeas.filter(idea => idea._id !== action.id);
       localStorage.setItem("inkrush_saved", JSON.stringify(filtered));
       return { ...state, savedIdeas: filtered };
     }

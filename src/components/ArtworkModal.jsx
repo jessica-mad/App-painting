@@ -337,6 +337,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
 
   const react = (type) => {
     const was = reacted[type];
+    if (type === "try" && isOwn) return; // no auto-intentaré
     if (type === "try" && !was && triesLeft !== undefined && triesLeft <= 0) return;
     if (post.id) addReaction(post.id, type).catch(() => {});
     if (type === "like")    setLikes(n    => was ? n - 1 : n + 1);
@@ -381,7 +382,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
   const reactions = [
     { Ico: IHeart,   count: likes,    type: "like",    bg: "var(--rose)",   active: reacted.like },
     { Ico: IInspire, count: inspires, type: "inspire", bg: "var(--lilac)",  active: reacted.inspire },
-    { Ico: IFlame,   count: tries,    type: "try",     bg: "var(--butter)", active: reacted.try },
+    { Ico: IFlame,   count: tries,    type: "try",     bg: "var(--butter)", active: reacted.try, disabled: isOwn },
   ];
 
   return (
@@ -475,12 +476,13 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
         {reactions.map((b, j) => {
           const isTry = b.type === "try";
           const saved = isTry && trySaved;
-          const blocked = isTry && !reacted.try && triesLeft !== undefined && triesLeft <= 0;
+          const blocked = (isTry && !reacted.try && triesLeft !== undefined && triesLeft <= 0) || b.disabled;
           return (
             <button
               key={j}
               onClick={() => react(b.type)}
               disabled={blocked}
+              title={b.disabled ? "No puedes intentar tu propio reto" : undefined}
               style={{
                 flex: 1, height: 38, borderRadius: 12, border: "2px solid var(--ink)",
                 background: saved ? "var(--mint)" : b.active ? b.bg : "var(--paper-2)",
@@ -488,7 +490,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
                 fontWeight: 800, fontSize: 12,
                 boxShadow: b.active ? "3px 3px 0 var(--ink)" : "none",
                 cursor: blocked ? "not-allowed" : "pointer",
-                opacity: blocked ? 0.45 : 1,
+                opacity: blocked ? 0.4 : 1,
                 transition: "background .2s",
                 fontFamily: "Space Grotesk",
               }}>

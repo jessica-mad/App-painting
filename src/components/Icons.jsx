@@ -59,6 +59,8 @@ export const IWatercolor = (p) => <Icon {...p} d={<><path d="M14 3l4 4-6 6-3-3z"
 export const ISketchbook = (p) => <Icon {...p} d={<><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M17 3l-2 18" strokeWidth={2.2}/><path d="M9 8h3" strokeWidth={1.4} opacity="0.55"/></>}/>;
 export const ISettings   = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></>}/>;
 export const IChevronD   = (p) => <Icon {...p} d={<><path d="M6 9l6 6 6-6"/></>}/>;
+export const IGrip       = (p) => <Icon {...p} d={<><circle cx="9" cy="5"  r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="5"  r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1.4" fill="currentColor" stroke="none"/></>}/>;
+export const IUndo       = (p) => <Icon {...p} d={<><path d="M3 10h11a6 6 0 0 1 0 12h-4"/><path d="M3 10l4-4M3 10l4 4"/></>}/>;
 
 /* Convenience bundle for spread usage */
 export const Icons = {

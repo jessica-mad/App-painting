@@ -5,7 +5,7 @@ import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, RARITY, getOverallRarity, generatePrompt, pickVariables } from "../data/parameters";
 import { generateAIPrompt } from "../utils/api";
-import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar } from "../components/Icons";
+import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar, IUndo } from "../components/Icons";
 
 const CAT_MAP = Object.fromEntries(PARAM_CATEGORIES.map(c => [c.id, c]));
 const CAT_ICONS_EL = { Emociones: IHeart, Animales: IFlame, Lugares: IStar, Objetos: IBrush, Eventos: IStar, Acciones: IBrush };
@@ -31,7 +31,14 @@ const GLOW_COLORS = {
 
 export function IdeaScreen() {
   const { state, dispatch } = useApp();
-  const { currentIdea, rollsLeft, activeSeason } = state;
+  const { currentIdea, rollsLeft, activeSeason, displacedIdea } = state;
+
+  /* Auto-dismiss undo toast */
+  useEffect(() => {
+    if (!displacedIdea) return;
+    const t = setTimeout(() => dispatch({ type: "CLEAR_DISPLACED" }), 6000);
+    return () => clearTimeout(t);
+  }, [displacedIdea, dispatch]);
   const [saved, setSaved]         = useState(false);
   const [rerolling, setRerolling] = useState(false);
   const [aiPrompt, setAiPrompt]   = useState(null);
@@ -214,6 +221,39 @@ export function IdeaScreen() {
               <IBookmark s={20}/>
             </button>
           </div>
+
+          {/* Undo toast — displaced idea when limit reached */}
+          <AnimatePresence>
+            {displacedIdea && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ overflow: "hidden" }}
+              >
+                <div style={{
+                  background: "var(--coral)", border: "2px solid var(--ink)", borderRadius: 12,
+                  padding: "8px 12px", display: "flex", alignItems: "center", gap: 8, marginBottom: 4,
+                }}>
+                  <p style={{ flex: 1, fontWeight: 700, fontSize: 11, color: "#fff", lineHeight: 1.3 }}>
+                    Límite 5/5 — se eliminó la última idea guardada
+                  </p>
+                  <button
+                    onClick={() => dispatch({ type: "UNDO_SAVE" })}
+                    style={{
+                      height: 28, padding: "0 10px", borderRadius: 999,
+                      border: "2px solid #fff", background: "#fff",
+                      color: "var(--coral)", fontWeight: 800, fontSize: 10,
+                      display: "flex", alignItems: "center", gap: 4, cursor: "pointer", flexShrink: 0,
+                    }}
+                  >
+                    <IUndo s={11}/> Deshacer
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Primary CTA */}
           <button
