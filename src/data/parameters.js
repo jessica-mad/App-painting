@@ -349,12 +349,19 @@ export function getOverallRarity(variables) {
   return RARITY.COMUN;
 }
 
-export function generatePrompt(variables) {
-  const vals = variables.map(v => v.value);
-  if (vals.length === 1) return `Ilustra: ${vals[0]}.`;
-  if (vals.length === 2) return `Ilustra ${vals[0]} con ${vals[1]}.`;
-  if (vals.length === 3) return `Ilustra ${vals[0]} encontrando ${vals[1]} en ${vals[2]}.`;
-  return `Ilustra una escena donde ${vals.join(", ")} se entrelazan de forma inesperada.`;
+export function generatePrompt(variables, lang = "es", t = null) {
+  const getLabel = v => (lang === "en" && v.value_en) ? v.value_en : v.value;
+  const vals = variables.map(getLabel);
+  if (!t) {
+    if (vals.length === 1) return `Ilustra: ${vals[0]}.`;
+    if (vals.length === 2) return `Ilustra ${vals[0]} con ${vals[1]}.`;
+    if (vals.length === 3) return `Ilustra ${vals[0]} encontrando ${vals[1]} en ${vals[2]}.`;
+    return `Ilustra una escena donde ${vals.join(", ")} se entrelazan de forma inesperada.`;
+  }
+  if (vals.length === 1) return t("idea.prompt.1", { a: vals[0] });
+  if (vals.length === 2) return t("idea.prompt.2", { a: vals[0], b: vals[1] });
+  if (vals.length === 3) return t("idea.prompt.3", { a: vals[0], b: vals[1], c: vals[2] });
+  return t("idea.prompt.4+", { vars: vals.join(", ") });
 }
 
 export function pickVariables(paramIds, activeSeason = null) {

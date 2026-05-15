@@ -197,6 +197,7 @@ export default {
   "random.no_coins":     "NO COINS",
   "random.roll.drag":    "// drag the lever →",
   "random.roll.tomorrow":"// come back tomorrow",
+  "random.lever.hint":   "DRAG ↓",
   "random.cat.Emociones":  "Emotions",
   "random.cat.Animales":   "Animals",
   "random.cat.Lugares":    "Places",
@@ -204,8 +205,16 @@ export default {
   "random.cat.Eventos":    "Events",
   "random.cat.Acciones":   "Actions",
   "random.cat.Personajes": "Characters",
+  "random.win.Raro.line":        "nice roll!",
+  "random.win.Raro.sub":         "uncommon combination",
+  "random.win.Épico.line":       "epic roll!",
+  "random.win.Épico.sub":        "this one is worth drawing",
+  "random.win.Legendario.line":  "LEGENDARY!",
+  "random.win.Legendario.sub":   "one in a thousand. go for it.",
 
   /* ── Idea screen ── */
+  "idea.title":             "Your creative challenge for today",
+  "idea.spoken":            "// the Randomizer has spoken",
   "idea.back":              "Back and change categories",
   "idea.headline.Común":    "The usual, but it always works",
   "idea.headline.Raro":     "Getting interesting now",
@@ -221,6 +230,10 @@ export default {
   "idea.probability":       "probability",
   "idea.season":            "INKRUSH · TODAY",
   "idea.deckLabel":         "RARITY ×{n}",
+  "idea.prompt.1":          "Illustrate: {a}.",
+  "idea.prompt.2":          "Illustrate {a} with {b}.",
+  "idea.prompt.3":          "Illustrate {a} encountering {b} in {c}.",
+  "idea.prompt.4+":         "Illustrate a scene where {vars} intertwine unexpectedly.",
 
   /* ── Saved screen ── */
   "saved.title":        "Saved",

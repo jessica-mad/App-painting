@@ -79,7 +79,7 @@ export function IdeaScreen() {
 
   const { variables, params } = currentIdea;
   const rarity   = getOverallRarity(variables);
-  const prompt   = aiPrompt ?? generatePrompt(variables);
+  const prompt   = aiPrompt ?? generatePrompt(variables, state.lang, t);
   const rarityInfo = RARITY_INFO[rarity] ?? RARITY_INFO[RARITY.COMUN];
   const glowRgb  = GLOW_COLORS[rarity];
   const rotations = [-1, 1, -0.5];
@@ -111,7 +111,7 @@ export function IdeaScreen() {
           )}
         </div>
 
-        <h2 className="serif" style={{ fontSize: 36, marginTop: 6, lineHeight: 1, padding: "0 22px", flexShrink: 0 }}>Tu condena creativa de hoy</h2>
+        <h2 className="serif" style={{ fontSize: 36, marginTop: 6, lineHeight: 1, padding: "0 22px", flexShrink: 0 }}>{t("idea.title")}</h2>
 
         {/* Scrollable content */}
         <div className="scroll" style={{ flex: 1, minHeight: 0, padding: "14px 22px 8px" }}>
@@ -136,7 +136,7 @@ export function IdeaScreen() {
                       <CatIcon s={22}/>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// {cat.label?.toUpperCase() || params[i]?.toUpperCase()}</p>
+                      <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// {params[i] ? t(`random.cat.${params[i]}`).toUpperCase() : ""}</p>
                       <p style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1, marginTop: 2, textTransform: "lowercase" }}>{getVarLabel(variable, state.lang)}</p>
                     </div>
                     <RarityBadge rarity={variable.rarity}/>
@@ -152,7 +152,7 @@ export function IdeaScreen() {
               <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.18 }}/>
               <div style={{ position: "relative", padding: "20px 18px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                  <span className="tag">// el Randómetro ha hablado</span>
+                  <span className="tag">{t("idea.spoken")}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {aiPrompt && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{t("idea.ai.btn")}</span>}
                     {aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1s infinite" }}>{t("idea.ai.generating")}</span>}

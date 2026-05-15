@@ -41,7 +41,7 @@ const RARITY_GLYPH = {
 };
 
 /* ── Palanca arrastrable con idle bounce ───────────────────────────────── */
-function IdleLever({ onPull, disabled, height = 200, ballSize = 34 }) {
+function IdleLever({ onPull, disabled, height = 200, ballSize = 34, hintLabel = "DRAG ↓" }) {
   const [y, setY]           = useState(0);
   const [dragging, setDragging] = useState(false);
   const [idle, setIdle]     = useState(true);
@@ -121,7 +121,7 @@ function IdleLever({ onPull, disabled, height = 200, ballSize = 34 }) {
             boxShadow: "2px 2px 0 var(--ink)",
           }}
         >
-          ARRASTRA ↓
+          {hintLabel}
         </span>
       )}
     </div>
@@ -182,20 +182,15 @@ function Sparkles({ count = 8 }) {
 }
 
 /* ── Banner de victoria (Raro / Épico / Legendario) ───────────────────── */
-const WIN_COPY = {
-  "Raro":       { line: "¡bien tirado!",   sub: "combinación poco común" },
-  "Épico":      { line: "¡tirada épica!",  sub: "esto vale la pena dibujarse" },
-  "Legendario": { line: "¡LEGENDARIO!",    sub: "una entre mil. dale caña." },
-};
-
-function WinBanner({ rarity, onDone }) {
+function WinBanner({ rarity, onDone, t }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 2600);
-    return () => clearTimeout(t);
+    const timer = setTimeout(onDone, 2600);
+    return () => clearTimeout(timer);
   }, [onDone]);
 
-  const cfg = WIN_COPY[rarity];
-  if (!cfg) return null;
+  const line = t(`random.win.${rarity}.line`);
+  const sub  = t(`random.win.${rarity}.sub`);
+  if (!line) return null;
 
   return (
     <div className="rnd-win-banner" style={{
@@ -215,8 +210,8 @@ function WinBanner({ rarity, onDone }) {
         <span style={{ position: "relative", fontFamily: "JetBrains Mono", fontWeight: 800, fontSize: 11, letterSpacing: "0.18em", color: "rgba(20,17,15,.65)" }}>
           {RARITY_GLYPH[rarity]} {rarity.toUpperCase()}
         </span>
-        <p className="serif" style={{ position: "relative", fontSize: 28, lineHeight: 1, margin: "8px 0 4px", textTransform: "lowercase" }}>{cfg.line}</p>
-        <p className="mono" style={{ position: "relative", fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.65)", margin: 0, letterSpacing: "0.04em" }}>{cfg.sub}</p>
+        <p className="serif" style={{ position: "relative", fontSize: 28, lineHeight: 1, margin: "8px 0 4px", textTransform: "lowercase" }}>{line}</p>
+        <p className="mono" style={{ position: "relative", fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.65)", margin: 0, letterSpacing: "0.04em" }}>{sub}</p>
       </div>
     </div>
   );
@@ -489,7 +484,7 @@ export function RandomScreen() {
                     const cat = PARAM_CATEGORIES.find(c => c.id === selectedParams[i]);
                     return (
                       <p key={i} className="mono" style={{ fontSize: 8, fontWeight: 700, textAlign: "center", color: "rgba(20,17,15,.55)" }}>
-                        {cat ? cat.label.toUpperCase() : "—"}
+                        {cat ? t(`random.cat.${cat.id}`).toUpperCase() : "—"}
                       </p>
                     );
                   })}
@@ -504,7 +499,7 @@ export function RandomScreen() {
                 {win === "Común"      && (
                   <div className="rnd-win-flash" style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.4)", pointerEvents: "none", zIndex: 8 }}/>
                 )}
-                {win && win !== "Común" && <WinBanner rarity={win} onDone={handleWinDone}/>}
+                {win && win !== "Común" && <WinBanner rarity={win} onDone={handleWinDone} t={t}/>}
               </div>
 
               {/* Coin tray */}
@@ -551,6 +546,7 @@ export function RandomScreen() {
                 disabled={rolling || rollsLeft <= 0 || !!win}
                 height={200}
                 ballSize={34}
+                hintLabel={t("random.lever.hint")}
               />
             </div>
           </div>
