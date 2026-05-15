@@ -4,6 +4,7 @@ import { useApp } from "../data/store";
 import { TECHNIQUES, getUserLevel } from "../data/parameters";
 import { createArtwork, IS_LOGGED_IN } from "../utils/api";
 import { IArrowL, IArrowR, IBrush, ICam, ILock, IShare } from "../components/Icons";
+import { useT } from "../i18n";
 
 const TECH_COLORS = {
   acuarela: "var(--sky)", tinta: "var(--paper-2)", lapiz: "var(--paper-2)",
@@ -17,7 +18,7 @@ const CROP_OUT_W = 900;
 const CROP_OUT_H = 1200;
 
 /* ── Crop modal ─────────────────────────────────────────────────────────── */
-function CropModal({ src, naturalW, naturalH, onConfirm, onCancel }) {
+function CropModal({ src, naturalW, naturalH, onConfirm, onCancel, t }) {
   /* Container display size – 3:4, as wide as screen allows */
   const CONT_W = Math.min(300, (typeof window !== "undefined" ? window.innerWidth : 390) - 48);
   const CONT_H = Math.round(CONT_W * 4 / 3);
@@ -111,7 +112,7 @@ function CropModal({ src, naturalW, naturalH, onConfirm, onCancel }) {
     <div
       style={{ position: "fixed", inset: 0, background: "rgba(20,17,15,.94)", zIndex: 600, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 24px" }}
     >
-      <p className="serif" style={{ color: "#fff", fontSize: 22, lineHeight: 1, marginBottom: 16 }}>Ajusta tu obra</p>
+      <p className="serif" style={{ color: "#fff", fontSize: 22, lineHeight: 1, marginBottom: 16 }}>{t("upload.adjust.title")}</p>
 
       {/* Crop frame */}
       <div
@@ -150,19 +151,19 @@ function CropModal({ src, naturalW, naturalH, onConfirm, onCancel }) {
       </div>
 
       <p className="mono" style={{ color: "rgba(255,255,255,.38)", fontSize: 9, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em" }}>
-        arrastra · pellizca para zoom
+        {t("upload.adjust.hint")}
       </p>
 
       <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
         <button
           onClick={onCancel}
           style={{ padding: "12px 26px", borderRadius: 14, border: "2px solid rgba(255,255,255,.25)", background: "transparent", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" }}
-        >Cancelar</button>
+        >{t("upload.adjust.cancel")}</button>
         <button
           onClick={confirm}
           className="stk"
           style={{ padding: "12px 26px", borderRadius: 14, border: "2px solid var(--acid)", background: "var(--acid)", color: "var(--ink)", fontWeight: 800, fontSize: 14, cursor: "pointer" }}
-        >Usar esta</button>
+        >{t("upload.adjust.confirm")}</button>
       </div>
     </div>
   );
@@ -212,6 +213,7 @@ function PhotoCarousel({ images, onRemove }) {
 /* ── Main screen ────────────────────────────────────────────────────────── */
 export function UploadScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const { profile, currentIdea } = state;
   const [technique,   setTechnique]   = useState(TECHNIQUES[0].id);
   const [description, setDescription] = useState("");
@@ -265,7 +267,7 @@ export function UploadScreen() {
           variables:   currentIdea.variables.map(v => v.value),
           params:      currentIdea.params,
           rarity:      currentIdea.variables[0]?.rarity ?? "Común",
-          technique:   TECHNIQUES.find(t => t.id === technique)?.label ?? technique,
+          technique:   TECHNIQUES.find(tech => tech.id === technique)?.label ?? technique,
           description,
           images,
         });
@@ -274,7 +276,7 @@ export function UploadScreen() {
       setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "feed" }), 1600);
     } catch (err) {
       setSaving(false);
-      setUploadError(err?.message || "No se pudo publicar. Revisa tu conexión e inténtalo de nuevo.");
+      setUploadError(err?.message || t("upload.error"));
     }
   };
 
@@ -287,15 +289,15 @@ export function UploadScreen() {
             <div className="stripes-y" style={{ position: "absolute", inset: 0, opacity: 0.4 }}/>
             <div style={{ position: "relative" }}>
               <p className="serif" style={{ fontSize: 72, lineHeight: 1 }}>🚀</p>
-              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>Publicada.</h2>
-              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, color: "rgba(20,17,15,.65)" }}>Ahora la comunidad tiene que lidiar con tu talento.</p>
+              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>{t("upload.success.title")}</h2>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, color: "rgba(20,17,15,.65)" }}>{t("upload.success.sub")}</p>
               <div className="perforated" style={{ margin: "20px 0 16px" }}/>
               <button
                 onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
                 className="stk"
                 style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}
               >
-                Ver en el Feed <IArrowR s={18} stroke="var(--acid)"/>
+                {t("upload.success.feed")} <IArrowR s={18} stroke="var(--acid)"/>
               </button>
             </div>
           </div>
@@ -314,6 +316,7 @@ export function UploadScreen() {
           naturalH={cropQueue[0].naturalH}
           onConfirm={handleCropConfirm}
           onCancel={handleCropCancel}
+          t={t}
         />
       )}
 
@@ -326,15 +329,15 @@ export function UploadScreen() {
             onClick={() => dispatch({ type: "SET_SCREEN", screen: "timer" })}
             style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, padding: 0, cursor: "pointer" }}
           >
-            <IArrowL s={16}/> Volver
+            <IArrowL s={16}/> {t("upload.back")}
           </button>
           <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
             <IBrush s={12} stroke="var(--acid)"/> {level.name}
           </span>
         </div>
 
-        <h2 className="serif" style={{ fontSize: 30, marginTop: 8, lineHeight: 1 }}>Muéstranos qué has hecho</h2>
-        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// la comunidad tiene que verlo</p>
+        <h2 className="serif" style={{ fontSize: 30, marginTop: 8, lineHeight: 1 }}>{t("upload.title")}</h2>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{t("upload.subtitle")}</p>
 
         <div className="scroll" style={{ flex: 1, marginTop: 14 }}>
           {/* Photo zone */}
@@ -347,7 +350,7 @@ export function UploadScreen() {
                   className="stk-sm"
                   style={{ width: "100%", height: 44, marginTop: 10, border: "2px dashed var(--ink)", background: "var(--paper-2)", borderRadius: 12, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
                 >
-                  <ICam s={16}/> Añadir foto ({images.length}/{MAX_PHOTOS})
+                  <ICam s={16}/> {t("upload.add.photo", { n: images.length, max: MAX_PHOTOS })}
                 </button>
               )}
             </div>
@@ -361,15 +364,15 @@ export function UploadScreen() {
               <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                 <ICam s={28}/>
               </div>
-              <p style={{ fontWeight: 800, fontSize: 13, position: "relative" }}>Toca para añadir tu obra</p>
-              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>JPG · PNG · MÁXIMO 5 FOTOS</p>
+              <p style={{ fontWeight: 800, fontSize: 13, position: "relative" }}>{t("upload.tap.hint")}</p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{t("upload.formats")}</p>
             </button>
           )}
 
           {/* Prompt tags */}
           {currentIdea && (
             <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 12, marginTop: 14 }}>
-              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// reto superado</p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{t("upload.challenge.done")}</p>
               <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                 {currentIdea.variables.map(v => (
                   <span key={v.value} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 800 }}>
@@ -381,27 +384,27 @@ export function UploadScreen() {
           )}
 
           {/* Technique */}
-          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 16, marginBottom: 8 }}>¿Con qué lo has hecho?</p>
+          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 16, marginBottom: 8 }}>{t("upload.technique.label")}</p>
           <div className="scroll" style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
-            {TECHNIQUES.map(t => (
+            {TECHNIQUES.map(tech => (
               <button
-                key={t.id}
-                onClick={() => setTechnique(t.id)}
-                style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 12, border: "2px solid var(--ink)", background: technique === t.id ? (TECH_COLORS[t.id] || "var(--acid)") : "var(--paper-2)", fontSize: 11, fontWeight: 700, boxShadow: technique === t.id ? "3px 3px 0 var(--ink)" : "none", display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                key={tech.id}
+                onClick={() => setTechnique(tech.id)}
+                style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 12, border: "2px solid var(--ink)", background: technique === tech.id ? (TECH_COLORS[tech.id] || "var(--acid)") : "var(--paper-2)", fontSize: 11, fontWeight: 700, boxShadow: technique === tech.id ? "3px 3px 0 var(--ink)" : "none", display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
               >
-                <IBrush s={13}/> {t.label}
+                <IBrush s={13}/> {tech.label}
               </button>
             ))}
           </div>
 
           {/* Description */}
           <p style={{ fontWeight: 800, fontSize: 12, marginTop: 16, marginBottom: 6 }}>
-            Cuéntanos algo <span className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>(opcional)</span>
+            {t("upload.desc.label")} <span className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>{t("upload.desc.optional")}</span>
           </p>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="¿Cómo fue? ¿Qué salió mal? ¿Qué salió bien?"
+            placeholder={t("upload.desc.placeholder")}
             style={{ width: "100%", height: 84, border: "2px solid var(--ink)", borderRadius: 14, padding: 12, fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 12, resize: "none", outline: "none", background: "var(--paper-2)" }}
           />
 
@@ -441,7 +444,7 @@ export function UploadScreen() {
           className="stk"
           style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: saving || images.length === 0 ? "not-allowed" : "pointer", opacity: saving || images.length === 0 ? 0.45 : 1 }}
         >
-          <IShare s={18}/> {saving ? "Publicando..." : "Publicar"}
+          <IShare s={18}/> {saving ? t("upload.publishing") : t("upload.publish")}
         </button>
         <button
           onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}

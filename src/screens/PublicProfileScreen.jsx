@@ -5,6 +5,7 @@ import { fetchUserProfile, fetchUserArtworks, followUser, IS_LOGGED_IN, WP_USER_
 import { getUserLevel } from "../data/parameters";
 import { IUser, IFlame, IBrush, IArrowL, ICheck, ILink, ICopy, IHeart, IInspire } from "../components/Icons";
 import { ArtworkModal } from "../components/ArtworkModal";
+import { useT } from "../i18n";
 
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
@@ -25,6 +26,7 @@ async function copyText(text) {
 
 export function PublicProfileScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const userId = state.viewingUserId;
 
   const [profile,       setProfile]       = useState(null);
@@ -90,21 +92,21 @@ export function PublicProfileScreen() {
             onClick={goBack}
             style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, cursor: "pointer", padding: 0 }}
           >
-            <IArrowL s={16}/> Volver
+            <IArrowL s={16}/> {t("public.back")}
           </button>
         </div>
 
         {loading && (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// CARGANDO PERFIL...</p>
+            <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{t("public.loading")}</p>
           </div>
         )}
 
         {!loading && !profile && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
-            <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>Perfil no encontrado</p>
+            <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>{t("public.notFound")}</p>
             <button onClick={goBack} className="stk-sm" style={{ marginTop: 16, height: 40, padding: "0 16px", borderRadius: 12, border: "2px solid var(--ink)", background: "var(--paper-2)", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>
-              Volver al feed
+              {t("public.notFound.back")}
             </button>
           </div>
         )}
@@ -136,7 +138,7 @@ export function PublicProfileScreen() {
                       @{handle.toLowerCase()}
                     </p>
                     <h2 className="serif" style={{ fontSize: 24, lineHeight: 1, marginTop: 2 }}>
-                      {profile.displayName || profile.display_name || "Artista"}
+                      {profile.displayName || profile.display_name || t("public.artist")}
                     </h2>
                     <div style={{ display: "flex", gap: 6, marginTop: 5, flexWrap: "wrap", alignItems: "center" }}>
                       {level && (
@@ -189,7 +191,7 @@ export function PublicProfileScreen() {
                   >
                     {copied ? <ICheck s={12}/> : <ICopy s={12}/>}
                     <span className="mono" style={{ fontSize: 9, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "rgba(20,17,15,.7)" }}>
-                      {copied ? "¡Copiado!" : profile.shareLink.replace(/^https?:\/\//, "")}
+                      {copied ? t("public.copied") : profile.shareLink.replace(/^https?:\/\//, "")}
                     </span>
                   </button>
                 )}
@@ -197,11 +199,11 @@ export function PublicProfileScreen() {
                 {/* Stats */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 0, marginTop: 14, borderTop: "2px solid var(--ink)", paddingTop: 12 }}>
                   {[
-                    { l: "Retos",    v: profile.completedChallenges ?? 0, click: null },
-                    { l: "Seguid.",  v: profile.followers ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "followers" }) },
-                    { l: "Siguiendo",v: profile.following ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "following" }) },
-                    { l: "Likes",    v: profile.totalLikes ?? 0,          click: null },
-                    { l: "Inspiras", v: profile.totalInspires ?? 0,       click: null },
+                    { l: t("public.counters.challenges"), v: profile.completedChallenges ?? 0, click: null },
+                    { l: t("public.counters.followers"),  v: profile.followers ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "followers" }) },
+                    { l: t("public.counters.following"),  v: profile.following ?? 0,           click: () => dispatch({ type: "VIEW_FOLLOW_LIST", userId, listType: "following" }) },
+                    { l: t("public.counters.likes"),      v: profile.totalLikes ?? 0,          click: null },
+                    { l: t("public.counters.inspires"),   v: profile.totalInspires ?? 0,       click: null },
                   ].map((s, i) => (
                     <div
                       key={i}
@@ -231,7 +233,7 @@ export function PublicProfileScreen() {
                       opacity: followLoading ? 0.6 : 1,
                     }}
                   >
-                    {following ? <><ICheck s={15}/> Siguiendo</> : "+ Seguir"}
+                    {following ? <><ICheck s={15}/> {t("public.following")}</> : t("public.follow")}
                   </button>
                 )}
                 {isOwnProfile && (
@@ -240,7 +242,7 @@ export function PublicProfileScreen() {
                     className="stk"
                     style={{ width: "100%", height: 46, marginTop: 14, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}
                   >
-                    Editar perfil
+                    {t("public.editProfile")}
                   </button>
                 )}
               </div>
@@ -250,16 +252,16 @@ export function PublicProfileScreen() {
             <div style={{ marginTop: 2 }}>
               <div style={{ padding: "10px 14px 6px" }}>
                 <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>
-                  // OBRAS · {artworks.length}
+                  {t("public.works", { n: artworks.length })}
                 </p>
               </div>
 
               {artworks.length === 0 ? (
                 <div style={{ padding: "0 14px" }}>
                   <div className="stk-sm" style={{ background: "var(--paper-2)", padding: 20, borderRadius: 16, textAlign: "center" }}>
-                    <p className="serif" style={{ fontSize: 20, lineHeight: 1 }}>Sin obras publicadas</p>
+                    <p className="serif" style={{ fontSize: 20, lineHeight: 1 }}>{t("public.empty")}</p>
                     <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 6 }}>
-                      // AÚN NO HA SUBIDO NADA
+                      {t("public.empty.sub")}
                     </p>
                   </div>
                 </div>

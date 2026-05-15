@@ -4,11 +4,13 @@ import { useApp } from "../data/store";
 import { fetchUserFollowing, fetchUserFollowers, followUser, WP_USER_ID } from "../utils/api";
 import { getUserLevel } from "../data/parameters";
 import { IUser, IArrowL, IBrush, ICheck } from "../components/Icons";
+import { useT } from "../i18n";
 
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
 export function FollowListScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const userId      = state.followListUserId;
   const listType    = state.followListType ?? "following";
   const returnScreen = state.viewingUserId ? "publicProfile" : "profile";
@@ -43,7 +45,7 @@ export function FollowListScreen() {
     setUnfollowing(s => { const n = { ...s }; delete n[targetId]; return n; });
   };
 
-  const title = listType === "followers" ? "Seguidores" : "Siguiendo";
+  const title = listType === "followers" ? t("follow.title.followers") : t("follow.title.following");
 
   return (
     <Phone>
@@ -60,7 +62,7 @@ export function FollowListScreen() {
             <h2 className="serif" style={{ fontSize: 26, lineHeight: 1 }}>{title}</h2>
             {!loading && (
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 2 }}>
-                // {users.length} CUENTA{users.length !== 1 ? "S" : ""}
+                {users.length === 1 ? t("follow.count.one") : t("follow.count.many", { n: users.length })}
               </p>
             )}
           </div>
@@ -68,16 +70,16 @@ export function FollowListScreen() {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "10px 16px 20px" }}>
           {loading && (
-            <p className="mono" style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)", padding: "40px 0" }}>// CARGANDO...</p>
+            <p className="mono" style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)", padding: "40px 0" }}>{t("follow.loading")}</p>
           )}
 
           {!loading && users.length === 0 && (
             <div style={{ textAlign: "center", padding: "52px 24px" }}>
               <p className="serif" style={{ fontSize: 24, lineHeight: 1 }}>
-                {listType === "followers" ? "Sin seguidores aún" : "Sin cuentas seguidas"}
+                {listType === "followers" ? t("follow.empty.followers") : t("follow.empty.following")}
               </p>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
-                // EXPLORE EL FEED PARA DESCUBRIR ARTISTAS
+                {t("follow.empty.hint")}
               </p>
             </div>
           )}
@@ -123,7 +125,7 @@ export function FollowListScreen() {
                       {level.name}
                     </span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>
-                      <IBrush s={10}/> {u.completedChallenges ?? 0} retos
+                      <IBrush s={10}/> {u.completedChallenges ?? 0} {t("follow.challenges")}
                     </span>
                   </div>
                 </div>
@@ -144,7 +146,7 @@ export function FollowListScreen() {
                       fontFamily: "Space Grotesk",
                     }}
                   >
-                    <ICheck s={12}/> Siguiendo
+                    <ICheck s={12}/> {t("follow.unfollow")}
                   </button>
                 ) : (
                   <span style={{ fontSize: 16, color: "rgba(20,17,15,.3)" }}>→</span>

@@ -6,6 +6,7 @@ import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, PARAMETERS, pickVariables } from "../data/parameters";
 import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
 import { WP_ROLLS } from "../utils/api";
+import { useT } from "../i18n";
 
 const CAT_ICONS = {
   Emociones:  IHeart,
@@ -224,6 +225,7 @@ function WinBanner({ rarity, onDone }) {
 /* ── Pantalla principal ─────────────────────────────────────────────────── */
 export function RandomScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const { selectedParams, rollsLeft, activeSeason } = state;
   const [rolling, setRolling] = useState(false);
   const [slots, setSlots]     = useState([null, null, null]);
@@ -249,7 +251,7 @@ export function RandomScreen() {
         const bumped = PARAM_CATEGORIES.find(c => c.id === selectedParams[0]);
         if (bumped) {
           if (toastTimer.current) clearTimeout(toastTimer.current);
-          setToast({ label: bumped.label });
+          setToast({ label: t(`random.cat.${bumped.id}`) });
           toastTimer.current = setTimeout(() => setToast(null), 2500);
         }
         dispatch({ type: "SET_PARAMS", params: [...selectedParams.slice(1), paramId] });
@@ -267,10 +269,10 @@ export function RandomScreen() {
 
     const results = pickVariables(selectedParams, activeSeason);
 
-    [350, 600, 850].slice(0, selectedParams.length).forEach((t, i) => {
+    [350, 600, 850].slice(0, selectedParams.length).forEach((tv, i) => {
       setTimeout(() => {
         setSlots(prev => { const n = [...prev]; n[i] = results[i]; return n; });
-      }, t);
+      }, tv);
     });
 
     setTimeout(() => {
@@ -337,7 +339,7 @@ export function RandomScreen() {
             </h2>
           </div>
           <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 6 }}>
-            // elige hasta 3 categorías · el primero que entra, primero que sale
+            {t("random.subtitle")}
           </p>
         </div>
 
@@ -367,7 +369,7 @@ export function RandomScreen() {
                   }}
                 >
                   <CatIcon s={14}/>
-                  {cat.label}
+                  {t(`random.cat.${cat.id}`)}
                   <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: active ? "rgba(20,17,15,.5)" : "rgba(20,17,15,.38)" }}>
                     ({count})
                   </span>
@@ -517,7 +519,7 @@ export function RandomScreen() {
                 justifyContent: "space-between",
               }}>
                 <span className="mono" style={{ fontWeight: 800, fontSize: 10, letterSpacing: "0.1em" }}>
-                  {rollsLeft > 0 ? "MONEDERO" : "SIN MONEDAS"}
+                  {rollsLeft > 0 ? t("random.coins") : t("random.no_coins")}
                 </span>
                 <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
                   {Array.from({ length: totalRolls }).map((_, j) => (
@@ -538,7 +540,7 @@ export function RandomScreen() {
               </div>
 
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, textAlign: "center", color: "rgba(255,255,255,.5)", margin: "10px 0 0" }}>
-                {rollsLeft > 0 ? "// arrastra la palanca →" : "// vuelve mañana"}
+                {rollsLeft > 0 ? t("random.roll.drag") : t("random.roll.tomorrow")}
               </p>
             </div>
 

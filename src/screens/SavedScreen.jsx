@@ -5,6 +5,7 @@ import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
 import { IBookmark, ITimer, ITrash, IGrip, IUndo } from "../components/Icons";
+import { useT } from "../i18n";
 
 const MAX_SAVED = 5;
 
@@ -13,7 +14,7 @@ function decodeTag(t) {
   try { return decodeURIComponent(raw); } catch { return raw; }
 }
 
-function IdeaCard({ idea, rank, onRemove, onStart, isExiting }) {
+function IdeaCard({ idea, rank, onRemove, onStart, isExiting, tFn }) {
   const controls = useDragControls();
   const rarity = idea.variables?.[0]?.rarity ?? "Común";
   const rarityColor = { Legendario: "var(--acid)", Épico: "var(--lilac)", Raro: "var(--sky)" }[rarity] ?? "rgba(20,17,15,.12)";
@@ -90,7 +91,7 @@ function IdeaCard({ idea, rank, onRemove, onStart, isExiting }) {
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer",
               }}
             >
-              <ITimer s={14}/> Aceptar reto
+              <ITimer s={14}/> {tFn("saved.accept")}
             </button>
             <button
               onClick={onRemove}
@@ -111,6 +112,7 @@ function IdeaCard({ idea, rank, onRemove, onStart, isExiting }) {
 
 export function SavedScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const savedIdeas = state.savedIdeas ?? [];
   const displaced = state.displacedIdea;
   const [exitingIds, setExitingIds] = useState(new Set());
@@ -118,8 +120,8 @@ export function SavedScreen() {
   /* Auto-dismiss undo toast after 6s */
   useEffect(() => {
     if (!displaced) return;
-    const t = setTimeout(() => dispatch({ type: "CLEAR_DISPLACED" }), 6000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => dispatch({ type: "CLEAR_DISPLACED" }), 6000);
+    return () => clearTimeout(timer);
   }, [displaced, dispatch]);
 
   const startIdea = (idea) => {
@@ -145,7 +147,7 @@ export function SavedScreen() {
         {/* Header */}
         <div style={{ padding: "8px 22px 10px", borderBottom: "2px solid var(--ink)", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 className="serif" style={{ fontSize: 30, lineHeight: 1 }}>Guardados</h2>
+            <h2 className="serif" style={{ fontSize: 30, lineHeight: 1 }}>{t("saved.title")}</h2>
             {/* Capacity slots */}
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ display: "flex", gap: 3 }}>
@@ -162,7 +164,7 @@ export function SavedScreen() {
             </div>
           </div>
           <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>
-            // ARRASTRA ≡ PARA PRIORIZAR · MÁX {MAX_SAVED} IDEAS
+            {t("saved.subtitle")}
           </p>
         </div>
 
@@ -182,7 +184,7 @@ export function SavedScreen() {
               }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 800, fontSize: 12, color: "#fff" }}>
-                    Límite alcanzado — se eliminó la última idea
+                    {t("saved.limitReached")}
                   </p>
                   <p style={{ fontWeight: 600, fontSize: 11, color: "rgba(255,255,255,.8)", marginTop: 1 }}>
                     {(displaced.variables ?? []).map(v => decodeTag(v)).join(" + ")}
@@ -197,7 +199,7 @@ export function SavedScreen() {
                     display: "flex", alignItems: "center", gap: 5, cursor: "pointer", flexShrink: 0,
                   }}
                 >
-                  <IUndo s={13}/> Deshacer
+                  <IUndo s={13}/> {t("saved.undo")}
                 </button>
               </div>
             </motion.div>
@@ -215,9 +217,9 @@ export function SavedScreen() {
               }}>
                 <IBookmark s={28}/>
               </div>
-              <p className="serif" style={{ fontSize: 24 }}>Sin ideas guardadas</p>
+              <p className="serif" style={{ fontSize: 24 }}>{t("saved.empty.title")}</p>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
-                // GUARDA DESDE EL RANDÓMETRO O EL FEED
+                {t("saved.empty.hint")}
               </p>
             </div>
           ) : (
@@ -236,6 +238,7 @@ export function SavedScreen() {
                   isExiting={exitingIds.has(idea._id)}
                   onStart={() => startIdea(idea)}
                   onRemove={() => handleRemove(idea)}
+                  tFn={t}
                 />
               ))}
             </Reorder.Group>

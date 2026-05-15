@@ -6,6 +6,7 @@ import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, RARITY, getOverallRarity, generatePrompt, pickVariables } from "../data/parameters";
 import { generateAIPrompt } from "../utils/api";
 import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar, IUndo } from "../components/Icons";
+import { useT } from "../i18n";
 
 const CAT_MAP = Object.fromEntries(PARAM_CATEGORIES.map(c => [c.id, c]));
 const CAT_ICONS_EL = { Emociones: IHeart, Animales: IFlame, Lugares: IStar, Objetos: IBrush, Eventos: IStar, Acciones: IBrush };
@@ -18,10 +19,10 @@ const VAR_COLORS = {
 };
 
 const RARITY_INFO = {
-  [RARITY.COMUN]:      { emoji: "⚪", desc: "Lo de siempre, pero siempre funciona",      pct: "50%" },
-  [RARITY.RARO]:       { emoji: "🔵", desc: "Ya empieza a ponerse interesante",          pct: "30%" },
-  [RARITY.EPICO]:      { emoji: "🟣", desc: "Difícil. El tipo de reto que se recuerda", pct: "15%" },
-  [RARITY.LEGENDARIO]: { emoji: "🌟", desc: "Solo sale si tienes suerte. Y valor.",      pct: "5%"  },
+  [RARITY.COMUN]:      { emoji: "⚪", pct: "50%" },
+  [RARITY.RARO]:       { emoji: "🔵", pct: "30%" },
+  [RARITY.EPICO]:      { emoji: "🟣", pct: "15%" },
+  [RARITY.LEGENDARIO]: { emoji: "🌟", pct: "5%"  },
 };
 
 const GLOW_COLORS = {
@@ -31,13 +32,14 @@ const GLOW_COLORS = {
 
 export function IdeaScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const { currentIdea, rollsLeft, activeSeason, displacedIdea } = state;
 
   /* Auto-dismiss undo toast */
   useEffect(() => {
     if (!displacedIdea) return;
-    const t = setTimeout(() => dispatch({ type: "CLEAR_DISPLACED" }), 6000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => dispatch({ type: "CLEAR_DISPLACED" }), 6000);
+    return () => clearTimeout(timer);
   }, [displacedIdea, dispatch]);
   const [saved, setSaved]         = useState(false);
   const [rerolling, setRerolling] = useState(false);
@@ -92,7 +94,7 @@ export function IdeaScreen() {
             onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
             style={{ display: "flex", gap: 6, alignItems: "center", fontWeight: 800, fontSize: 13, background: "transparent", border: "none", cursor: "pointer" }}
           >
-            <IArrowL s={16}/> Volver y cambiar categorías
+            <IArrowL s={16}/> {t("idea.back")}
           </button>
 
           {/* Rarity badge — glows for Épico/Legendario */}
@@ -152,8 +154,8 @@ export function IdeaScreen() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                   <span className="tag">// el Randómetro ha hablado</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {aiPrompt && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>✦ IA</span>}
-                    {aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1s infinite" }}>generando...</span>}
+                    {aiPrompt && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{t("idea.ai.btn")}</span>}
+                    {aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1s infinite" }}>{t("idea.ai.generating")}</span>}
                     <span className="stamp" style={{ background: rarity === "Legendario" ? "var(--coral)" : "var(--acid)", color: rarity === "Legendario" ? "#fff" : "var(--ink)", borderColor: rarity === "Legendario" ? "#fff" : "var(--ink)" }}>
                       ★ {rarity.toLowerCase()}
                     </span>
@@ -164,8 +166,8 @@ export function IdeaScreen() {
                 </p>
                 <div className="perforated" style={{ margin: "16px -8px 10px" }}/>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>INKRUSH · HOY</span>
-                  <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>RAREZA ×{variables.length}</span>
+                  <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>{t("idea.season")}</span>
+                  <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>{t("idea.deckLabel", { n: variables.length })}</span>
                 </div>
               </div>
             </div>
@@ -177,9 +179,9 @@ export function IdeaScreen() {
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                 <span style={{ fontWeight: 800, fontSize: 12 }}>{rarity}</span>
-                <span className="mono" style={{ fontSize: 9, fontWeight: 700, background: "rgba(20,17,15,.1)", padding: "1px 6px", borderRadius: 4 }}>{rarityInfo.pct} de probabilidad</span>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, background: "rgba(20,17,15,.1)", padding: "1px 6px", borderRadius: 4 }}>{rarityInfo.pct} {t("idea.probability")}</span>
               </div>
-              <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.6)", lineHeight: 1.3 }}>{rarityInfo.desc}</p>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.6)", lineHeight: 1.3 }}>{t(`idea.headline.${rarity}`)}</p>
             </div>
           </div>
 
@@ -210,7 +212,7 @@ export function IdeaScreen() {
                 ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}><IDice s={15}/></motion.div>
                 : <IDice s={15}/>
               }
-              {rollsLeft > 0 ? "Este no. Dame otro." : "Sin intentos"}
+              {rollsLeft > 0 ? t("idea.reroll") : t("idea.reroll.disabled")}
             </button>
             <button
               onClick={saveIdea}
@@ -237,7 +239,7 @@ export function IdeaScreen() {
                   padding: "8px 12px", display: "flex", alignItems: "center", gap: 8, marginBottom: 4,
                 }}>
                   <p style={{ flex: 1, fontWeight: 700, fontSize: 11, color: "#fff", lineHeight: 1.3 }}>
-                    Límite 5/5 — se eliminó la última idea guardada
+                    {t("idea.savedLimit")}
                   </p>
                   <button
                     onClick={() => dispatch({ type: "UNDO_SAVE" })}
@@ -248,7 +250,7 @@ export function IdeaScreen() {
                       display: "flex", alignItems: "center", gap: 4, cursor: "pointer", flexShrink: 0,
                     }}
                   >
-                    <IUndo s={11}/> Deshacer
+                    <IUndo s={11}/> {t("idea.undo")}
                   </button>
                 </div>
               </motion.div>
@@ -261,7 +263,7 @@ export function IdeaScreen() {
             className="stk"
             style={{ height: 56, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
           >
-            <IBrush s={20}/> Venga, lo acepto
+            <IBrush s={20}/> {t("idea.accept")}
           </button>
         </div>
 
