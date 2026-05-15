@@ -182,6 +182,20 @@ function inkrush_register_routes() {
         'permission_callback' => '__return_true',
     ] );
 
+    /* ── Traducción masiva de parámetros ── */
+    register_rest_route( 'inkrush/v1', '/parameters/translate-missing', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_translate_missing_params',
+        'permission_callback' => fn() => current_user_can( 'manage_options' ),
+    ] );
+
+    /* ── Traducir un parámetro concreto ── */
+    register_rest_route( 'inkrush/v1', '/parameters/(?P<id>[a-f0-9]+)/translate', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_translate_single_param',
+        'permission_callback' => fn() => current_user_can( 'manage_options' ),
+    ] );
+
     /* ── Recuperar contraseña ── */
     register_rest_route( 'inkrush/v1', '/forgot-password', [
         'methods'             => 'POST',
@@ -287,11 +301,12 @@ function inkrush_api_create_parameter( WP_REST_Request $req ) {
     $category = sanitize_text_field( $req->get_param('category') );
     $rarity   = sanitize_text_field( $req->get_param('rarity') ?? 'Común' );
     $season   = sanitize_text_field( $req->get_param('season') ?? '' );
+    $value_en = sanitize_text_field( $req->get_param('value_en') ?? '' );
 
     if ( !$value || !$category ) return new WP_Error('missing','value y category requeridos.',['status'=>400]);
 
     $vars  = inkrush_get_variables();
-    $new   = [ 'id'=>inkrush_uid(), 'category'=>$category, 'value'=>strtolower($value), 'rarity'=>$rarity, 'season'=>$season ];
+    $new   = [ 'id'=>inkrush_uid(), 'category'=>$category, 'value'=>strtolower($value), 'value_en'=>$value_en, 'rarity'=>$rarity, 'season'=>$season ];
     $vars[] = $new;
     inkrush_save_variables($vars);
     return rest_ensure_response( ['success'=>true,'variable'=>$new] );
@@ -1661,4 +1676,155 @@ function inkrush_api_translate( WP_REST_Request $req ) {
     }
 
     return rest_ensure_response( [ 'translation' => $translation ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   TRADUCCIÓN MASIVA DE PARÁMETROS (admin only)
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_translate_missing_params( WP_REST_Request $req ) {
+    $api_key = get_option( 'inkrush_anthropic_key', '' );
+    if ( empty( $api_key ) ) {
+        return new WP_Error( 'no_api_key', 'API key not configured.', [ 'status' => 400 ] );
+    }
+
+    $vars    = inkrush_get_variables();
+    $missing = array_filter( $vars, fn( $v ) => empty( $v['value_en'] ) );
+
+    if ( empty( $missing ) ) {
+        return rest_ensure_response( [ 'translated' => 0, 'message' => 'All parameters already have English translations.' ] );
+    }
+
+    // Build a batch of values to translate in a single API call (max 80 items per request)
+    $batch_size = 80;
+    $chunks     = array_chunk( array_values( $missing ), $batch_size );
+    $translated = 0;
+    $errors     = [];
+
+    foreach ( $chunks as $chunk ) {
+        // Build a numbered list for the prompt
+        $lines = [];
+        foreach ( $chunk as $i => $v ) {
+            $lines[] = ( $i + 1 ) . '. ' . $v['value'];
+        }
+        $prompt = "Translate each item in this numbered list from Spanish to English. " .
+                  "Return ONLY the numbered list with translations, same format, no extra text.\n\n" .
+                  implode( "\n", $lines );
+
+        $response = wp_remote_post( 'https://api.anthropic.com/v1/messages', [
+            'timeout' => 30,
+            'headers' => [
+                'x-api-key'         => $api_key,
+                'anthropic-version' => '2023-06-01',
+                'content-type'      => 'application/json',
+            ],
+            'body' => wp_json_encode( [
+                'model'      => 'claude-haiku-4-5-20251001',
+                'max_tokens' => 2048,
+                'messages'   => [ [ 'role' => 'user', 'content' => $prompt ] ],
+            ] ),
+        ] );
+
+        if ( is_wp_error( $response ) ) {
+            $errors[] = 'API request failed for a batch.';
+            continue;
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+        $raw  = trim( $body['content'][0]['text'] ?? '' );
+
+        if ( empty( $raw ) ) {
+            $errors[] = 'Empty response for a batch.';
+            continue;
+        }
+
+        // Parse "1. translated text" lines
+        $result_lines = preg_split( '/\r?\n/', $raw );
+        $translations = [];
+        foreach ( $result_lines as $line ) {
+            $line = trim( $line );
+            if ( preg_match( '/^\d+\.\s+(.+)$/', $line, $m ) ) {
+                $translations[] = trim( $m[1] );
+            }
+        }
+
+        // Map translations back to variables by matching IDs
+        foreach ( $chunk as $i => $v ) {
+            $en = $translations[ $i ] ?? '';
+            if ( empty( $en ) ) continue;
+            foreach ( $vars as &$stored ) {
+                if ( $stored['id'] === $v['id'] ) {
+                    $stored['value_en'] = sanitize_text_field( strtolower( $en ) );
+                    $translated++;
+                    break;
+                }
+            }
+            unset( $stored );
+        }
+    }
+
+    inkrush_save_variables( $vars );
+
+    $result = [ 'translated' => $translated ];
+    if ( ! empty( $errors ) ) $result['errors'] = $errors;
+    return rest_ensure_response( $result );
+}
+
+function inkrush_api_translate_single_param( WP_REST_Request $req ) {
+    $api_key = get_option( 'inkrush_anthropic_key', '' );
+    if ( empty( $api_key ) ) {
+        return new WP_Error( 'no_api_key', 'API key not configured.', [ 'status' => 400 ] );
+    }
+
+    $id   = sanitize_text_field( $req->get_param( 'id' ) );
+    $vars = inkrush_get_variables();
+
+    $target = null;
+    foreach ( $vars as $v ) {
+        if ( $v['id'] === $id ) { $target = $v; break; }
+    }
+
+    if ( ! $target ) {
+        return new WP_Error( 'not_found', 'Parameter not found.', [ 'status' => 404 ] );
+    }
+
+    $response = wp_remote_post( 'https://api.anthropic.com/v1/messages', [
+        'timeout' => 15,
+        'headers' => [
+            'x-api-key'         => $api_key,
+            'anthropic-version' => '2023-06-01',
+            'content-type'      => 'application/json',
+        ],
+        'body' => wp_json_encode( [
+            'model'      => 'claude-haiku-4-5-20251001',
+            'max_tokens' => 128,
+            'messages'   => [ [
+                'role'    => 'user',
+                'content' => "Translate this short Spanish art term to English. Return ONLY the translation, no quotes, no explanation.\n\n" . $target['value'],
+            ] ],
+        ] ),
+    ] );
+
+    if ( is_wp_error( $response ) ) {
+        return new WP_Error( 'api_error', 'Translation service unavailable.', [ 'status' => 503 ] );
+    }
+
+    $body    = json_decode( wp_remote_retrieve_body( $response ), true );
+    $en_val  = sanitize_text_field( strtolower( trim( $body['content'][0]['text'] ?? '' ) ) );
+
+    if ( empty( $en_val ) ) {
+        return new WP_Error( 'empty_response', 'Empty translation response.', [ 'status' => 503 ] );
+    }
+
+    foreach ( $vars as &$v ) {
+        if ( $v['id'] === $id ) {
+            $v['value_en'] = $en_val;
+            break;
+        }
+    }
+    unset( $v );
+
+    inkrush_save_variables( $vars );
+
+    return rest_ensure_response( [ 'success' => true, 'id' => $id, 'value_en' => $en_val ] );
 }

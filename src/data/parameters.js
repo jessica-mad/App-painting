@@ -1,3 +1,12 @@
+/**
+ * Returns the display label for a variable in the current language.
+ * Falls back to Spanish value if no English translation is stored.
+ */
+export function getVarLabel(variable, lang) {
+  if (lang === "en" && variable.value_en) return variable.value_en;
+  return variable.value;
+}
+
 // Rarity tiers
 export const RARITY = {
   COMUN: "Común",

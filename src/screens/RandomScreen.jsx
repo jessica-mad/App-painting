@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
-import { PARAM_CATEGORIES, PARAMETERS, pickVariables } from "../data/parameters";
+import { PARAM_CATEGORIES, PARAMETERS, pickVariables, getVarLabel } from "../data/parameters";
 import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
 import { WP_ROLLS } from "../utils/api";
 import { useT } from "../i18n";
@@ -462,7 +462,7 @@ export function RandomScreen() {
                           <div className="rnd-reel" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
                             {[...pool, ...pool, ...pool, ...pool].map((w, k) => (
                               <span key={k} className="serif" style={{ height: 36, display: "flex", alignItems: "center", fontSize: 15, lineHeight: 1, color: "rgba(20,17,15,.65)" }}>
-                                {w.value}
+                                {getVarLabel(w, state.lang)}
                               </span>
                             ))}
                           </div>
@@ -471,7 +471,7 @@ export function RandomScreen() {
                             <span className="mono" style={{ fontWeight: 800, fontSize: 8, letterSpacing: "0.08em", opacity: 0.7 }}>
                               {RARITY_GLYPH[v.rarity]} {v.rarity.toUpperCase()}
                             </span>
-                            <span className="serif" style={{ fontSize: 17, lineHeight: 1, textAlign: "center" }}>{v.value}</span>
+                            <span className="serif" style={{ fontSize: 17, lineHeight: 1, textAlign: "center" }}>{getVarLabel(v, state.lang)}</span>
                           </div>
                         ) : (
                           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: isActive ? "rgba(20,17,15,.15)" : "rgba(255,255,255,.2)", fontWeight: 800, fontSize: 30 }}>

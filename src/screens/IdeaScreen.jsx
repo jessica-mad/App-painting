@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { PARAM_CATEGORIES, RARITY, getOverallRarity, generatePrompt, pickVariables } from "../data/parameters";
+import { PARAM_CATEGORIES, RARITY, getOverallRarity, generatePrompt, pickVariables, getVarLabel } from "../data/parameters";
 import { generateAIPrompt } from "../utils/api";
 import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar, IUndo } from "../components/Icons";
 import { useT } from "../i18n";
@@ -137,7 +137,7 @@ export function IdeaScreen() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>// {cat.label?.toUpperCase() || params[i]?.toUpperCase()}</p>
-                      <p style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1, marginTop: 2, textTransform: "lowercase" }}>{variable.value}</p>
+                      <p style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1, marginTop: 2, textTransform: "lowercase" }}>{getVarLabel(variable, state.lang)}</p>
                     </div>
                     <RarityBadge rarity={variable.rarity}/>
                   </motion.div>
