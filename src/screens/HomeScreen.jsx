@@ -3,6 +3,7 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { ArtworkModal } from "../components/ArtworkModal";
 import { useApp } from "../data/store";
+import { useT } from "../i18n";
 import { getUserLevel } from "../data/parameters";
 import { searchUsers, searchPosts, WP_TRIES_LEFT, WP_TRIES_LIMIT, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
 import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR, IBell, ISearch, IX } from "../components/Icons";
@@ -38,6 +39,7 @@ const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "
 
 export function HomeScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const { profile, unreadNotifs } = state;
   const level = getUserLevel(profile.completedChallenges);
   const pct = Math.min(100, Math.round((profile.completedChallenges % 10) / 10 * 100));
@@ -104,10 +106,10 @@ export function HomeScreen() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>
-                // día {profile.streak} de racha · {level.name.toLowerCase()}
+                {t("home.streak", { n: profile.streak, level: level.name.toLowerCase() })}
               </p>
               <h1 className="serif" style={{ fontSize: 30, lineHeight: 1, marginTop: 4 }}>
-                Hola, {(profile.displayName || profile.username || "artista").split(" ")[0]} 🪶
+                {t("home.greeting", { name: (profile.displayName || profile.username || "artista").split(" ")[0] })}
               </h1>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -148,7 +150,7 @@ export function HomeScreen() {
               <input
                 value={searchQ}
                 onChange={e => handleSearchInput(e.target.value)}
-                placeholder="Busca #hashtag o @usuario"
+                placeholder={t("home.search.placeholder")}
                 style={{ flex: 1, border: "none", background: "transparent", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, outline: "none", color: "var(--ink)" }}
               />
               {searchQ && (
@@ -159,7 +161,7 @@ export function HomeScreen() {
             </div>
             {searchMode && (
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)", marginTop: 5 }}>
-                {searchMode === "posts" ? "// buscando posts con ese hashtag" : "// buscando cuentas por nombre o @"}
+                {searchMode === "posts" ? t("home.search.mode.posts") : t("home.search.mode.users")}
               </p>
             )}
           </div>
@@ -169,12 +171,12 @@ export function HomeScreen() {
             <div style={{ marginBottom: 14 }}>
               {searching && (
                 <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", marginBottom: 10 }}>
-                  // buscando...
+                  {t("home.search.searching")}
                 </p>
               )}
               {!searching && searchResults.length === 0 && searchQ.length >= 3 && (
                 <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.35)", textAlign: "center", padding: "20px 0" }}>
-                  // sin resultados para "{searchQ}"
+                  {t("home.search.empty", { query: searchQ })}
                 </p>
               )}
               {searchMode === "users" && searchResults.map((u, i) => (
@@ -194,7 +196,7 @@ export function HomeScreen() {
                     {u.handle && <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.45)", margin: "2px 0 0" }}>@{u.handle}</p>}
                   </div>
                   <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.35)", flexShrink: 0 }}>
-                    {u.completedChallenges} retos
+                    {t("home.search.challenges", { n: u.completedChallenges })}
                   </span>
                 </div>
               ))}
@@ -230,7 +232,7 @@ export function HomeScreen() {
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{level.name}</p>
                   <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 3 }}>
-                    {profile.completedChallenges} retos · {profile.streak > 0 ? `${profile.streak} días seguidos` : "racha rota"}
+                    {profile.completedChallenges} {t("profile.counters.challenges").toLowerCase()} · {profile.streak > 0 ? t("profile.streak.ok", { n: profile.streak }) : t("profile.streak.broken")}
                   </p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -247,9 +249,9 @@ export function HomeScreen() {
                 <div style={{ position: "relative", padding: "20px 20px 16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
                     <div>
-                      <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO DEL DÍA</span>
-                      <h3 className="serif" style={{ fontSize: 32, lineHeight: 0.95, marginTop: 10, maxWidth: 210 }}>La hoja en blanco ya está esperando.</h3>
-                      <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{state.rollsLeft} intentos · recarga en 23h 41m</p>
+                      <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>{t("home.cta.tag")}</span>
+                      <h3 className="serif" style={{ fontSize: 32, lineHeight: 0.95, marginTop: 10, maxWidth: 210 }}>{t("home.cta.headline")}</h3>
+                      <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{t("home.cta.rollsLeft", { n: state.rollsLeft })}</p>
                     </div>
                     <div style={{ width: 50, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <IDice s={26} sw={2.4}/>
@@ -259,7 +261,7 @@ export function HomeScreen() {
                     onClick={() => dispatch({ type: "SET_SCREEN", screen: "random" })}
                     style={{ width: "100%", height: 48, background: "var(--ink)", color: "var(--acid)", border: "none", borderRadius: 14, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
                   >
-                    EMPEZAR <IArrowR s={16} stroke="var(--acid)"/>
+                    {t("home.cta.start")} <IArrowR s={16} stroke="var(--acid)"/>
                   </button>
                 </div>
               </div>
@@ -267,9 +269,9 @@ export function HomeScreen() {
               {/* Stats row */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
                 {[
-                  { Ico: IHeart,   v: profile.totalLikes,    l: "Likes",        c: "var(--rose)" },
-                  { Ico: IInspire, v: profile.totalInspires, l: "Inspiras",     c: "var(--lilac)" },
-                  { Ico: IFlame,   v: profile.totalTries,    l: "Lo intentaré", c: "var(--butter)" },
+                  { Ico: IHeart,   v: profile.totalLikes,    l: t("home.stats.likes"),    c: "var(--rose)" },
+                  { Ico: IInspire, v: profile.totalInspires, l: t("home.stats.inspires"), c: "var(--lilac)" },
+                  { Ico: IFlame,   v: profile.totalTries,    l: t("home.stats.tries"),    c: "var(--butter)" },
                 ].map((s, i) => (
                   <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: 10, textAlign: "center" }}>
                     <div style={{ width: 28, height: 28, margin: "0 auto", borderRadius: 8, background: s.c, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -287,8 +289,8 @@ export function HomeScreen() {
                   <ISpark s={80} stroke="var(--ink-blue)"/>
                 </div>
                 <div style={{ position: "relative" }}>
-                  <div className="stamp" style={{ background: "var(--paper-2)" }}>TEMP · {state.activeSeason || "primavera"}</div>
-                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>Variables de {state.activeSeason || "primavera"} activas. Úsalas bien y puede salir algo legendario.</p>
+                  <div className="stamp" style={{ background: "var(--paper-2)" }}>{t("home.season.label", { season: state.activeSeason || "primavera" })}</div>
+                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>{t("home.season.desc", { season: state.activeSeason || "primavera" })}</p>
                 </div>
               </div>
 
@@ -309,7 +311,7 @@ export function HomeScreen() {
           post={activeArtwork}
           onClose={() => setActiveArtwork(null)}
           triesLeft={triesLeft}
-          onTryUsed={(serverLeft) => setTriesLeft(t => typeof serverLeft === "number" ? serverLeft : Math.max(0, t - 1))}
+          onTryUsed={(serverLeft) => setTriesLeft(tl => typeof serverLeft === "number" ? serverLeft : Math.max(0, tl - 1))}
           onViewAuthor={activeArtwork.author_id ? () => { setActiveArtwork(null); viewUser(activeArtwork.author_id); } : undefined}
         />
       )}

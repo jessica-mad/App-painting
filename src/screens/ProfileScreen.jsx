@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
+import { useT } from "../i18n";
 import { getUserLevel, LEVELS, TECHNIQUES } from "../data/parameters";
 import { updateProfile, checkUsername, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
 import { compressImage } from "../utils/imageUtils";
@@ -29,22 +30,39 @@ async function copyToClipboard(text, onDone) {
   onDone?.();
 }
 
-const TABS_OWNER  = ["Mi Sketchbook", "Editar", "Logros", "Estadísticas"];
-const TABS_GUEST  = ["Mi Sketchbook", "Logros", "Estadísticas"];
+/* Tab IDs are stable keys, display comes from t() */
+const TAB_SKETCHBOOK  = "sketchbook";
+const TAB_EDIT        = "edit";
+const TAB_ACHIEVEMENTS = "achievements";
+const TAB_STATS       = "stats";
+
+const TABS_OWNER = [TAB_SKETCHBOOK, TAB_EDIT, TAB_ACHIEVEMENTS, TAB_STATS];
+const TABS_GUEST = [TAB_SKETCHBOOK, TAB_ACHIEVEMENTS, TAB_STATS];
 
 export function ProfileScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const { profile } = state;
   const level = getUserLevel(profile.completedChallenges);
-  const [tab, setTab] = useState(() => state.profileInitialTab ?? "Mi Sketchbook");
 
-  /* edit state */
+  /* Map legacy Spanish initial tab values to new keys */
+  const mapLegacyTab = (raw) => {
+    if (!raw) return TAB_SKETCHBOOK;
+    if (raw === "Mi Sketchbook" || raw === TAB_SKETCHBOOK) return TAB_SKETCHBOOK;
+    if (raw === "Editar"        || raw === TAB_EDIT)        return TAB_EDIT;
+    if (raw === "Logros"        || raw === TAB_ACHIEVEMENTS) return TAB_ACHIEVEMENTS;
+    if (raw === "Estadísticas"  || raw === TAB_STATS)       return TAB_STATS;
+    return TAB_SKETCHBOOK;
+  };
+
+  const [tab, setTab] = useState(() => mapLegacyTab(state.profileInitialTab));
+
   const [editName,    setEditName]    = useState(profile.displayName);
   const [editBio,     setEditBio]     = useState(profile.bio ?? "");
   const [editEmail,   setEditEmail]   = useState(profile.email ?? "");
   const [editSocials, setEditSocials] = useState(profile.socials ?? { instagram: "", tiktok: "", pinterest: "" });
   const [editHandle,  setEditHandle]  = useState(profile.handle ?? "");
-  const [handleStatus, setHandleStatus] = useState(null); // null | "checking" | "available" | "taken" | "invalid"
+  const [handleStatus, setHandleStatus] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarB64,   setAvatarB64]   = useState(null);
   const [saving,      setSaving]      = useState(false);
@@ -58,7 +76,6 @@ export function ProfileScreen() {
     if (state.profileInitialTab) dispatch({ type: "CLEAR_PROFILE_TAB" });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* artworks */
   const [artworks, setArtworks] = useState([]);
   const [selectedArtwork, setSelectedArtwork] = useState(null);
   const [loadingArt, setLoadingArt] = useState(false);
@@ -66,12 +83,11 @@ export function ProfileScreen() {
   const favTechs = TECHNIQUES.filter(t => state.favoriteTechniques.includes(t.id));
   const TABS = IS_LOGGED_IN ? TABS_OWNER : TABS_GUEST;
 
-  /* share link — use WP-provided URL (username-based) or build from window */
   const shareLink = profile.shareLink ||
     `${window.location.origin}${window.location.pathname.replace(/\/$/, "")}?u=${profile.username}`;
 
   useEffect(() => {
-    if (tab !== "Mi Sketchbook") return;
+    if (tab !== TAB_SKETCHBOOK) return;
     if (!IS_LOGGED_IN) return;
     setLoadingArt(true);
     fetchUserArtworks(WP_USER_ID)
@@ -131,7 +147,7 @@ export function ProfileScreen() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      setSaveError(err?.message || "No se pudieron guardar los cambios. Revisa tu conexión.");
+      setSaveError(err?.message || t("profile.edit.error"));
     } finally { setSaving(false); }
   };
 
@@ -141,6 +157,14 @@ export function ProfileScreen() {
     } else {
       dispatch({ type: "LOGOUT" });
     }
+  };
+
+  const tabLabel = (key) => {
+    if (key === TAB_SKETCHBOOK)   return t("profile.tab.sketchbook");
+    if (key === TAB_EDIT)         return t("profile.tab.edit");
+    if (key === TAB_ACHIEVEMENTS) return t("profile.tab.achievements");
+    if (key === TAB_STATS)        return t("profile.tab.stats");
+    return key;
   };
 
   const avatarSrc = avatarPreview || profile.avatarUrl || null;
@@ -159,7 +183,6 @@ export function ProfileScreen() {
         <div style={{ background: "var(--lilac)", borderBottom: "2px solid var(--ink)", padding: "12px 22px 14px", position: "relative", overflow: "hidden", flexShrink: 0 }} className="grain-soft">
           <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.1 }}/>
 
-          {/* Bell button — top right */}
           <button
             onClick={() => dispatch({ type: "SET_SCREEN", screen: "notifications" })}
             style={{
@@ -196,7 +219,7 @@ export function ProfileScreen() {
               </div>
               {IS_LOGGED_IN && (
                 <button
-                  onClick={() => { setTab("Editar"); avatarRef.current?.click(); }}
+                  onClick={() => { setTab(TAB_EDIT); avatarRef.current?.click(); }}
                   style={{ position: "absolute", bottom: -4, right: -4, width: 28, height: 28, borderRadius: 999, background: "var(--acid)", border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                 >
                   <IBrush s={14}/>
@@ -213,8 +236,8 @@ export function ProfileScreen() {
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.6)" }}>
                   {profile.streak > 0
-                    ? <><IFlame s={12}/> {profile.streak} días</>
-                    : "racha rota · toca arreglarlo"
+                    ? <><IFlame s={12}/> {t("profile.streak.ok", { n: profile.streak })}</>
+                    : t("profile.streak.broken")
                   }
                 </span>
               </div>
@@ -231,16 +254,16 @@ export function ProfileScreen() {
               onClick={() => copyToClipboard(shareLink, () => { setCopied(true); setTimeout(() => setCopied(false), 1800); })}
               style={{ background: copied ? "var(--mint)" : "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", transition: "background .2s", flexShrink: 0 }}
             >
-              {copied ? <ICheck s={11}/> : <ICopy s={11}/>} {copied ? "Copiado" : "Copiar"}
+              {copied ? <ICheck s={11}/> : <ICopy s={11}/>} {copied ? t("profile.copied") : t("profile.copy")}
             </button>
           </div>
 
           {/* Stats */}
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: 14 }}>
             {[
-              { l: "Retos",      v: profile.completedChallenges, onClick: null },
-              { l: "Seguidores", v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: WP_USER_ID, listType: "followers" }) : null },
-              { l: "Siguiendo",  v: profile.following, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: WP_USER_ID, listType: "following" }) : null },
+              { l: t("profile.counters.challenges"), v: profile.completedChallenges, onClick: null },
+              { l: t("profile.counters.followers"),  v: profile.followers > 999 ? `${(profile.followers / 1000).toFixed(1)}K` : profile.followers, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: WP_USER_ID, listType: "followers" }) : null },
+              { l: t("profile.counters.following"),  v: profile.following, onClick: IS_LOGGED_IN ? () => dispatch({ type: "VIEW_FOLLOW_LIST", userId: WP_USER_ID, listType: "following" }) : null },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: "center", cursor: s.onClick ? "pointer" : "default" }} onClick={s.onClick ?? undefined}>
                 <p className="serif" style={{ fontSize: 22, lineHeight: 1, textDecoration: s.onClick ? "underline" : "none" }}>{s.v}</p>
@@ -252,41 +275,41 @@ export function ProfileScreen() {
 
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "2px solid var(--ink)", flexShrink: 0 }}>
-          {TABS.map((t, i) => (
-            <button key={t} onClick={() => setTab(t)} style={{
+          {TABS.map((key, i) => (
+            <button key={key} onClick={() => setTab(key)} style={{
               flex: 1, padding: "10px 0", border: "none",
               borderRight: i < TABS.length - 1 ? "2px solid var(--ink)" : "none",
-              background: tab === t ? "var(--acid)" : "var(--paper-2)",
+              background: tab === key ? "var(--acid)" : "var(--paper-2)",
               fontWeight: 800, fontSize: 10, fontFamily: "JetBrains Mono",
               textTransform: "uppercase", letterSpacing: "0.03em", cursor: "pointer",
-            }}>{t}</button>
+            }}>{tabLabel(key)}</button>
           ))}
         </div>
 
         {/* Tab content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 22px 90px" }}>
 
-          {tab === "Mi Sketchbook" && (
+          {tab === TAB_SKETCHBOOK && (
             <div>
               {favTechs.length > 0 && (
                 <>
-                  <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Con qué trabajo</p>
+                  <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>{t("profile.work.tech")}</p>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-                    {favTechs.map(t => (
-                      <span key={t.id} style={{ display: "inline-flex", gap: 5, alignItems: "center", padding: "5px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: t.color || "var(--sky)", fontSize: 11, fontWeight: 700 }}>
-                        <IBrush s={13}/> {t.label}
+                    {favTechs.map(tech => (
+                      <span key={tech.id} style={{ display: "inline-flex", gap: 5, alignItems: "center", padding: "5px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: tech.color || "var(--sky)", fontSize: 11, fontWeight: 700 }}>
+                        <IBrush s={13}/> {tech.label}
                       </span>
                     ))}
                   </div>
                 </>
               )}
-              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10 }}>Lo que he hecho</p>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10 }}>{t("profile.work.done")}</p>
               {loadingArt && (
-                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1.5s ease-in-out infinite" }}>// CARGANDO...</p>
+                <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1.5s ease-in-out infinite" }}>{t("profile.loading")}</p>
               )}
               {!loadingArt && artworks.length === 0 && (
                 <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.45)" }}>
-                  // Aún no hay nada aquí. Eso tiene solución fácil.
+                  {t("profile.empty")}
                 </p>
               )}
               {artworks.length > 0 && (
@@ -303,7 +326,7 @@ export function ProfileScreen() {
                         }
                         {aw.hidden && (
                           <div style={{ position: "absolute", inset: 0, background: "rgba(20,17,15,.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <p className="mono" style={{ fontSize: 8, color: "white", fontWeight: 800 }}>OCULTA</p>
+                            <p className="mono" style={{ fontSize: 8, color: "white", fontWeight: 800 }}>{t("profile.hidden")}</p>
                           </div>
                         )}
                       </div>
@@ -314,9 +337,9 @@ export function ProfileScreen() {
             </div>
           )}
 
-          {tab === "Editar" && (
+          {tab === TAB_EDIT && (
             <div>
-              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 16 }}>Editar perfil</p>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 16 }}>{t("profile.edit.title")}</p>
 
               {/* Avatar */}
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
@@ -327,22 +350,22 @@ export function ProfileScreen() {
                   }
                 </div>
                 <div>
-                  <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>Foto de perfil</p>
+                  <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>{t("profile.edit.avatar")}</p>
                   <button
                     onClick={() => avatarRef.current?.click()}
                     className="stk-sm"
                     style={{ height: 36, padding: "0 14px", border: "2px solid var(--ink)", borderRadius: 10, background: "var(--paper-2)", fontWeight: 800, fontSize: 11, cursor: "pointer" }}
                   >
-                    Cambiar foto
+                    {t("profile.edit.avatar.change")}
                   </button>
                 </div>
               </div>
 
-              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre artístico</label>
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>{t("profile.edit.name")}</label>
               <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
                 style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 14, outline: "none", background: "var(--paper-2)", marginBottom: 14 }}/>
 
-              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Nombre de usuario (URL)</label>
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>{t("profile.edit.handle")}</label>
               <div style={{ position: "relative", marginBottom: 6 }}>
                 <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontWeight: 800, fontSize: 14, color: "rgba(20,17,15,.45)", fontFamily: "Space Grotesk" }}>@</span>
                 <input
@@ -354,22 +377,22 @@ export function ProfileScreen() {
                 />
               </div>
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, marginBottom: 14, color: handleStatus === "taken" || handleStatus === "invalid" ? "var(--coral)" : handleStatus === "available" ? "var(--mint)" : "rgba(20,17,15,.5)" }}>
-                {handleStatus === "checking" && "// comprobando…"}
-                {handleStatus === "available" && "// ✓ disponible"}
-                {handleStatus === "taken" && "// ✗ ya en uso"}
-                {handleStatus === "invalid" && "// mínimo 3 caracteres · solo a-z, 0-9, _"}
+                {handleStatus === "checking"  && t("profile.edit.handle.checking")}
+                {handleStatus === "available" && t("profile.edit.handle.available")}
+                {handleStatus === "taken"     && t("profile.edit.handle.taken")}
+                {handleStatus === "invalid"   && t("profile.edit.handle.invalid")}
                 {!handleStatus && `// tu url: ${window.location.origin}/${window.InkRushConfig?.profileBase ?? "artista"}/${editHandle || (profile.handle ?? "…")}`}
               </p>
 
-              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Biografía</label>
-              <textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Cuéntanos sobre ti..."
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>{t("profile.edit.bio")}</label>
+              <textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder={t("profile.edit.bio.placeholder")}
                 style={{ width: "100%", height: 80, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", marginBottom: 14 }}/>
 
-              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>Email</label>
+              <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>{t("profile.edit.email")}</label>
               <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
                 style={{ width: "100%", border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 700, fontSize: 13, outline: "none", background: "var(--paper-2)", marginBottom: 16 }}/>
 
-              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>Redes sociales</p>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>{t("profile.edit.socials")}</p>
               {[
                 { key: "instagram", label: "Instagram", placeholder: "@usuario" },
                 { key: "tiktok",    label: "TikTok",    placeholder: "@usuario" },
@@ -383,6 +406,32 @@ export function ProfileScreen() {
                 </div>
               ))}
 
+              {/* Language selector */}
+              <div style={{ marginTop: 16, marginBottom: 6 }}>
+                <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10 }}>{t("profile.lang.label")}</p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {["es", "en"].map(lang => (
+                    <button
+                      key={lang}
+                      onClick={() => dispatch({ type: "SET_LANG", lang })}
+                      style={{
+                        flex: 1, height: 44, borderRadius: 12,
+                        border: "2px solid var(--ink)",
+                        background: state.lang === lang ? "var(--ink)" : "var(--paper-2)",
+                        color: state.lang === lang ? "var(--acid)" : "var(--ink)",
+                        fontWeight: 800, fontSize: 13,
+                        cursor: "pointer",
+                        boxShadow: state.lang === lang ? "3px 3px 0 var(--ink)" : "none",
+                        fontFamily: "Space Grotesk",
+                        transition: "background .15s",
+                      }}
+                    >
+                      {t(`profile.lang.${lang}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {saveError && (
                 <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 12, fontSize: 12, fontWeight: 700, color: "var(--ink)", lineHeight: 1.4 }}>
                   ⚠ {saveError}
@@ -390,7 +439,7 @@ export function ProfileScreen() {
               )}
               <button onClick={handleSaveProfile} disabled={saving} className="stk"
                 style={{ width: "100%", height: 50, background: saved ? "var(--mint)" : "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: saving ? 0.6 : 1, marginTop: 10, marginBottom: 24 }}>
-                {saved ? "✓ Guardado" : saving ? "Guardando..." : "Guardar cambios"}
+                {saved ? t("profile.edit.saved") : saving ? t("profile.edit.saving") : t("profile.edit.save")}
               </button>
 
               <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -399,19 +448,19 @@ export function ProfileScreen() {
                   className="stk-sm"
                   style={{ width: "100%", height: 44, background: "var(--paper-2)", border: "2px solid rgba(20,17,15,.25)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                 >
-                  🐛 Reportar un bug
+                  {t("profile.edit.bug")}
                 </button>
                 <button onClick={handleLogout} className="stk-sm"
                   style={{ width: "100%", height: 48, background: "var(--rose)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
-                  Cerrar sesión
+                  {t("profile.edit.logout")}
                 </button>
               </div>
             </div>
           )}
 
-          {tab === "Logros" && (
+          {tab === TAB_ACHIEVEMENTS && (
             <div>
-              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 12 }}>Por dónde vas</p>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 12 }}>{t("profile.achievements.title")}</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {LEVELS.map(lv => {
                   const unlocked = level.id >= lv.id;
@@ -426,10 +475,10 @@ export function ProfileScreen() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <p style={{ fontWeight: 800, fontSize: 13 }}>{lv.name}</p>
-                        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ retos · {lv.desc}</p>
+                        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ {t("profile.counters.challenges").toLowerCase()} · {lv.desc}</p>
                       </div>
                       {unlocked
-                        ? <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>{current ? "Actual" : <ICheck s={12} stroke="var(--acid)"/>}</span>
+                        ? <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>{current ? t("profile.achievements.current") : <ICheck s={12} stroke="var(--acid)"/>}</span>
                         : <ILock s={16} stroke="rgba(20,17,15,.4)"/>
                       }
                     </div>
@@ -439,13 +488,13 @@ export function ProfileScreen() {
             </div>
           )}
 
-          {tab === "Estadísticas" && (
+          {tab === TAB_STATS && (
             <div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 12 }}>
                 {[
-                  { Ico: IHeart,   l: "Likes",       v: profile.totalLikes,    c: "var(--rose)" },
-                  { Ico: IInspire, l: "Inspiras",     v: profile.totalInspires, c: "var(--lilac)" },
-                  { Ico: IFlame,   l: "Lo intentaré", v: profile.totalTries,    c: "var(--butter)" },
+                  { Ico: IHeart,   l: t("home.stats.likes"),    v: profile.totalLikes,    c: "var(--rose)" },
+                  { Ico: IInspire, l: t("home.stats.inspires"), v: profile.totalInspires, c: "var(--lilac)" },
+                  { Ico: IFlame,   l: t("home.stats.tries"),    v: profile.totalTries,    c: "var(--butter)" },
                 ].map((s, i) => (
                   <div key={i} className="stk-sm" style={{ background: "var(--paper-2)", padding: 10, textAlign: "center" }}>
                     <div style={{ width: 30, height: 30, margin: "0 auto", borderRadius: 8, background: s.c, border: "2px solid var(--ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -458,8 +507,8 @@ export function ProfileScreen() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
                 {[
-                  { Ico: ITimer, l: "Sesiones",   v: profile.pomodorosCompleted, c: "var(--sky)" },
-                  { Ico: IDice,  l: "Retos",       v: profile.completedChallenges, c: "var(--mint)" },
+                  { Ico: ITimer, l: t("profile.stats.sessions"),   v: profile.pomodorosCompleted,  c: "var(--sky)" },
+                  { Ico: IDice,  l: t("profile.stats.challenges"),  v: profile.completedChallenges, c: "var(--mint)" },
                 ].map((s, i) => (
                   <div key={i} className="stk-sm" style={{ background: s.c, padding: 14 }}>
                     <s.Ico s={22}/>
@@ -471,10 +520,10 @@ export function ProfileScreen() {
               <div className="stk" style={{ background: "var(--acid)", padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <IStar s={18}/>
-                  <p style={{ fontWeight: 800, fontSize: 13 }}>Tu huella en la comunidad</p>
+                  <p style={{ fontWeight: 800, fontSize: 13 }}>{t("profile.stats.community")}</p>
                 </div>
                 <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.65)", marginTop: 6 }}>
-                  Has inspirado a {profile.totalInspires} artistas. Eso ya es algo.
+                  {t("profile.stats.inspired", { n: profile.totalInspires })}
                 </p>
               </div>
             </div>

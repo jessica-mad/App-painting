@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { RarityBadge } from "./RarityBadge";
 import { useApp } from "../data/store";
-import { addReaction, useTryAPI, deleteArtwork, hideArtwork, reportArtwork, updateArtwork, fetchComments, postComment, deleteComment, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
+import { useT } from "../i18n";
+import { addReaction, useTryAPI, deleteArtwork, hideArtwork, reportArtwork, updateArtwork, fetchComments, postComment, deleteComment, translateText, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
 import { IHeart, IInspire, IFlame, IUser, IBrush, IEyeOff, ITrash, IFlag, IArrowL, IArrowR, IComment, ITrash as ITrashIcon, IX } from "./Icons";
 
 function decodeTag(t) {
   const raw = typeof t === "string" ? t : (t.value ?? "");
-  // Fix \uXXXX sequences stored literally (WP stripslashes strips the backslash)
   return raw
     .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/u([0-9a-fA-F]{2}[89a-fA-F][0-9a-fA-F])/g, (match, h) => {
@@ -15,17 +15,29 @@ function decodeTag(t) {
     });
 }
 
-function timeAgo(dateStr) {
+function timeAgoFromT(dateStr, t) {
   if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
   const d = Math.floor(diff / 86400000);
-  if (d === 0) return "hoy";
-  if (d === 1) return "ayer";
-  if (d < 7) return `hace ${d} días`;
+  if (d === 0) return t("time.today");
+  if (d === 1) return t("time.yesterday");
+  if (d < 7)  return t("time.days", { n: d });
   const w = Math.floor(d / 7);
-  if (w < 5) return `hace ${w} sem.`;
+  if (w < 5)  return t("time.weeks", { n: w });
   const m = Math.floor(d / 30);
-  return `hace ${m} mes${m > 1 ? "es" : ""}`;
+  if (m === 1) return t("time.month");
+  return t("time.months", { n: m });
+}
+
+function timeAgoCommentFromT(dateStr, t) {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr + "Z").getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return t("time.c.now");
+  if (m < 60) return t("time.c.m", { n: m });
+  const h = Math.floor(m / 60);
+  if (h < 24) return t("time.c.h", { n: h });
+  return t("time.c.d", { n: Math.floor(h / 24) });
 }
 
 function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
@@ -36,7 +48,6 @@ function markLocalTry() {
 
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
-/* ── Horizontal three-dot icon ── */
 function IDotsH({ s = 20, color = "#fff" }) {
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill={color}>
@@ -47,7 +58,6 @@ function IDotsH({ s = 20, color = "#fff" }) {
   );
 }
 
-/* ── Image carousel — arrows + counter inside, dots rendered outside ── */
 export function PostImages({ images, aspectRatio = "3/4", slide, onSlide }) {
   const [internal, setInternal] = useState(0);
   const cur = slide !== undefined ? Math.min(slide, images.length - 1) : Math.min(internal, images.length - 1);
@@ -67,7 +77,6 @@ export function PostImages({ images, aspectRatio = "3/4", slide, onSlide }) {
             style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: 999, background: "var(--paper-2)", border: "2px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: cur === images.length - 1 ? 0.3 : 1 }}>
             <IArrowR s={13}/>
           </button>
-          {/* Counter pill bottom-right */}
           <div style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(20,17,15,.75)", color: "#fff", fontFamily: "JetBrains Mono", fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 999, border: "1.5px solid var(--ink)", zIndex: 11 }}>
             {cur + 1} / {images.length}
           </div>
@@ -77,7 +86,6 @@ export function PostImages({ images, aspectRatio = "3/4", slide, onSlide }) {
   );
 }
 
-/* ── Carousel dots (rendered below the image, outside it) ── */
 function CarouselDots({ count, current, onSelect }) {
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, padding: "10px 0 4px" }}>
@@ -89,7 +97,6 @@ function CarouselDots({ count, current, onSelect }) {
   );
 }
 
-/* ── Renderiza texto con #hashtags resaltados en verde ── */
 function renderWithHashtags(text) {
   if (!text) return null;
   return text.split(/(#\w+)/g).map((part, i) =>
@@ -99,8 +106,51 @@ function renderWithHashtags(text) {
   );
 }
 
-/* ── Expandable caption: username (bold) + text, 2-line clamp with más/menos ── */
+/* ── Translate button — shown when app language !== "es" ── */
+function TranslateBtn({ text, lang }) {
+  const t = useT();
+  const [translation, setTranslation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
+
+  const handleTranslate = async () => {
+    if (translation) {
+      setShowTranslation(v => !v);
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await translateText(text, lang);
+      if (res?.translation) {
+        setTranslation(res.translation);
+        setShowTranslation(true);
+      }
+    } catch {}
+    setLoading(false);
+  };
+
+  if (!text) return null;
+
+  return (
+    <div style={{ padding: "0 14px 10px" }}>
+      {showTranslation && translation && (
+        <div style={{ borderLeft: "3px solid var(--mint)", paddingLeft: 10, marginBottom: 8, fontSize: 13, lineHeight: 1.45, fontStyle: "italic", color: "rgba(20,17,15,.8)", fontWeight: 500 }}>
+          {translation}
+        </div>
+      )}
+      <button
+        onClick={handleTranslate}
+        disabled={loading}
+        style={{ all: "unset", cursor: loading ? "default" : "pointer", fontFamily: "JetBrains Mono", fontWeight: 700, fontSize: 9, color: "rgba(20,17,15,.5)", letterSpacing: "0.04em", opacity: loading ? 0.5 : 1 }}
+      >
+        🌐 {loading ? t("translate.loading") : showTranslation ? t("translate.showOriginal") : t("translate.btn")}
+      </button>
+    </div>
+  );
+}
+
 function ExpandableCaption({ username, text }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
   const ref = useRef(null);
@@ -118,33 +168,33 @@ function ExpandableCaption({ username, text }) {
     <div style={{ padding: "0 14px 14px", fontSize: 13, lineHeight: 1.45, color: "var(--ink)", fontWeight: 500 }}>
       <p ref={ref} style={{ margin: 0, display: expanded ? "block" : "-webkit-box", WebkitLineClamp: expanded ? "unset" : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
         <b style={{ marginRight: 4 }}>{username}</b>{renderWithHashtags(text)}
-        {expanded && <>{" "}<button onClick={() => setExpanded(false)} style={linkStyle}>menos</button></>}
+        {expanded && <>{" "}<button onClick={() => setExpanded(false)} style={linkStyle}>{t("post.caption.less")}</button></>}
       </p>
       {!expanded && overflows && (
-        <button onClick={() => setExpanded(true)} style={{ ...linkStyle, marginTop: 2, display: "block" }}>... más</button>
+        <button onClick={() => setExpanded(true)} style={{ ...linkStyle, marginTop: 2, display: "block" }}>{t("post.caption.more")}</button>
       )}
     </div>
   );
 }
 
-/* ── Delete confirmation modal ── */
 function DeleteConfirm({ onConfirm, onCancel }) {
+  const t = useT();
   return (
     <div onClick={onCancel} style={{ position: "absolute", inset: 0, zIndex: 50, background: "rgba(20,17,15,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
       <div onClick={e => e.stopPropagation()} className="stk" style={{ background: "var(--paper-2)", borderRadius: 18, padding: "18px 18px 14px", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
           <span style={{ width: 34, height: 34, borderRadius: 999, background: "var(--coral)", border: "2px solid var(--ink)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, flexShrink: 0 }}>!</span>
-          <p className="serif" style={{ fontSize: 22, lineHeight: 1, margin: 0 }}>¿Eliminar post?</p>
+          <p className="serif" style={{ fontSize: 22, lineHeight: 1, margin: 0 }}>{t("delete.title")}</p>
         </div>
         <p style={{ fontSize: 12, lineHeight: 1.45, marginTop: 6, marginBottom: 14, color: "rgba(20,17,15,.7)", fontWeight: 600 }}>
-          Esta acción es <b>permanente</b>. Perderás los likes, inspiras y comentarios asociados.
+          {t("delete.warning")}
         </p>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={onCancel} style={{ flex: 1, height: 40, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--paper-2)", fontWeight: 800, fontSize: 12, cursor: "pointer", fontFamily: "Space Grotesk" }}>
-            Cancelar
+            {t("delete.cancel")}
           </button>
           <button onClick={onConfirm} style={{ flex: 1, height: 40, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--coral)", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer", boxShadow: "3px 3px 0 var(--ink)", fontFamily: "Space Grotesk" }}>
-            Eliminar
+            {t("delete.confirm")}
           </button>
         </div>
       </div>
@@ -152,16 +202,15 @@ function DeleteConfirm({ onConfirm, onCancel }) {
   );
 }
 
-/* ── Report form modal ── */
-const REPORT_REASONS = [
-  "Contenido ofensivo o violento",
-  "Spam o publicidad",
-  "Copia / plagio",
-  "Acoso o discurso de odio",
-  "Otro",
-];
-
 function ReportModal({ postId, onClose }) {
+  const t = useT();
+  const REPORT_REASONS = [
+    { key: "offensive",  label: t("report.reason.offensive") },
+    { key: "spam",       label: t("report.reason.spam") },
+    { key: "copy",       label: t("report.reason.copy") },
+    { key: "harassment", label: t("report.reason.harassment") },
+    { key: "other",      label: t("report.reason.other") },
+  ];
   const [reason, setReason]   = useState("");
   const [text, setText]       = useState("");
   const [sending, setSending] = useState(false);
@@ -187,33 +236,33 @@ function ReportModal({ postId, onClose }) {
       <div onClick={e => e.stopPropagation()} className="stk" style={{ background: "var(--paper-2)", borderRadius: 18, padding: "18px 18px 14px", width: "100%" }}>
         {done ? (
           <div style={{ textAlign: "center", padding: "16px 0" }}>
-            <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Denuncia enviada</p>
-            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>// gracias por ayudar a mantener la comunidad</p>
+            <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{t("report.sent.title")}</p>
+            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>{t("report.sent.sub")}</p>
           </div>
         ) : (
           <>
-            <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginBottom: 14 }}>Denunciar post</p>
+            <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginBottom: 14 }}>{t("report.title")}</p>
 
-            <p style={{ fontWeight: 800, fontSize: 11, marginBottom: 8 }}>Motivo</p>
+            <p style={{ fontWeight: 800, fontSize: 11, marginBottom: 8 }}>{t("report.reason.label")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
               {REPORT_REASONS.map(r => (
-                <label key={r} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-                  <input type="radio" name="reason" value={r} checked={reason === r} onChange={() => setReason(r)}
+                <label key={r.key} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+                  <input type="radio" name="reason" value={r.key} checked={reason === r.key} onChange={() => setReason(r.key)}
                     style={{ accentColor: "var(--ink)", width: 16, height: 16, cursor: "pointer" }}/>
-                  {r}
+                  {r.label}
                 </label>
               ))}
             </div>
 
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <p style={{ fontWeight: 800, fontSize: 11 }}>Detalles <span style={{ fontWeight: 600, color: "rgba(20,17,15,.45)" }}>(opcional)</span></p>
-                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: overLimit ? "var(--coral)" : "rgba(20,17,15,.4)" }}>{wordCount} / 150 palabras</span>
+                <p style={{ fontWeight: 800, fontSize: 11 }}>{t("report.details.label")} <span style={{ fontWeight: 600, color: "rgba(20,17,15,.45)" }}>{t("report.details.optional")}</span></p>
+                <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: overLimit ? "var(--coral)" : "rgba(20,17,15,.4)" }}>{t("report.words", { n: wordCount })}</span>
               </div>
               <textarea
                 value={text}
                 onChange={e => setText(e.target.value)}
-                placeholder="Cuéntanos qué está mal con este post…"
+                placeholder={t("report.details.placeholder")}
                 style={{ width: "100%", height: 72, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", boxSizing: "border-box", color: overLimit ? "var(--coral)" : "inherit" }}
               />
             </div>
@@ -222,7 +271,7 @@ function ReportModal({ postId, onClose }) {
               onClick={send}
               disabled={!reason || overLimit || sending}
               style={{ width: "100%", height: 44, borderRadius: 12, border: "2px solid var(--ink)", background: "var(--coral)", color: "#fff", fontWeight: 800, fontSize: 13, cursor: !reason || overLimit ? "not-allowed" : "pointer", opacity: !reason || overLimit || sending ? 0.55 : 1, boxShadow: "3px 3px 0 var(--ink)", fontFamily: "Space Grotesk" }}>
-              {sending ? "Enviando…" : "Enviar denuncia"}
+              {sending ? t("report.sending") : t("report.send")}
             </button>
           </>
         )}
@@ -231,8 +280,8 @@ function ReportModal({ postId, onClose }) {
   );
 }
 
-/* ── Edit modal ── */
 function EditModal({ post, onClose, onSaved }) {
+  const t = useT();
   const [prompt, setPrompt] = useState(post.prompt ?? "");
   const [saving, setSaving] = useState(false);
   const save = async () => {
@@ -244,21 +293,21 @@ function EditModal({ post, onClose, onSaved }) {
   return (
     <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 50, background: "rgba(20,17,15,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
       <div onClick={e => e.stopPropagation()} className="stk" style={{ background: "var(--paper-2)", borderRadius: 18, padding: "20px 18px", width: "100%" }}>
-        <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginBottom: 14 }}>Editar obra</p>
-        <label style={{ fontWeight: 800, fontSize: 11, display: "block", marginBottom: 6 }}>Descripción / reto</label>
+        <p className="serif" style={{ fontSize: 22, lineHeight: 1, marginBottom: 14 }}>{t("post.edit.title")}</p>
+        <label style={{ fontWeight: 800, fontSize: 11, display: "block", marginBottom: 6 }}>{t("post.edit.desc")}</label>
         <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
           style={{ width: "100%", height: 80, border: "2px solid var(--ink)", borderRadius: 12, padding: "10px 12px", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 13, resize: "none", outline: "none", background: "var(--paper-2)", boxSizing: "border-box", marginBottom: 14 }}/>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onClose} style={{ flex: 1, height: 40, border: "2px solid var(--ink)", borderRadius: 12, background: "var(--paper-2)", fontWeight: 800, fontSize: 12, cursor: "pointer", fontFamily: "Space Grotesk" }}>Cancelar</button>
-          <button onClick={save} disabled={saving} style={{ flex: 1, height: 40, border: "2px solid var(--ink)", borderRadius: 12, background: "var(--acid)", fontWeight: 800, fontSize: 12, cursor: "pointer", opacity: saving ? 0.6 : 1, fontFamily: "Space Grotesk" }}>{saving ? "Guardando…" : "Guardar"}</button>
+          <button onClick={onClose} style={{ flex: 1, height: 40, border: "2px solid var(--ink)", borderRadius: 12, background: "var(--paper-2)", fontWeight: 800, fontSize: 12, cursor: "pointer", fontFamily: "Space Grotesk" }}>{t("post.edit.cancel")}</button>
+          <button onClick={save} disabled={saving} style={{ flex: 1, height: 40, border: "2px solid var(--ink)", borderRadius: 12, background: "var(--acid)", fontWeight: 800, fontSize: 12, cursor: "pointer", opacity: saving ? 0.6 : 1, fontFamily: "Space Grotesk" }}>{saving ? t("post.edit.saving") : t("post.edit.save")}</button>
         </div>
       </div>
     </div>
   );
 }
 
-/* ── Context menu ── */
 function PostMenu({ isOwn, hidden, onEdit, onHide, onDelete, onFlag, onReport, onClose }) {
+  const t = useT();
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 20 }}/>
@@ -270,14 +319,14 @@ function PostMenu({ isOwn, hidden, onEdit, onHide, onDelete, onFlag, onReport, o
       }}>
         {isOwn ? (
           <>
-            <MenuRow icon={<IBrush s={15}/>} label="Editar" onClick={onEdit}/>
-            <MenuRow icon={<IEyeOff s={15}/>} label={hidden ? "Mostrar" : "Ocultar"} onClick={onHide}/>
-            <MenuRow icon={<ITrash s={15}/>} label="Eliminar" danger onClick={onDelete} last/>
+            <MenuRow icon={<IBrush s={15}/>} label={t("post.menu.edit")} onClick={onEdit}/>
+            <MenuRow icon={<IEyeOff s={15}/>} label={hidden ? t("post.menu.show") : t("post.menu.hide")} onClick={onHide}/>
+            <MenuRow icon={<ITrash s={15}/>} label={t("post.menu.delete")} danger onClick={onDelete} last/>
           </>
         ) : (
           <>
-            <MenuRow icon={<IFlag s={15}/>} label="No cumple el reto" onClick={onFlag}/>
-            <MenuRow icon={<IFlag s={15}/>} label="Denunciar" danger onClick={onReport} last/>
+            <MenuRow icon={<IFlag s={15}/>} label={t("post.menu.flag")} onClick={onFlag}/>
+            <MenuRow icon={<IFlag s={15}/>} label={t("post.menu.report")} danger onClick={onReport} last/>
           </>
         )}
       </div>
@@ -306,8 +355,8 @@ function MenuRow({ icon, label, danger, onClick, last }) {
   );
 }
 
-/* ── Single comment row ── */
 function CommentItem({ comment, artworkId, onDeleted, onViewUser }) {
+  const t = useT();
   const [deleting, setDeleting] = useState(false);
   const [gone,     setGone]     = useState(false);
 
@@ -324,17 +373,6 @@ function CommentItem({ comment, artworkId, onDeleted, onViewUser }) {
     }
   };
 
-  function timeAgoC(dateStr) {
-    if (!dateStr) return "";
-    const diff = Date.now() - new Date(dateStr + "Z").getTime();
-    const m = Math.floor(diff / 60000);
-    if (m < 1)  return "ahora";
-    if (m < 60) return `${m}m`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h`;
-    return `${Math.floor(h / 24)}d`;
-  }
-
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
       <div style={{ width: 30, height: 30, borderRadius: 999, border: "1.5px solid var(--ink)", background: "var(--lilac)", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -349,7 +387,7 @@ function CommentItem({ comment, artworkId, onDeleted, onViewUser }) {
             style={{ fontWeight: 800, fontSize: 12, cursor: onViewUser && comment.author_id ? "pointer" : "default", textDecoration: onViewUser && comment.author_id ? "underline" : "none" }}
             onClick={onViewUser && comment.author_id ? () => onViewUser(comment.author_id) : undefined}
           >{comment.author}</span>
-          <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{timeAgoC(comment.date)}</span>
+          <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{timeAgoCommentFromT(comment.date, t)}</span>
         </div>
         <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 500, lineHeight: 1.4, wordBreak: "break-word" }}>{comment.text}</p>
       </div>
@@ -357,7 +395,7 @@ function CommentItem({ comment, artworkId, onDeleted, onViewUser }) {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          title="Eliminar"
+          title={t("delete.confirm")}
           style={{ all: "unset", cursor: "pointer", opacity: deleting ? 0.4 : 0.5, padding: "2px 4px", flexShrink: 0 }}>
           <ITrashIcon s={13}/>
         </button>
@@ -366,8 +404,9 @@ function CommentItem({ comment, artworkId, onDeleted, onViewUser }) {
   );
 }
 
-/* ── Comments section (collapsible in list, expanded in modal) ── */
 function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onViewUser }) {
+  const t = useT();
+  const { state } = useApp();
   const [open,     setOpen]     = useState(defaultOpen);
   const [comments, setComments] = useState([]);
   const [count,    setCount]    = useState(initialCount);
@@ -416,7 +455,7 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onV
     setPosting(false);
   };
 
-  const onDeleted = (id) => {
+  const onDeleted = () => {
     setCount(n => Math.max(0, n - 1));
   };
 
@@ -424,9 +463,14 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onV
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
   };
 
+  const toggleLabel = count === 0
+    ? t("comments.toggle.zero")
+    : count === 1
+    ? t("comments.toggle.one")
+    : t("comments.toggle.many", { n: count });
+
   return (
     <div style={{ borderTop: "1.5px solid rgba(20,17,15,.1)", marginTop: 2 }}>
-      {/* Toggle chip */}
       <button
         onClick={toggle}
         style={{
@@ -434,9 +478,7 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onV
           padding: "10px 14px", width: "100%", boxSizing: "border-box",
         }}>
         <IComment s={14}/>
-        <span style={{ fontWeight: 700, fontSize: 12 }}>
-          {count > 0 ? `${count} comentario${count === 1 ? "" : "s"}` : "Comentarios"}
-        </span>
+        <span style={{ fontWeight: 700, fontSize: 12 }}>{toggleLabel}</span>
         <span style={{ marginLeft: "auto", fontSize: 11, color: "rgba(20,17,15,.45)", fontWeight: 700 }}>
           {open ? "▲" : "▼"}
         </span>
@@ -445,10 +487,9 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onV
       {open && (
         <div style={{ padding: "0 14px 14px" }}>
           {loading && (
-            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", marginBottom: 10 }}>// cargando...</p>
+            <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.4)", marginBottom: 10 }}>{t("comments.loading")}</p>
           )}
 
-          {/* Comment list */}
           {loaded && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: comments.length > 0 ? 14 : 0 }}>
               {comments.map(c => (
@@ -456,13 +497,12 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onV
               ))}
               {comments.length === 0 && (
                 <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.35)", textAlign: "center", margin: "4px 0 12px" }}>
-                  // sin comentarios aún
+                  {t("comments.empty")}
                 </p>
               )}
             </div>
           )}
 
-          {/* Input */}
           {IS_LOGGED_IN && (
             <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
               <textarea
@@ -470,7 +510,7 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onV
                 value={text}
                 onChange={e => setText(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder="Añade un comentario…"
+                placeholder={t("comments.placeholder")}
                 rows={1}
                 style={{
                   flex: 1, border: "2px solid var(--ink)", borderRadius: 12, padding: "8px 12px",
@@ -490,7 +530,7 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onV
                   flexShrink: 0, fontFamily: "Space Grotesk",
                   transition: "background .15s",
                 }}>
-                {posting ? "…" : "OK"}
+                {posting ? "…" : t("comments.submit")}
               </button>
             </div>
           )}
@@ -500,12 +540,11 @@ function CommentsSection({ artworkId, initialCount = 0, defaultOpen = false, onV
   );
 }
 
-/* ── Main PostCard ──
-   Used in feed (inline) and from profile grids (inside ArtworkModal bottom-sheet).
-   isOwn, onRemove, onUpdate are optional — omit them in read-only contexts.        */
 export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, triesLeft, onTryUsed, onViewAuthor, commentsOpen = false }) {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
+  const t = useT();
   const isOwn = isOwnProp ?? (IS_LOGGED_IN && parseInt(post.author_id) === WP_USER_ID);
+  const showTranslate = state.lang !== "es";
 
   const viewUser = (userId) => {
     if (!userId) return;
@@ -547,7 +586,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
 
   const react = (type) => {
     const was = reacted[type];
-    if (type === "try" && isOwn) return; // no auto-intentaré
+    if (type === "try" && isOwn) return;
     if (type === "try" && !was && triesLeft !== undefined && triesLeft <= 0) return;
     if (post.id) addReaction(post.id, type).catch(() => {});
     if (type === "like")    setLikes(n    => was ? n - 1 : n + 1);
@@ -560,7 +599,6 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
         if (IS_LOGGED_IN) {
           const variables = tags.map(t => ({ value: decodeTag(t), rarity: typeof t === "object" && t.rarity ? t.rarity : "Común" }));
           dispatch({ type: "SAVE_IDEA", idea: { variables, params: post.params ?? [] } });
-          // Send variables to server log; sync triesLeft from authoritative server count
           useTryAPI(variables)
             .then(res => { if (typeof res?.left === "number") onTryUsed?.(res.left); })
             .catch(() => {});
@@ -588,8 +626,8 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
   if (deleted) {
     return (
       <div className="stk" style={{ background: "var(--paper-2)", borderRadius: 18, padding: "22px 18px", textAlign: "center", marginBottom: 14 }}>
-        <p className="serif" style={{ fontSize: 22, margin: 0 }}>Post eliminado</p>
-        <p className="mono" style={{ fontSize: 10, marginTop: 6, opacity: 0.5 }}>// removido permanentemente</p>
+        <p className="serif" style={{ fontSize: 22, margin: 0 }}>{t("post.deleted.title")}</p>
+        <p className="mono" style={{ fontSize: 10, marginTop: 6, opacity: 0.5 }}>{t("post.deleted.sub")}</p>
       </div>
     );
   }
@@ -603,14 +641,12 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
   return (
     <div className="stk" style={{ background: "var(--paper-2)", padding: 0, borderRadius: 18, overflow: "hidden", marginBottom: 14, boxShadow: "var(--shadow-lg)", position: "relative" }}>
 
-      {/* Hidden band — only owner sees this */}
       {isOwn && hidden && (
         <div style={{ background: "var(--coral)", color: "#fff", borderBottom: "2px solid var(--ink)", padding: "5px 14px", fontFamily: "JetBrains Mono", fontWeight: 700, fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
-          <IEyeOff s={12} stroke="#fff"/> Oculto · sólo tú lo ves
+          <IEyeOff s={12} stroke="#fff"/> {t("post.hidden.label")}
         </div>
       )}
 
-      {/* Image area — full bleed */}
       <div style={{ position: "relative" }}>
         {images.length > 0 ? (
           <PostImages images={images} slide={slide} onSlide={setSlide}/>
@@ -620,14 +656,12 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
           </div>
         )}
 
-        {/* Gradient overlay — multiply dark-to-transparent */}
         <div aria-hidden style={{
           position: "absolute", top: 0, left: 0, right: 0, height: "55%",
           background: "linear-gradient(to bottom, rgba(20,17,15,.85) 0%, rgba(20,17,15,.5) 40%, rgba(20,17,15,0) 100%)",
           mixBlendMode: "multiply", pointerEvents: "none",
         }}/>
 
-        {/* Absolute header: avatar · user · tech/date · rarity · menu */}
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10, zIndex: 10 }}>
           <div
             onClick={hasAuthor ? onViewAuthor : undefined}
@@ -641,7 +675,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
           <div style={{ flex: 1, minWidth: 0, paddingTop: 1, cursor: hasAuthor ? "pointer" : "default" }} onClick={hasAuthor ? onViewAuthor : undefined}>
             <p style={{ fontWeight: 800, fontSize: 13, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,.4)", margin: 0 }}>{user}</p>
             <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,.75)", margin: "2px 0 0", letterSpacing: "0.04em" }}>
-              {[tech, timeAgo(post.date)].filter(Boolean).join(" · ").toUpperCase()}
+              {[tech, timeAgoFromT(post.date, t)].filter(Boolean).join(" · ").toUpperCase()}
             </p>
           </div>
 
@@ -669,24 +703,21 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
           </div>
         </div>
 
-        {/* Tags anchored at bottom of image */}
         {tags.length > 0 && (
           <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", flexWrap: "wrap", gap: 6, zIndex: 10 }}>
-            {tags.map((t, i) => (
+            {tags.map((tag, i) => (
               <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700, boxShadow: "2px 2px 0 var(--ink)" }}>
-                {decodeTag(t)}
+                {decodeTag(tag)}
               </span>
             ))}
           </div>
         )}
       </div>
 
-      {/* Carousel dots — between image and reactions */}
       {images.length > 1 && (
         <CarouselDots count={images.length} current={slide} onSelect={setSlide}/>
       )}
 
-      {/* Reactions */}
       <div style={{ display: "flex", gap: 8, padding: 12 }}>
         {reactions.map((b, j) => {
           const isTry = b.type === "try";
@@ -697,7 +728,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
               key={j}
               onClick={() => react(b.type)}
               disabled={blocked}
-              title={b.disabled ? "No puedes intentar tu propio reto" : undefined}
+              title={b.disabled ? t("post.noTryOwn") : undefined}
               style={{
                 flex: 1, height: 38, borderRadius: 12, border: "2px solid var(--ink)",
                 background: saved ? "var(--mint)" : b.active ? b.bg : "var(--paper-2)",
@@ -709,16 +740,18 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
                 transition: "background .2s",
                 fontFamily: "Space Grotesk",
               }}>
-              <b.Ico s={15}/> {saved ? "Guardado" : b.count}
+              <b.Ico s={15}/> {saved ? t("post.reactions.saved") : b.count}
             </button>
           );
         })}
       </div>
 
-      {/* Caption expandible debajo de las reacciones */}
       <ExpandableCaption username={user} text={caption}/>
 
-      {/* Comentarios */}
+      {showTranslate && caption && (
+        <TranslateBtn text={caption} lang={state.lang}/>
+      )}
+
       {post.id && (
         <CommentsSection
           artworkId={post.id}
@@ -728,7 +761,6 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
         />
       )}
 
-      {/* Modals (scoped inside card so backdrop is card-sized) */}
       {confirmDel && <DeleteConfirm onConfirm={handleDelete} onCancel={() => setConfirmDel(false)}/>}
       {editOpen && (
         <EditModal
@@ -742,7 +774,6 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
   );
 }
 
-/* ── Overlay modal wrapper (used from profile grids and notifications) ── */
 export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewAuthor }) {
   const backdropRef = useRef(null);
 
@@ -769,7 +800,6 @@ export function ArtworkModal({ post, onClose, col, triesLeft, onTryUsed, onViewA
         display: "flex", flexDirection: "column", alignItems: "center",
       }}
     >
-      {/* Close button */}
       <button
         onClick={onClose}
         style={{

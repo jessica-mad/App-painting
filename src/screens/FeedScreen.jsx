@@ -2,14 +2,18 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
+import { useT } from "../i18n";
 import { fetchArtworks, IS_LOGGED_IN, WP_USER_ID, WP_TRIES_LEFT, WP_TRIES_LIMIT } from "../utils/api";
 import { IFlame, IGrid, IList, IX, IBell } from "../components/Icons";
 import { PostCard } from "../components/ArtworkModal";
 
+/* Internal filter keys (language-independent) */
+const FILTER_KEYS = ["forYou", "following", "legendary", "thisWeek"];
+
 function filterToParams(f) {
-  if (f === "Legendarios") return { rarity: "Legendario" };
-  if (f === "Siguiendo")   return { following: 1 };
-  if (f === "Esta semana") return { period: "week" };
+  if (f === "legendary") return { rarity: "Legendario" };
+  if (f === "following")  return { following: 1 };
+  if (f === "thisWeek")   return { period: "week" };
   return {};
 }
 
@@ -37,16 +41,13 @@ function useCountdown() {
   return label;
 }
 
-const FILTERS = ["Para ti", "Siguiendo", "Legendarios", "Esta semana"];
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
 /* ── Gallery modal overlay ── */
 function GalleryModal({ post, idx, onClose, triesLeft, onTryUsed, onRemove, onUpdate, onViewAuthor }) {
-  /* Close on backdrop click */
   const backdropRef = useRef(null);
   const handleBackdrop = (e) => { if (e.target === backdropRef.current) onClose(); };
 
-  /* Lock body scroll while open */
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
@@ -63,7 +64,6 @@ function GalleryModal({ post, idx, onClose, triesLeft, onTryUsed, onRemove, onUp
         display: "flex", flexDirection: "column", alignItems: "center",
       }}
     >
-      {/* Close button */}
       <button
         onClick={onClose}
         style={{
@@ -136,13 +136,14 @@ function GalleryGrid({ posts, onOpen }) {
 
 export function FeedScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const unreadNotifs = state.unreadNotifs;
-  const [filter, setFilter]         = useState("Para ti");
+  const [filter, setFilter]         = useState("forYou");
   const [posts, setPosts]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [triesLeft, setTriesLeft]   = useState(() => Math.min(WP_TRIES_LEFT, localTriesLeft()));
   const [view, setView]             = useState(() => localStorage.getItem("inkrush_feed_view") || "list");
-  const [galleryPost, setGalleryPost] = useState(null); // { post, idx }
+  const [galleryPost, setGalleryPost] = useState(null);
   const countdown = useCountdown();
 
   useEffect(() => {
@@ -180,7 +181,7 @@ export function FeedScreen() {
         {/* Header */}
         <div style={{ padding: "8px 22px 6px", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>Feed</h2>
+            <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>{t("feed.title")}</h2>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {/* Bell */}
               <button
@@ -197,12 +198,12 @@ export function FeedScreen() {
               {/* View toggle */}
               <div style={{ display: "flex", border: "2px solid var(--ink)", borderRadius: 10, overflow: "hidden" }}>
                 {[
-                  { id: "list", Icon: IList,  title: "Vista lista" },
-                  { id: "grid", Icon: IGrid,  title: "Vista galería" },
-                ].map(({ id, Icon, title }) => (
+                  { id: "list", Icon: IList,  label: t("feed.view.list") },
+                  { id: "grid", Icon: IGrid,  label: t("feed.view.grid") },
+                ].map(({ id, Icon, label }) => (
                   <button
                     key={id}
-                    title={title}
+                    title={label}
                     onClick={() => changeView(id)}
                     style={{
                       width: 34, height: 30,
@@ -229,22 +230,22 @@ export function FeedScreen() {
 
           {triesLeft === 0 && (
             <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.45)", marginTop: 3 }}>
-              reset {countdown}
+              {t("feed.tries.reset", { countdown })}
             </p>
           )}
 
           {/* Filters */}
           <div className="scroll" style={{ display: "flex", gap: 8, marginTop: 10, paddingBottom: 4 }}>
-            {FILTERS.map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{
+            {FILTER_KEYS.map(key => (
+              <button key={key} onClick={() => setFilter(key)} style={{
                 flexShrink: 0, padding: "5px 12px", borderRadius: 999,
                 border: "2px solid var(--ink)",
-                background: filter === f ? "var(--ink)" : "var(--paper-2)",
-                color: filter === f ? "var(--acid)" : "var(--ink)",
+                background: filter === key ? "var(--ink)" : "var(--paper-2)",
+                color: filter === key ? "var(--acid)" : "var(--ink)",
                 fontWeight: 700, fontSize: 11,
-                boxShadow: filter === f ? "3px 3px 0 var(--ink)" : "none",
+                boxShadow: filter === key ? "3px 3px 0 var(--ink)" : "none",
                 cursor: "pointer",
-              }}>{f}</button>
+              }}>{t(`feed.filter.${key}`)}</button>
             ))}
           </div>
         </div>
@@ -252,14 +253,14 @@ export function FeedScreen() {
         {/* Content */}
         {loading && (
           <p className="mono" style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)", padding: "40px 0" }}>
-            // CARGANDO...
+            {t("feed.loading")}
           </p>
         )}
         {!loading && posts.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 24px" }}>
-            <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>Sin obras aún</p>
+            <p className="serif" style={{ fontSize: 28, lineHeight: 1 }}>{t("feed.empty.title")}</p>
             <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
-              {filter === "Siguiendo" ? "Sigue a otros artistas para ver sus obras aquí." : "Aún no hay nada aquí. Eso tiene solución fácil."}
+              {filter === "following" ? t("feed.empty.following") : t("feed.empty.generic")}
             </p>
           </div>
         )}

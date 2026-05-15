@@ -1,16 +1,18 @@
 import { useApp } from "../data/store";
+import { useT } from "../i18n";
 import { IHome, IFeed, IPlus, IBookmark, ISketchbook } from "./Icons";
-
-const NAV_ITEMS = [
-  { id: "home",    icon: IHome,       label: "Inicio" },
-  { id: "feed",    icon: IFeed,       label: "Feed" },
-  { id: "random",  icon: IPlus,       label: "Reto",   special: true },
-  { id: "saved",   icon: IBookmark,   label: "Guardar" },
-  { id: "profile", icon: ISketchbook, label: "Mi Sketchbook" },
-];
 
 export function BottomNav({ current }) {
   const { dispatch } = useApp();
+  const t = useT();
+
+  const NAV_ITEMS = [
+    { id: "home",    icon: IHome,       label: t("nav.home") },
+    { id: "feed",    icon: IFeed,       label: t("nav.feed") },
+    { id: "random",  icon: IPlus,       label: t("nav.challenge"), special: true },
+    { id: "saved",   icon: IBookmark,   label: t("nav.saved") },
+    { id: "profile", icon: ISketchbook, label: t("nav.profile") },
+  ];
 
   const nav = (id) => {
     dispatch({ type: "SET_SCREEN", screen: id });

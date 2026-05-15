@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import { ACTIVE_SEASON } from "./parameters";
 import { WP_ROLLS, WP_ROLLS_USED } from "../utils/api";
+import { getLang } from "../i18n";
 
 export const AppContext = createContext(null);
 export function useApp() { return useContext(AppContext); }
@@ -99,6 +100,7 @@ export const initialState = {
   followListType:   "following",
   profileInitialTab: null,
   unreadNotifs:     0,
+  lang:             getLang(),
 };
 
 export function reducer(state, action) {
@@ -214,6 +216,10 @@ export function reducer(state, action) {
 
     case "CLEAR_UNREAD_NOTIFS":
       return { ...state, unreadNotifs: 0 };
+
+    case "SET_LANG":
+      localStorage.setItem("inkrush_lang", action.lang);
+      return { ...state, lang: action.lang };
 
     default:
       return state;

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
+import { useT } from "../i18n";
 import { IS_LOGGED_IN, registerUser, loginUser, forgotPassword } from "../utils/api";
 import { IBrush, ISpark, IStar, ILock, IArrowL, IUser, ICheck } from "../components/Icons";
 
@@ -20,6 +21,7 @@ const HEADLINES = [
 
 export function LoginScreen() {
   const { dispatch } = useApp();
+  const t = useT();
   const [mode, setMode]           = useState("main"); // main | login | register | forgot
   const [email, setEmail]         = useState("");
   const [password, setPassword]   = useState("");
@@ -48,7 +50,6 @@ export function LoginScreen() {
 
   const back = () => { setMode("main"); setError(""); setSuccess(""); setConfirm(""); };
 
-  /* ── Montar widget reCAPTCHA cuando se entra al modo register ── */
   useEffect(() => {
     if (mode !== "register" || !RECAPTCHA_SITE_KEY) return;
     const mount = () => {
@@ -66,7 +67,6 @@ export function LoginScreen() {
     return () => { captchaWidget.current = null; };
   }, [mode]);
 
-  /* ── Registro con email ── */
   const handleRegister = async () => {
     if (!name.trim())              { setError("Escribe tu nombre."); return; }
     if (!email.includes("@"))      { setError("Email inválido."); return; }
@@ -88,16 +88,14 @@ export function LoginScreen() {
     }
   };
 
-  /* ── Recuperar contraseña ── */
   const handleForgot = async () => {
     if (!email.includes("@")) { setError("Email inválido."); return; }
     setError(""); setLoading(true);
     try { await forgotPassword(email); } catch {}
-    setSuccess("Si ese email está registrado, recibirás un enlace en breve.");
+    setSuccess(t("login.forgot.success"));
     setLoading(false);
   };
 
-  /* ── Login en-app ── */
   const handleLogin = async () => {
     if (!email.includes("@")) { setError("Email inválido."); return; }
     if (!password)            { setError("Escribe tu contraseña."); return; }
@@ -120,17 +118,17 @@ export function LoginScreen() {
       <Phone>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px", overflow: "hidden" }}>
           <button onClick={back} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
-            <IArrowL s={16}/> Volver
+            <IArrowL s={16}/> {t("common.back")}
           </button>
-          <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>Crear cuenta</h2>
-          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// REGISTRO CON EMAIL</p>
+          <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>{t("login.register.title")}</h2>
+          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{t("login.register.subtitle")}</p>
 
           <div className="scroll" style={{ flex: 1, marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
             {[
-              { label: "Tu nombre artístico", val: name,    set: setName,     type: "text",     ph: "Malva Ink",    Icon: IUser },
-              { label: "Email",               val: email,   set: setEmail,    type: "email",    ph: "tu@email.com", Icon: ILock },
-              { label: "Contraseña (mín. 6)", val: password,set: setPassword, type: "password", ph: "••••••••",     Icon: ILock },
-              { label: "Confirmar contraseña",val: confirm, set: setConfirm,  type: "password", ph: "••••••••",     Icon: ICheck },
+              { label: t("login.register.name"),    val: name,    set: setName,     type: "text",     ph: "Malva Ink",    Icon: IUser },
+              { label: t("login.register.email"),   val: email,   set: setEmail,    type: "email",    ph: "tu@email.com", Icon: ILock },
+              { label: t("login.register.password"),val: password,set: setPassword, type: "password", ph: "••••••••",     Icon: ILock },
+              { label: t("login.register.confirm"), val: confirm, set: setConfirm,  type: "password", ph: "••••••••",     Icon: ICheck },
             ].map(({ label, val, set, type, ph, Icon }) => (
               <div key={label}>
                 <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>{label}</p>
@@ -145,7 +143,7 @@ export function LoginScreen() {
 
             {RECAPTCHA_SITE_KEY && (
               <div>
-                <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>Verificación</p>
+                <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>{t("login.register.verification")}</p>
                 <div ref={captchaRef}/>
               </div>
             )}
@@ -159,11 +157,11 @@ export function LoginScreen() {
 
             <button onClick={handleRegister} disabled={loading} className="stk"
               style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", marginTop: 8, cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
-              <IBrush s={18}/> {loading ? "Creando cuenta…" : "Crear mi cuenta"}
+              <IBrush s={18}/> {loading ? t("login.register.submitting") : t("login.register.submit")}
             </button>
 
             <button onClick={() => { setMode("login"); setError(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 800, color: "rgba(20,17,15,.55)", cursor: "pointer", textDecoration: "underline", marginTop: 4, textAlign: "center" }}>
-              ¿Ya tienes cuenta? Iniciar sesión
+              {t("login.register.haveAccount")}
             </button>
           </div>
         </div>
@@ -177,13 +175,13 @@ export function LoginScreen() {
       <Phone>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
           <button onClick={back} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
-            <IArrowL s={16}/> Volver
+            <IArrowL s={16}/> {t("common.back")}
           </button>
-          <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>Recuperar contraseña</h2>
-          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// TE ENVIAREMOS UN ENLACE</p>
+          <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>{t("login.forgot.title")}</h2>
+          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{t("login.forgot.subtitle")}</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
-            <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>Email</p>
+            <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>{t("login.field.email")}</p>
             <div style={{ display: "flex", alignItems: "center", gap: 10, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", padding: "0 14px" }}>
               <IUser s={16}/>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com"
@@ -201,7 +199,7 @@ export function LoginScreen() {
 
           <button onClick={handleForgot} disabled={loading || !!success} className="stk"
             style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", marginTop: "auto", cursor: "pointer", opacity: loading || success ? 0.6 : 1 }}>
-            <ILock s={18}/> {loading ? "Enviando…" : "Enviar enlace"}
+            <ILock s={18}/> {loading ? t("login.forgot.submitting") : t("login.forgot.submit")}
           </button>
         </div>
       </Phone>
@@ -214,15 +212,15 @@ export function LoginScreen() {
       <Phone>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "8px 22px 22px" }}>
           <button onClick={back} style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}>
-            <IArrowL s={16}/> Volver
+            <IArrowL s={16}/> {t("common.back")}
           </button>
           <h2 className="serif" style={{ fontSize: 28, marginTop: 12, lineHeight: 1 }}>Iniciar sesión</h2>
-          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// CON TU EMAIL Y CONTRASEÑA</p>
+          <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{t("login.mode.email")}</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
             {[
-              { label: "Email",       val: email,    set: setEmail,    type: "email",    ph: "tu@email.com", Icon: IUser },
-              { label: "Contraseña",  val: password, set: setPassword, type: "password", ph: "••••••••",    Icon: ILock },
+              { label: t("login.field.email"),    val: email,    set: setEmail,    type: "email",    ph: "tu@email.com", Icon: IUser },
+              { label: t("login.field.password"), val: password, set: setPassword, type: "password", ph: "••••••••",    Icon: ILock },
             ].map(({ label, val, set, type, ph, Icon }) => (
               <div key={label}>
                 <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 6 }}>{label}</p>
@@ -245,15 +243,15 @@ export function LoginScreen() {
 
           <button onClick={handleLogin} disabled={loading} className="stk"
             style={{ height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", marginTop: "auto", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
-            <ILock s={18}/> {loading ? "Entrando…" : "Entrar"}
+            <ILock s={18}/> {loading ? t("login.submitting") : t("login.submit")}
           </button>
 
           <button onClick={() => { setMode("forgot"); setError(""); setSuccess(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 700, color: "rgba(20,17,15,.5)", cursor: "pointer", marginTop: 10, textAlign: "center" }}>
-            ¿Olvidaste tu contraseña?
+            {t("login.forgot")}
           </button>
 
           <button onClick={() => { setMode("register"); setError(""); }} style={{ background: "transparent", border: "none", fontSize: 12, fontWeight: 800, color: "rgba(20,17,15,.55)", cursor: "pointer", textDecoration: "underline", marginTop: 4, textAlign: "center" }}>
-            ¿No tienes cuenta? Crear cuenta gratis
+            {t("login.noAccount")}
           </button>
         </div>
       </Phone>
@@ -300,23 +298,23 @@ export function LoginScreen() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Entrar con Google · Próximamente
+            {t("login.google.label")}
           </button>
 
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
-            <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>O CON EMAIL</span>
+            <span className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{t("login.divider")}</span>
             <div style={{ flex: 1, height: 2, background: "rgba(20,17,15,.1)" }}/>
           </div>
 
           <button className="stk" onClick={() => { setMode("register"); setError(""); }}
             style={{ height: 50, background: "var(--mint)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
-            <IUser s={16}/> Crear cuenta con email
+            <IUser s={16}/> {t("login.createAccount")}
           </button>
 
           <button className="stk" onClick={() => { setMode("login"); setError(""); }}
             style={{ height: 50, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
-            <ILock s={16}/> Iniciar sesión con email
+            <ILock s={16}/> {t("login.signIn")}
           </button>
 
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
@@ -337,14 +335,14 @@ export function LoginScreen() {
             }
           }}
             style={{ height: 46, background: "transparent", border: "2px dashed rgba(20,17,15,.35)", borderRadius: 16, fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", color: "rgba(20,17,15,.6)", opacity: loading ? 0.6 : 1 }}>
-            🧪 {loading ? "Entrando…" : "Entrar como tester · test1234"}
+            🧪 {loading ? t("login.tester.entering") : t("login.tester.label")}
           </button>
 
           {error   && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--coral)", textAlign: "center" }}>{error}</p>}
           {success && <p style={{ fontSize: 12, fontWeight: 800, color: "var(--ink)", textAlign: "center" }}>{success}</p>}
 
           <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.4)", textAlign: "center", marginTop: 8 }}>
-            Al entrar aceptas los términos y la política de privacidad
+            {t("login.terms")}
           </p>
         </div>
       </div>

@@ -5,32 +5,33 @@ import { useApp } from "../data/store";
 import { fetchNotifications, markNotificationsRead, fetchArtwork, IS_LOGGED_IN } from "../utils/api";
 import { IArrowL, IUser, IBell, IHeart, IInspire, IFlame, IComment, IBrush } from "../components/Icons";
 import { ArtworkModal } from "../components/ArtworkModal";
+import { useT } from "../i18n";
 
-const TYPE_META = {
-  like:     { icon: IHeart,   color: "var(--rose)",   label: (n) => `${n} le dio like a tu obra` },
-  inspire:  { icon: IInspire, color: "var(--lilac)",  label: (n) => `${n} se inspiró con tu obra` },
-  try:      { icon: IFlame,   color: "var(--butter)", label: (n) => `${n} va a intentar tu reto` },
-  comment:  { icon: IComment, color: "var(--sky)",    label: (n) => `${n} comentó en tu obra` },
-  follow:   { icon: IUser,    color: "var(--mint)",   label: (n) => `${n} empezó a seguirte` },
-  new_post: { icon: IBrush,   color: "var(--acid)",   label: (n) => `${n} publicó una nueva obra` },
-};
-
-function timeAgo(dateStr) {
+function timeAgo(dateStr, t) {
   if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr + "Z").getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)   return "ahora";
-  if (m < 60)  return `${m}m`;
+  if (m < 1)   return t("time.c.now");
+  if (m < 60)  return t("time.c.m", { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24)  return `${h}h`;
+  if (h < 24)  return t("time.c.h", { n: h });
   const d = Math.floor(h / 24);
-  if (d < 7)   return `${d}d`;
-  return `${Math.floor(d / 7)}sem`;
+  if (d < 7)   return t("time.c.d", { n: d });
+  return t("time.c.d", { n: Math.floor(d / 7) });
 }
 
 const ARTWORK_TYPES = new Set(["like", "inspire", "try", "comment", "new_post"]);
 
-function NotifRow({ notif, onViewUser, onOpenArtwork }) {
+function NotifRow({ notif, onViewUser, onOpenArtwork, t }) {
+  const TYPE_META = {
+    like:     { icon: IHeart,   color: "var(--rose)",   labelKey: "notifs.like" },
+    inspire:  { icon: IInspire, color: "var(--lilac)",  labelKey: "notifs.inspire" },
+    try:      { icon: IFlame,   color: "var(--butter)", labelKey: "notifs.try" },
+    comment:  { icon: IComment, color: "var(--sky)",    labelKey: "notifs.comment" },
+    follow:   { icon: IUser,    color: "var(--mint)",   labelKey: "notifs.follow" },
+    new_post: { icon: IBrush,   color: "var(--acid)",   labelKey: "notifs.new_post" },
+  };
+
   const meta     = TYPE_META[notif.type] ?? TYPE_META.like;
   const IcoFn    = meta.icon;
   const isRead   = notif.is_read;
@@ -94,7 +95,7 @@ function NotifRow({ notif, onViewUser, onOpenArtwork }) {
       {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, fontWeight: isRead ? 500 : 700, lineHeight: 1.3, margin: 0 }}>
-          {meta.label(notif.from.name)}
+          {t(meta.labelKey, { name: notif.from.name })}
         </p>
         {notif.excerpt && (
           <p style={{
@@ -106,7 +107,7 @@ function NotifRow({ notif, onViewUser, onOpenArtwork }) {
           </p>
         )}
         <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.38)", marginTop: 3 }}>
-          {timeAgo(notif.created_at)}
+          {timeAgo(notif.created_at, t)}
           {notif.from.handle && ` · @${notif.from.handle}`}
         </p>
       </div>
@@ -126,6 +127,7 @@ function NotifRow({ notif, onViewUser, onOpenArtwork }) {
 
 export function NotificationsScreen() {
   const { dispatch } = useApp();
+  const t = useT();
   const [notifs,       setNotifs]       = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [empty,        setEmpty]        = useState(false);
@@ -169,7 +171,7 @@ export function NotificationsScreen() {
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
             <IBell s={18}/>
-            <h2 className="serif" style={{ fontSize: 22, lineHeight: 1, margin: 0 }}>Notificaciones</h2>
+            <h2 className="serif" style={{ fontSize: 22, lineHeight: 1, margin: 0 }}>{t("notifs.title")}</h2>
           </div>
         </div>
 
@@ -177,16 +179,16 @@ export function NotificationsScreen() {
         <div className="scroll" style={{ flex: 1 }}>
           {loading && (
             <div style={{ padding: "40px 0", textAlign: "center" }}>
-              <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>// CARGANDO...</p>
+              <p className="mono" style={{ fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{t("notifs.loading")}</p>
             </div>
           )}
 
           {!loading && empty && (
             <div style={{ padding: "60px 24px", textAlign: "center" }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🔔</div>
-              <p className="serif" style={{ fontSize: 24, lineHeight: 1 }}>Sin notificaciones</p>
+              <p className="serif" style={{ fontSize: 24, lineHeight: 1 }}>{t("notifs.empty.title")}</p>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.45)", marginTop: 8 }}>
-                // cuando alguien interactúe con tu obra aparecerá aquí
+                {t("notifs.empty.desc")}
               </p>
             </div>
           )}
@@ -202,10 +204,10 @@ export function NotificationsScreen() {
           {!loading && notifs.length > 0 && (
             <div>
               {notifs.map(n => (
-                <NotifRow key={n.id} notif={n} onViewUser={viewUser} onOpenArtwork={setActiveArtwork}/>
+                <NotifRow key={n.id} notif={n} onViewUser={viewUser} onOpenArtwork={setActiveArtwork} t={t}/>
               ))}
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.3)", textAlign: "center", padding: "18px 0" }}>
-                // últimas 50 notificaciones
+                {t("notifs.footer")}
               </p>
             </div>
           )}

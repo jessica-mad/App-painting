@@ -214,6 +214,14 @@ export async function deleteComment(artworkId, commentId) {
   return apiFetch(`/artworks/${artworkId}/comments/${commentId}`, { method: "DELETE" });
 }
 
+/* ── Traducción con IA ── */
+export async function translateText(text, targetLang = "en") {
+  return apiFetch("/translate", {
+    method: "POST",
+    body: JSON.stringify({ text, target_lang: targetLang }),
+  });
+}
+
 /* ── Recuperar contraseña ── */
 export async function forgotPassword(email) {
   return apiFetch('/forgot-password', {

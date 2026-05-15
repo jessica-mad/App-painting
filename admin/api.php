@@ -175,6 +175,13 @@ function inkrush_register_routes() {
         [ 'methods' => 'POST', 'callback' => 'inkrush_api_mark_notifications_read', 'permission_callback' => 'is_user_logged_in' ],
     ] );
 
+    /* ── Traducción IA ── */
+    register_rest_route( 'inkrush/v1', '/translate', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_translate',
+        'permission_callback' => '__return_true',
+    ] );
+
     /* ── Recuperar contraseña ── */
     register_rest_route( 'inkrush/v1', '/forgot-password', [
         'methods'             => 'POST',
@@ -1596,4 +1603,62 @@ function inkrush_api_search_posts( WP_REST_Request $req ) {
     }
 
     return rest_ensure_response( [ 'artworks' => $artworks ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   TRADUCCIÓN CON IA (Claude Haiku)
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_translate( WP_REST_Request $req ) {
+    $api_key = get_option( 'inkrush_anthropic_key', '' );
+    if ( empty( $api_key ) ) {
+        return new WP_Error( 'no_api_key', 'API key not configured.', [ 'status' => 400 ] );
+    }
+
+    $text        = sanitize_textarea_field( $req->get_param( 'text' ) ?? '' );
+    $target_lang = sanitize_text_field( $req->get_param( 'target_lang' ) ?? 'en' );
+
+    if ( empty( $text ) ) {
+        return new WP_Error( 'invalid_text', 'Text is required.', [ 'status' => 400 ] );
+    }
+    if ( strlen( $text ) > 2000 ) {
+        return new WP_Error( 'text_too_long', 'Text exceeds 2000 characters.', [ 'status' => 400 ] );
+    }
+    if ( ! in_array( $target_lang, [ 'en', 'es' ], true ) ) {
+        $target_lang = 'en';
+    }
+
+    $lang_name = $target_lang === 'en' ? 'English' : 'Spanish';
+
+    $response = wp_remote_post( 'https://api.anthropic.com/v1/messages', [
+        'timeout' => 15,
+        'headers' => [
+            'x-api-key'         => $api_key,
+            'anthropic-version' => '2023-06-01',
+            'content-type'      => 'application/json',
+        ],
+        'body' => wp_json_encode( [
+            'model'      => 'claude-haiku-4-5-20251001',
+            'max_tokens' => 1024,
+            'messages'   => [
+                [
+                    'role'    => 'user',
+                    'content' => "Translate the following text to {$lang_name}. Return ONLY the translation, no explanations, no quotes.\n\n{$text}",
+                ],
+            ],
+        ] ),
+    ] );
+
+    if ( is_wp_error( $response ) ) {
+        return new WP_Error( 'api_error', 'Translation service unavailable.', [ 'status' => 503 ] );
+    }
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    $translation = $body['content'][0]['text'] ?? '';
+
+    if ( empty( $translation ) ) {
+        return new WP_Error( 'empty_response', 'Empty translation response.', [ 'status' => 503 ] );
+    }
+
+    return rest_ensure_response( [ 'translation' => $translation ] );
 }
