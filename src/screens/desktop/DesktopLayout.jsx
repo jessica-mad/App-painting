@@ -389,12 +389,17 @@ function DeskGalleryModal({ post, idx, onClose, triesLeft, onTryUsed, onRemove, 
 
 const COL_CYCLE = ["var(--rose)", "var(--lilac)", "var(--sky)", "var(--mint)", "var(--butter)", "var(--acid)"];
 
-function DeskFeedCard({ post, index, onClick }) {
+function DeskFeedCard({ post, index, onClick, onReact }) {
   const images = post.images?.length ? post.images : (post.image ? [post.image] : []);
   const user   = post.username ?? post.user ?? "Artista";
   const tech   = post.technique ?? "—";
   const rarity = post.rarity ?? "Común";
   const tags   = post.variables ?? post.tags ?? [];
+
+  const handleReact = (type, e) => {
+    e.stopPropagation();
+    if (post.id) onReact?.(post.id, type);
+  };
 
   return (
     <div
@@ -436,12 +441,18 @@ function DeskFeedCard({ post, index, onClick }) {
         </div>
       )}
       <div style={{ display: "flex", gap: 8, padding: "8px 12px" }}>
-        <span style={{ flex: 1, height: 28, borderRadius: 8, border: "2px solid var(--ink)", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontWeight: 800, fontSize: 11 }}>
-          <IHeart s={12}/> {post.likes ?? 0}
-        </span>
-        <span style={{ flex: 1, height: 28, borderRadius: 8, border: "2px solid var(--ink)", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontWeight: 800, fontSize: 11 }}>
-          <IInspire s={12}/> {post.inspires ?? 0}
-        </span>
+        <button
+          onClick={(e) => handleReact("like", e)}
+          style={{ flex: 1, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 800, fontSize: 11, cursor: "pointer" }}
+        >
+          <IHeart s={13}/> {post.likes ?? 0}
+        </button>
+        <button
+          onClick={(e) => handleReact("inspire", e)}
+          style={{ flex: 1, height: 32, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 800, fontSize: 11, cursor: "pointer" }}
+        >
+          <IInspire s={13}/> {post.inspires ?? 0}
+        </button>
       </div>
     </div>
   );
@@ -519,6 +530,7 @@ export function DeskFeed() {
               post={post}
               index={i}
               onClick={() => setGalleryPost({ post, idx: i })}
+              onReact={(id, type) => addReaction(id, type).catch(() => {})}
             />
           ))}
         </div>
