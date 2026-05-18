@@ -101,6 +101,7 @@ export const initialState = {
   profileInitialTab: null,
   unreadNotifs:     0,
   lang:             getLang(),
+  apiParams:        {},
 };
 
 export function reducer(state, action) {
@@ -220,6 +221,9 @@ export function reducer(state, action) {
     case "SET_LANG":
       localStorage.setItem("inkrush_lang", action.lang);
       return { ...state, lang: action.lang };
+
+    case "SET_API_PARAMS":
+      return { ...state, apiParams: action.params };
 
     default:
       return state;

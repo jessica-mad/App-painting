@@ -5,7 +5,7 @@ import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, PARAMETERS, pickVariables, getVarLabel } from "../data/parameters";
 import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
-import { WP_ROLLS } from "../utils/api";
+import { WP_ROLLS, fetchParameters } from "../utils/api";
 import { useT } from "../i18n";
 
 const CAT_ICONS = {
@@ -221,7 +221,7 @@ function WinBanner({ rarity, onDone, t }) {
 export function RandomScreen() {
   const { state, dispatch } = useApp();
   const t = useT();
-  const { selectedParams, rollsLeft, activeSeason } = state;
+  const { selectedParams, rollsLeft, activeSeason, apiParams } = state;
   const [rolling, setRolling] = useState(false);
   const [slots, setSlots]     = useState([null, null, null]);
   const [win, setWin]         = useState(null);
@@ -229,8 +229,27 @@ export function RandomScreen() {
   const toastTimer  = useRef(null);
   const totalRolls  = WP_ROLLS || 3;
 
+  /* Load backend variables (with value_en) once per session */
+  useEffect(() => {
+    if (Object.keys(apiParams).length > 0) return;
+    fetchParameters()
+      .then(data => {
+        if (!data?.parameters?.length) return;
+        const map = {};
+        data.parameters.forEach(v => {
+          if (!map[v.category]) map[v.category] = [];
+          map[v.category].push(v);
+        });
+        dispatch({ type: "SET_API_PARAMS", params: map });
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Use API data when available, fall back to static data */
+  const paramsMap = Object.keys(apiParams).length > 0 ? apiParams : PARAMETERS;
+
   const getCatCount = (catId) => {
-    const pool     = PARAMETERS[catId] || [];
+    const pool     = paramsMap[catId] || [];
     const filtered = activeSeason
       ? pool.filter(v => !v.season || v.season === activeSeason)
       : pool.filter(v => !v.season);

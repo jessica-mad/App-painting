@@ -364,9 +364,10 @@ export function generatePrompt(variables, lang = "es", t = null) {
   return t("idea.prompt.4+", { vars: vals.join(", ") });
 }
 
-export function pickVariables(paramIds, activeSeason = null) {
+export function pickVariables(paramIds, activeSeason = null, paramsMap = null) {
   return paramIds.map(paramId => {
-    const pool = PARAMETERS[paramId];
+    const pool = (paramsMap && paramsMap[paramId]?.length) ? paramsMap[paramId] : PARAMETERS[paramId];
+    if (!pool?.length) return { value: paramId, rarity: RARITY.COMUN };
     let filtered = activeSeason
       ? pool.filter(v => !v.season || v.season === activeSeason)
       : pool.filter(v => !v.season);
