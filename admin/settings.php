@@ -29,6 +29,17 @@ function inkrush_page_settings() {
                 delete_option( 'inkrush_recaptcha_secret_key' );
             }
         }
+        if ( isset( $_POST['mailchimp_api_key'] ) ) {
+            $mc_key = sanitize_text_field( $_POST['mailchimp_api_key'] );
+            if ( $mc_key !== '••••••••' && $mc_key !== '' ) {
+                update_option( 'inkrush_mailchimp_api_key', $mc_key );
+            } elseif ( $mc_key === '' ) {
+                delete_option( 'inkrush_mailchimp_api_key' );
+            }
+        }
+        if ( isset( $_POST['mailchimp_list_id'] ) ) {
+            update_option( 'inkrush_mailchimp_list_id', sanitize_text_field( $_POST['mailchimp_list_id'] ) );
+        }
         $message = '✅ Configuración guardada.';
     }
 
@@ -158,6 +169,49 @@ function inkrush_page_settings() {
                             <?php else : ?>
                                 <strong style="color:darkorange;">⚠️ No configurada — la lluvia de ideas estará desactivada.</strong>
                             <?php endif; ?>
+                        </p>
+                    </td>
+                </tr>
+                <!-- ── Mailchimp ───────────────────────────────────────── -->
+                <tr><td colspan="2"><hr style="border:none;border-top:2px solid #eee;margin:8px 0;"></td></tr>
+                <tr>
+                    <th style="vertical-align:top;padding-top:14px;">
+                        <label>📧 Mailchimp</label>
+                    </th>
+                    <td>
+                        <p style="font-size:12px;color:#555;margin:0 0 12px;">
+                            Los nuevos usuarios quedarán suscritos automáticamente a tu audiencia al registrarse.
+                            Consigue tu clave en <a href="https://us1.admin.mailchimp.com/account/api/" target="_blank">Account → Extras → API keys</a>.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="mailchimp_api_key">🔑 Mailchimp API Key</label></th>
+                    <td>
+                        <?php $has_mc = ! empty( get_option( 'inkrush_mailchimp_api_key', '' ) ); ?>
+                        <input type="password" name="mailchimp_api_key" id="mailchimp_api_key"
+                            value="<?php echo $has_mc ? '••••••••' : ''; ?>"
+                            placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-us14"
+                            style="width:360px;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;font-family:monospace;">
+                        <p class="description">
+                            Formato: <code>clave-dc</code> donde <code>dc</code> es tu servidor (ej. <code>us14</code>).
+                            <?php if ( $has_mc ) : ?>
+                                <strong style="color:green;">✅ Configurada.</strong>
+                            <?php else : ?>
+                                <strong style="color:#aaa;">No configurada — la suscripción automática estará desactivada.</strong>
+                            <?php endif; ?>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="mailchimp_list_id">📋 ID de Audiencia</label></th>
+                    <td>
+                        <input type="text" name="mailchimp_list_id" id="mailchimp_list_id"
+                            value="<?php echo esc_attr( get_option( 'inkrush_mailchimp_list_id', '' ) ); ?>"
+                            placeholder="abc123de"
+                            style="width:180px;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;font-family:monospace;">
+                        <p class="description">
+                            Encuéntralo en Mailchimp → Audience → Settings → Audience name and campaign defaults → Audience ID.
                         </p>
                     </td>
                 </tr>

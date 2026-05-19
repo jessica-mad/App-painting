@@ -589,6 +589,9 @@ function inkrush_api_register( WP_REST_Request $req ) {
     /* Login automático */
     wp_set_auth_cookie( $user_id, false );
 
+    /* Suscribir a Mailchimp (silencioso — nunca bloquea el registro) */
+    inkrush_mailchimp_subscribe( $email, $name );
+
     return rest_ensure_response( [
         'success'     => true,
         'userId'      => $user_id,
@@ -1840,6 +1843,54 @@ function inkrush_api_translate_single_param( WP_REST_Request $req ) {
     inkrush_save_variables( $vars );
 
     return rest_ensure_response( [ 'success' => true, 'id' => $id, 'value_en' => $en_val ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   MAILCHIMP — suscripción automática al registrarse
+────────────────────────────────────────────────────────────── */
+
+/**
+ * Suscribe un email a la audiencia Mailchimp configurada.
+ * Usa PUT /members/{hash} (upsert) para que sea idempotente:
+ * si el email ya existe no falla ni sobreescribe el estado.
+ * Cualquier error se silencia — nunca debe bloquear el registro.
+ */
+function inkrush_mailchimp_subscribe( $email, $name = '' ) {
+    $api_key = get_option( 'inkrush_mailchimp_api_key', '' );
+    $list_id = get_option( 'inkrush_mailchimp_list_id', '' );
+
+    if ( ! $api_key || ! $list_id ) return;
+
+    // El data center está al final de la clave: "xxxxxxxx-us14" → "us14"
+    $dc = substr( $api_key, strrpos( $api_key, '-' ) + 1 );
+    if ( ! $dc || $dc === $api_key ) return;
+
+    $subscriber_hash = md5( strtolower( trim( $email ) ) );
+    $url = "https://{$dc}.api.mailchimp.com/3.0/lists/{$list_id}/members/{$subscriber_hash}";
+
+    $body = [
+        'email_address' => $email,
+        'status_if_new' => 'subscribed', // no cambia el estado si ya existe
+    ];
+
+    if ( $name ) {
+        $parts = explode( ' ', $name, 2 );
+        $body['merge_fields'] = [
+            'FNAME' => $parts[0],
+            'LNAME' => $parts[1] ?? '',
+        ];
+    }
+
+    wp_remote_request( $url, [
+        'method'  => 'PUT',
+        'timeout' => 8,
+        'headers' => [
+            'Authorization' => 'Basic ' . base64_encode( 'musai:' . $api_key ),
+            'Content-Type'  => 'application/json',
+        ],
+        'body' => wp_json_encode( $body ),
+    ] );
+    // Resultado ignorado — los errores de Mailchimp no deben afectar el registro
 }
 
 /* ──────────────────────────────────────────────────────────────
