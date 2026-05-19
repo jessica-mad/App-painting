@@ -106,7 +106,7 @@ export function HomeScreen() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>
-                {t("home.streak", { n: profile.streak, level: level.name.toLowerCase() })}
+                {t("home.streak", { n: profile.streak, level: t(`level.${level.id}`).toLowerCase() })}
               </p>
               <h1 className="serif" style={{ fontSize: 30, lineHeight: 1, marginTop: 4 }}>
                 {t("home.greeting", { name: (profile.displayName || profile.username || "artista").split(" ")[0] })}
@@ -230,7 +230,7 @@ export function HomeScreen() {
               {/* Progress strip */}
               <div style={{ border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{level.name}</p>
+                  <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{t(`level.${level.id}`)}</p>
                   <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 3 }}>
                     {profile.completedChallenges} {t("profile.counters.challenges").toLowerCase()} · {profile.streak > 0 ? t("profile.streak.ok", { n: profile.streak }) : t("profile.streak.broken")}
                   </p>
@@ -251,7 +251,7 @@ export function HomeScreen() {
                     <div>
                       <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>{t("home.cta.tag")}</span>
                       <h3 className="serif" style={{ fontSize: 32, lineHeight: 0.95, marginTop: 10, maxWidth: 210 }}>{t("home.cta.headline")}</h3>
-                      <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{t("home.cta.rollsLeft", { n: state.rollsLeft })}</p>
+                      <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 6 }}>{state.rollsLeft === 1 ? t("home.cta.rollsLeft.one") : t("home.cta.rollsLeft", { n: state.rollsLeft })}</p>
                     </div>
                     <div style={{ width: 50, height: 50, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <IDice s={26} sw={2.4}/>
@@ -289,8 +289,8 @@ export function HomeScreen() {
                   <ISpark s={80} stroke="var(--ink-blue)"/>
                 </div>
                 <div style={{ position: "relative" }}>
-                  <div className="stamp" style={{ background: "var(--paper-2)" }}>{t("home.season.label", { season: state.activeSeason || "primavera" })}</div>
-                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>{t("home.season.desc", { season: state.activeSeason || "primavera" })}</p>
+                  <div className="stamp" style={{ background: "var(--paper-2)" }}>{t("home.season.label", { season: t(`season.${state.activeSeason || "Primavera"}`) })}</div>
+                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>{t("home.season.desc", { season: t(`season.${state.activeSeason || "Primavera"}`) })}</p>
                 </div>
               </div>
 

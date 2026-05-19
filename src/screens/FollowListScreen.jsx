@@ -122,7 +122,7 @@ export function FollowListScreen() {
                   </p>
                   <div style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
                     <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 7px", borderRadius: 999, fontSize: 9, fontWeight: 800 }}>
-                      {level.name}
+                      {t(`level.${level.id}`)}
                     </span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>
                       <IBrush s={10}/> {u.completedChallenges ?? 0} {t("follow.challenges")}

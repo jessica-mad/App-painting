@@ -232,7 +232,7 @@ export function ProfileScreen() {
               {profile.bio && <p style={{ fontSize: 11, fontWeight: 600, marginTop: 4, lineHeight: 1.3 }}>{profile.bio}</p>}
               <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>
-                  {level.name}
+                  {t(`level.${level.id}`)}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.6)" }}>
                   {profile.streak > 0

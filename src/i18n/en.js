@@ -27,6 +27,21 @@ export default {
   "rarity.Épico":      "Ecstasy",
   "rarity.Legendario": "✦ Epiphany",
 
+  /* ── Level names ── */
+  "level.1": "New Artist",
+  "level.2": "Active Artist",
+  "level.3": "Consistent Creator",
+  "level.4": "Inspirer",
+  "level.5": "Challenge Master",
+
+  /* ── Season names ── */
+  "season.Primavera": "Spring",
+  "season.Verano":    "Summer",
+  "season.Otoño":     "Autumn",
+  "season.Invierno":  "Winter",
+  "season.Halloween": "Halloween",
+  "season.Navidad":   "Christmas",
+
   /* ── Navigation ── */
   "nav.home":      "Home",
   "nav.feed":      "Feed",
@@ -40,6 +55,7 @@ export default {
   "home.cta.tag":            "DAILY CHALLENGE",
   "home.cta.headline":       "The page is already waiting.",
   "home.cta.rollsLeft":      "{n} visits to the Muse · resets in 23h 41m",
+  "home.cta.rollsLeft.one":  "1 visit to the Muse · resets in 23h 41m",
   "home.cta.start":          "Consult the Muse →",
   "home.stats.likes":        "Likes",
   "home.stats.inspires":     "Inspires",

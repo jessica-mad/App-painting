@@ -332,7 +332,7 @@ export function UploadScreen() {
             <IArrowL s={16}/> {t("upload.back")}
           </button>
           <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <IBrush s={12} stroke="var(--acid)"/> {level.name}
+            <IBrush s={12} stroke="var(--acid)"/> {t(`level.${level.id}`)}
           </span>
         </div>
 

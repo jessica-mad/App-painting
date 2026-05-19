@@ -27,6 +27,21 @@ export default {
   "rarity.Épico":      "Éxtasis",
   "rarity.Legendario": "✦ Epifanía",
 
+  /* ── Nombres de nivel ── */
+  "level.1": "Nuevo Artista",
+  "level.2": "Artista Activo",
+  "level.3": "Creador Constante",
+  "level.4": "Inspirador",
+  "level.5": "Maestro del Reto",
+
+  /* ── Nombres de temporada ── */
+  "season.Primavera": "Primavera",
+  "season.Verano":    "Verano",
+  "season.Otoño":     "Otoño",
+  "season.Invierno":  "Invierno",
+  "season.Halloween": "Halloween",
+  "season.Navidad":   "Navidad",
+
   /* ── Navigation ── */
   "nav.home":      "Inicio",
   "nav.feed":      "Feed",
@@ -40,6 +55,7 @@ export default {
   "home.cta.tag":            "RETO DEL DÍA",
   "home.cta.headline":       "La hoja ya está esperando.",
   "home.cta.rollsLeft":      "{n} visitas a la Musa · recarga en 23h 41m",
+  "home.cta.rollsLeft.one":  "1 visita a la Musa · recarga en 23h 41m",
   "home.cta.start":          "Consultar a la Musa →",
   "home.stats.likes":        "Likes",
   "home.stats.inspires":     "Inspiras",

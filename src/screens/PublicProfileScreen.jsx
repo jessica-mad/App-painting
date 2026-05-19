@@ -143,7 +143,7 @@ export function PublicProfileScreen() {
                     <div style={{ display: "flex", gap: 6, marginTop: 5, flexWrap: "wrap", alignItems: "center" }}>
                       {level && (
                         <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>
-                          {level.name}
+                          {t(`level.${level.id}`)}
                         </span>
                       )}
                       {(profile.streak ?? 0) > 0 && (
