@@ -5,7 +5,7 @@ import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, PARAMETERS, pickVariables, getVarLabel, getRarityName } from "../data/parameters";
 import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
-import { WP_ROLLS, fetchParameters } from "../utils/api";
+import { WP_ROLLS, fetchParameters, useRoll } from "../utils/api";
 import { useT } from "../i18n";
 
 const CAT_ICONS = {
@@ -277,6 +277,7 @@ export function RandomScreen() {
 
   const doRoll = () => {
     if (rolling || rollsLeft <= 0 || selectedParams.length === 0 || win) return;
+    useRoll();
     setRolling(true);
     setSlots([null, null, null]);
     setWin(null);
