@@ -232,7 +232,7 @@ export default {
   "idea.reroll.disabled":   "No visits left",
   "idea.savedLimit":        "5/5 limit — last inspiration removed",
   "idea.undo":              "Undo",
-  "idea.accept":            "Let's go, I accept",
+  "idea.accept":            "Let's go, I accept the Muse's challenge",
   "idea.probability":       "probability",
   "idea.season":            "MUSAI · TODAY",
   "idea.deckLabel":         "RARITY ×{n}",
@@ -240,6 +240,24 @@ export default {
   "idea.prompt.2":          "Illustrate {a} with {b}.",
   "idea.prompt.3":          "Illustrate {a} encountering {b} in {c}.",
   "idea.prompt.4+":         "Illustrate a scene where {vars} intertwine unexpectedly.",
+
+  /* ── Musai Mode (Timer setup) ── */
+  "timer.setup.title":    "How much time do you have?",
+  "timer.setup.sub":      "// pick a duration and your sound environment",
+  "timer.setup.duration": "Duration",
+  "timer.setup.music":    "Background music",
+  "timer.setup.music.sub":"infinite loop · so you stop thinking about anything else",
+  "timer.setup.music.soon":"SOON",
+  "timer.setup.music.config":"// SET UP AUDIO IN WORDPRESS ADMIN → MUSAI → MUSIC",
+  "timer.setup.preview.play": "Preview",
+  "timer.setup.preview.stop": "Stop",
+  "timer.setup.start":    "Musai Mode. Let's go.",
+  "timer.setup.skip":     "Start without timer →",
+  "timer.setup.back":     "Back",
+  "timer.setup.video":    "Process video (10s)",
+  "timer.setup.video.add":"Add video",
+  "timer.setup.video.locked":"Video locked",
+  "timer.setup.video.unlock":"{n} CHALLENGE{s} LEFT TO UNLOCK",
 
   /* ── Inspirations (Saved) ── */
   "saved.title":        "Inspirations",

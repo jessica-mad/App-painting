@@ -232,7 +232,7 @@ export default {
   "idea.reroll.disabled":   "Sin visitas",
   "idea.savedLimit":        "Límite 5/5 — se eliminó la última inspiración guardada",
   "idea.undo":              "Deshacer",
-  "idea.accept":            "Venga, lo acepto",
+  "idea.accept":            "Venga, acepto el reto de la Musa",
   "idea.probability":       "de probabilidad",
   "idea.prompt.1":          "Ilustra: {a}.",
   "idea.prompt.2":          "Ilustra {a} con {b}.",
@@ -240,6 +240,24 @@ export default {
   "idea.prompt.4+":         "Ilustra una escena donde {vars} se entrelazan de forma inesperada.",
   "idea.season":            "MUSAI · HOY",
   "idea.deckLabel":         "RAREZA ×{n}",
+
+  /* ── Modo Musai (Timer setup) ── */
+  "timer.setup.title":    "¿Cuánto tiempo tienes?",
+  "timer.setup.sub":      "// elige duración y ambiente sonoro",
+  "timer.setup.duration": "Duración",
+  "timer.setup.music":    "Música de fondo",
+  "timer.setup.music.sub":"loop infinito · para no pensar en otra cosa",
+  "timer.setup.music.soon":"PRÓX",
+  "timer.setup.music.config":"// CONFIGURA AUDIO EN WORDPRESS ADMIN → MUSAI → MÚSICA",
+  "timer.setup.preview.play": "Preescuchar",
+  "timer.setup.preview.stop": "Detener",
+  "timer.setup.start":    "Modo Musai. Vamos.",
+  "timer.setup.skip":     "Empezar sin timer →",
+  "timer.setup.back":     "Volver",
+  "timer.setup.video":    "Video de proceso (10s)",
+  "timer.setup.video.add":"Añadir video",
+  "timer.setup.video.locked":"Video bloqueado",
+  "timer.setup.video.unlock":"{n} RETO{s} PARA DESBLOQUEAR",
 
   /* ── Inspiraciones (Saved) ── */
   "saved.title":            "Inspiraciones",

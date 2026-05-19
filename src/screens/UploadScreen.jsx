@@ -409,10 +409,10 @@ export function UploadScreen() {
           />
 
           {/* Video */}
-          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 12, marginBottom: 8 }}>Video de proceso (10s)</p>
+          <p style={{ fontWeight: 800, fontSize: 12, marginTop: 12, marginBottom: 8 }}>{t("timer.setup.video")}</p>
           {canVideo ? (
             <button className="stk-sm" style={{ width: "100%", height: 48, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 12, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}>
-              <ICam s={18}/> Añadir video
+              <ICam s={18}/> {t("timer.setup.video.add")}
             </button>
           ) : (
             <div className="stk-sm" style={{ background: "#EFEAD8", padding: 12 }}>
@@ -421,14 +421,14 @@ export function UploadScreen() {
                   <ILock s={18}/>
                 </div>
                 <div>
-                  <p style={{ fontWeight: 800, fontSize: 12 }}>Video bloqueado</p>
-                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.55)" }}>FALTAN {videoNeeded} RETO{videoNeeded !== 1 ? "S" : ""} PARA DESBLOQUEAR</p>
+                  <p style={{ fontWeight: 800, fontSize: 12 }}>{t("timer.setup.video.locked")}</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.55)" }}>{t("timer.setup.video.unlock", { n: videoNeeded, s: videoNeeded !== 1 ? "S" : "" })}</p>
                 </div>
               </div>
               <div style={{ height: 6, borderRadius: 999, border: "1.5px solid var(--ink)", background: "var(--paper-2)", overflow: "hidden" }}>
                 <div style={{ width: `${(profile.completedChallenges / 10) * 100}%`, height: "100%", background: "var(--acid)" }}/>
               </div>
-              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{profile.completedChallenges}/10 RETOS</p>
+              <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{profile.completedChallenges}/10 {t("upload.challenge.done").replace("// ", "").toUpperCase()}</p>
             </div>
           )}
         </div>
@@ -451,7 +451,7 @@ export function UploadScreen() {
           disabled={saving}
           style={{ marginTop: 8, height: 44, background: "transparent", border: "2px solid rgba(20,17,15,.25)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.4 : 1 }}
         >
-          Cancelar
+          {t("common.cancel")}
         </button>
       </div>
     </Phone>

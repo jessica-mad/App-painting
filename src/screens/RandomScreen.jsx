@@ -346,10 +346,7 @@ export function RandomScreen() {
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <IDice s={24}/>
             <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>
-              El{" "}
-              <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "0 8px", borderRadius: 8, fontFamily: "Space Grotesk", fontStyle: "normal", fontWeight: 700, fontSize: 22, letterSpacing: "-0.04em" }}>
-                Randometro
-              </span>
+              {t("random.title")}
             </h2>
           </div>
           <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 6 }}>
@@ -436,7 +433,7 @@ export function RandomScreen() {
                 </div>
                 {/* Title */}
                 <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2 }}>
-                  <span className="serif" style={{ fontSize: 24, lineHeight: 1, fontStyle: "italic" }}>Randómetro</span>
+                  <span className="serif" style={{ fontSize: 24, lineHeight: 1, fontStyle: "italic" }}>{t("random.title")}</span>
                   <span className="mono" style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.2em", color: "rgba(20,17,15,.55)" }}>· 3 0 0 0 ·</span>
                 </div>
               </div>

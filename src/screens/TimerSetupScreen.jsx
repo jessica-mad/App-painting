@@ -3,9 +3,11 @@ import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { DURATIONS, MUSIC_TRACKS } from "../data/parameters";
 import { IArrowL, ITimer, IMusic, IPlay, IPause } from "../components/Icons";
+import { useT } from "../i18n";
 
 export function TimerSetupScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const [duration, setDuration] = useState(DURATIONS[2]);
   const [music, setMusic] = useState(MUSIC_TRACKS[0]);
   const [musicOn, setMusicOn] = useState(true);
@@ -66,15 +68,15 @@ export function TimerSetupScreen() {
           onClick={() => dispatch({ type: "SET_SCREEN", screen: "idea" })}
           style={{ background: "transparent", border: "none", display: "flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13, alignSelf: "flex-start", padding: 0, cursor: "pointer" }}
         >
-          <IArrowL s={16}/> Volver
+          <IArrowL s={16}/> {t("timer.setup.back")}
         </button>
-        <h2 className="serif" style={{ fontSize: 28, marginTop: 8, lineHeight: 1 }}>¿Cuánto tiempo tienes?</h2>
-        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>// elige duración y lo que vas a escuchar</p>
+        <h2 className="serif" style={{ fontSize: 28, marginTop: 8, lineHeight: 1 }}>{t("timer.setup.title")}</h2>
+        <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>{t("timer.setup.sub")}</p>
 
         <div className="scroll" style={{ flex: 1, marginTop: 16 }}>
           {/* Duration */}
           <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <ITimer s={14}/> Tiempo
+            <ITimer s={14}/> {t("timer.setup.duration")}
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
             {DURATIONS.map((d) => (
@@ -99,10 +101,10 @@ export function TimerSetupScreen() {
           {!hasMusicConfigured && (
             <div className="stk-sm" style={{ background: "var(--paper-2)", border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 4 }}>
               <p style={{ fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                <IMusic s={14}/> Música de fondo <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, background: "rgba(20,17,15,.1)", padding: "2px 6px", borderRadius: 4 }}>PRÓX</span>
+                <IMusic s={14}/> {t("timer.setup.music")} <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, background: "rgba(20,17,15,.1)", padding: "2px 6px", borderRadius: 4 }}>{t("timer.setup.music.soon")}</span>
               </p>
               <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.45)", marginTop: 6 }}>
-                // CONFIGURA AUDIO EN WORDPRESS ADMIN → INKRUSH → MÚSICA
+                {t("timer.setup.music.config")}
               </p>
             </div>
           )}
@@ -111,9 +113,9 @@ export function TimerSetupScreen() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <div>
                   <p style={{ fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                    <IMusic s={14}/> Música de fondo
+                    <IMusic s={14}/> {t("timer.setup.music")}
                   </p>
-                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 2 }}>loop infinito · para no pensar en otra cosa</p>
+                  <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 2 }}>{t("timer.setup.music.sub")}</p>
                 </div>
                 <button
                   onClick={() => setMusicOn(m => !m)}
@@ -175,7 +177,7 @@ export function TimerSetupScreen() {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); togglePreview(track); }}
-                        title={isPreviewing ? "Detener" : "Preescuchar"}
+                        title={isPreviewing ? t("timer.setup.preview.stop") : t("timer.setup.preview.play")}
                         style={{
                           position: "absolute", top: 8, right: 8,
                           width: 26, height: 26, borderRadius: 999, border: "2px solid var(--ink)",
@@ -226,13 +228,13 @@ export function TimerSetupScreen() {
           className="stk"
           style={{ marginTop: 14, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
         >
-          <IPlay s={18}/> Modo concentración. Vamos.
+          <IPlay s={18}/> {t("timer.setup.start")}
         </button>
         <button
           onClick={() => dispatch({ type: "SET_SCREEN", screen: "upload" })}
           style={{ marginTop: 8, height: 40, background: "transparent", border: "none", fontWeight: 700, fontSize: 12, color: "rgba(20,17,15,.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
         >
-          Empezar sin timer →
+          {t("timer.setup.skip")}
         </button>
       </div>
     </Phone>
