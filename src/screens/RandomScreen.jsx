@@ -183,6 +183,7 @@ function Sparkles({ count = 8 }) {
 
 /* ── Banner de victoria (Raro / Épico / Legendario) ───────────────────── */
 function WinBanner({ rarity, onDone, t }) {
+  const { state } = useApp();
   useEffect(() => {
     const timer = setTimeout(onDone, 2600);
     return () => clearTimeout(timer);
