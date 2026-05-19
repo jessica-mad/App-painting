@@ -1,10 +1,10 @@
 import { ICircle, IDiamond, ITriangle, IStar } from "./Icons";
 
 const RARITY_MAP = {
-  "Común":      { color: "#E8E1D0",        glyph: ICircle,   label: "Común" },
-  "Raro":       { color: "var(--sky)",     glyph: IDiamond,  label: "Raro" },
-  "Épico":      { color: "var(--lilac)",   glyph: ITriangle, label: "Épico" },
-  "Legendario": { color: "var(--acid)",    glyph: IStar,     label: "Legendario" },
+  "Común":      { color: "#E8E1D0",        glyph: ICircle,   label: "Susurro" },
+  "Raro":       { color: "var(--sky)",     glyph: IDiamond,  label: "Visión" },
+  "Épico":      { color: "var(--lilac)",   glyph: ITriangle, label: "Éxtasis" },
+  "Legendario": { color: "var(--acid)",    glyph: IStar,     label: "✦ Epifanía" },
 };
 
 export function RarityBadge({ rarity, size = "sm" }) {

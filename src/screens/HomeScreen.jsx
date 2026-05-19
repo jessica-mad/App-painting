@@ -51,7 +51,7 @@ export function HomeScreen() {
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 800, fontSize: 14, lineHeight: 1 }}>{level.name}</p>
                 <p className="mono" style={{ fontSize: 10, fontWeight: 600, marginTop: 4, color: "rgba(20,17,15,.6)" }}>
-                  {profile.completedChallenges} retos · racha {profile.streak} días
+                  {profile.completedChallenges} retos · {profile.streak} días de racha
                 </p>
               </div>
               <span className="serif" style={{ fontSize: 30, lineHeight: 1, color: "var(--ink)" }}>0{level.id}</span>
@@ -79,8 +79,8 @@ export function HomeScreen() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <span className="tag" style={{ background: "var(--ink)", color: "var(--acid)", padding: "3px 8px", borderRadius: 4 }}>RETO DEL DÍA</span>
-                  <h3 className="serif" style={{ fontSize: 36, lineHeight: 0.95, marginTop: 12, maxWidth: 220 }}>Genera tu reto de hoy</h3>
-                  <p className="mono" style={{ fontSize: 11, fontWeight: 600, marginTop: 8 }}>{state.rollsLeft} intentos · expira 23:59</p>
+                  <h3 className="serif" style={{ fontSize: 36, lineHeight: 0.95, marginTop: 12, maxWidth: 220 }}>La Musa ha preparado algo para ti.</h3>
+                  <p className="mono" style={{ fontSize: 11, fontWeight: 600, marginTop: 8 }}>{state.rollsLeft} visita{state.rollsLeft !== 1 ? "s" : ""} a la Musa · expira 23:59</p>
                 </div>
                 <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <IDice s={28} sw={2.4}/>
@@ -88,9 +88,9 @@ export function HomeScreen() {
               </div>
               <div className="perforated" style={{ margin: "16px 0 12px" }}/>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>RANDOMETRO 3000™</span>
+                <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>CONSULTAR A LA MUSA™</span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 800, fontSize: 13 }}>
-                  Empezar <IArrowR s={16}/>
+                  Consultar <IArrowR s={16}/>
                 </span>
               </div>
             </div>
@@ -119,8 +119,8 @@ export function HomeScreen() {
               <ISpark s={80} stroke="var(--ink-blue)"/>
             </div>
             <div style={{ position: "relative" }}>
-              <div className="stamp" style={{ background: "var(--paper-2)" }}>TEMP · {state.activeSeason || "primavera"}</div>
-              <p className="serif" style={{ fontSize: 18, marginTop: 8, lineHeight: 1.1 }}>Variables exclusivas activas. Combina para legendarios.</p>
+              <div className="stamp" style={{ background: "var(--paper-2)" }}>✦ MUSA · {(state.activeSeason || "primavera").toUpperCase()}</div>
+              <p className="serif" style={{ fontSize: 18, marginTop: 8, lineHeight: 1.1 }}>Musa de {state.activeSeason || "Primavera"} activa. Variables exclusivas desbloqueadas.</p>
             </div>
           </div>
         </div>

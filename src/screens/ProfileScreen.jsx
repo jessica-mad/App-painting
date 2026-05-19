@@ -356,7 +356,7 @@ export function ProfileScreen() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
                 {[
-                  { Ico: ITimer, l: "Pomodoros",  v: profile.pomodorosCompleted, c: "var(--sky)" },
+                  { Ico: ITimer, l: "Sesiones",   v: profile.pomodorosCompleted, c: "var(--sky)" },
                   { Ico: IDice,  l: "Retos",       v: profile.completedChallenges, c: "var(--mint)" },
                 ].map((s, i) => (
                   <div key={i} className="stk-sm" style={{ background: s.c, padding: 14 }}>

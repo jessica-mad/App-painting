@@ -19,13 +19,13 @@ export function SavedScreen() {
         {/* Header */}
         <div style={{ padding: "8px 22px 10px", borderBottom: "2px solid var(--ink)", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 className="serif" style={{ fontSize: 30, lineHeight: 1 }}>Guardados</h2>
+            <h2 className="serif" style={{ fontSize: 30, lineHeight: 1 }}>Inspiraciones</h2>
             <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
               <IBookmark s={12} stroke="var(--acid)"/> {savedIdeas.length}
             </span>
           </div>
           <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 4 }}>
-            // IDEAS PARA CUANDO ESTÉS LISTO
+            // GUARDADA. PARA CUANDO TENGAS GANAS DE VERDAD.
           </p>
         </div>
 
@@ -77,7 +77,7 @@ export function SavedScreen() {
             <div style={{ textAlign: "center", padding: "48px 0" }}>
               <p className="serif" style={{ fontSize: 24 }}>Sin ideas guardadas</p>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)", marginTop: 8 }}>
-                // GUARDA IDEAS DESDE EL RANDÓMETRO
+                // GUARDA IDEAS DESDE LA MUSA
               </p>
             </div>
           )}

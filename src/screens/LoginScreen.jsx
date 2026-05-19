@@ -166,7 +166,7 @@ export function LoginScreen() {
               <IBrush s={28}/>
             </div>
             <div><Wordmark size={42}/></div>
-            <p className="mono" style={{ fontSize: 10, fontWeight: 700, marginTop: 6, color: "rgba(20,17,15,.6)" }}>// PARA ARTISTAS E ILUSTRADORES</p>
+            <p className="mono" style={{ fontSize: 10, fontWeight: 700, marginTop: 6, color: "rgba(20,17,15,.6)" }}>// TU MUSA DIARIA</p>
           </div>
         </div>
 

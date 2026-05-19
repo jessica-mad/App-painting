@@ -15,6 +15,17 @@ const VAR_COLORS = {
   "Legendario": "var(--acid)",
 };
 
+const RARITY_DISPLAY = {
+  "Común": "Susurro", "Raro": "Visión", "Épico": "Éxtasis", "Legendario": "✦ Epifanía",
+};
+
+const RARITY_MSG = {
+  "Común": "Un susurro de inspiración. Sencillo, directo.",
+  "Raro": "Una visión. Esto tiene potencial.",
+  "Épico": "Éxtasis. La Musa ha sido generosa hoy.",
+  "Legendario": "Epifanía. Esto no pasa todos los días. No lo desperdicies.",
+};
+
 export function IdeaScreen() {
   const { state, dispatch } = useApp();
   const { currentIdea, rollsLeft } = state;
@@ -82,15 +93,18 @@ export function IdeaScreen() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                   <span className="tag">// TU RETO</span>
                   <span className="stamp" style={{ background: rarity === "Legendario" ? "var(--coral)" : "var(--acid)", color: rarity === "Legendario" ? "#fff" : "var(--ink)", borderColor: rarity === "Legendario" ? "#fff" : "var(--ink)" }}>
-                    ★ {rarity.toLowerCase()}
+                    {RARITY_DISPLAY[rarity] || rarity}
                   </span>
                 </div>
                 <p className="serif" style={{ fontSize: 22, lineHeight: 1.1, letterSpacing: "-0.005em" }}>
                   {prompt}
                 </p>
-                <div className="perforated" style={{ margin: "16px -8px 10px" }}/>
+                <p className="mono" style={{ fontSize: 10, fontWeight: 600, color: "rgba(20,17,15,.55)", marginTop: 8, lineHeight: 1.4 }}>
+                  {RARITY_MSG[rarity]}
+                </p>
+                <div className="perforated" style={{ margin: "12px -8px 10px" }}/>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>INKRUSH · HOY</span>
+                  <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>MUSAI · HOY</span>
                   <span className="mono" style={{ fontSize: 10, fontWeight: 700 }}>RAREZA ×{variables.length}</span>
                 </div>
               </div>
@@ -116,7 +130,7 @@ export function IdeaScreen() {
               className="stk"
               style={{ height: 48, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: rollsLeft > 0 ? "pointer" : "not-allowed", opacity: rollsLeft <= 0 ? 0.4 : 1 }}
             >
-              <IDice s={16}/> {rollsLeft > 0 ? "Otra idea" : "Sin intentos"}
+              <IDice s={16}/> {rollsLeft > 0 ? "Otra idea" : "Sin visitas hoy"}
             </button>
             <button
               onClick={saveIdea}

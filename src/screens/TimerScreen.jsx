@@ -158,8 +158,8 @@ export function TimerScreen() {
             <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.2 }}/>
             <div style={{ position: "relative" }}>
               <div className="serif" style={{ fontSize: 72, lineHeight: 1 }}>🎉</div>
-              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>¡Reto completado!</h2>
-              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, lineHeight: 1.4 }}>Increíble trabajo artista.<br/>Sube tu resultado a la comunidad.</p>
+              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>Tiempo.</h2>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, lineHeight: 1.4 }}>¿Qué has hecho? Muéstranos.</p>
               <div className="perforated" style={{ margin: "20px 0 16px" }}/>
               <button onClick={finish} className="stk" style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
                 Subir mi dibujo <IArrowR s={18} stroke="var(--acid)"/>
@@ -215,7 +215,7 @@ export function TimerScreen() {
               <CircularProgress progress={progress} size={240}/>
               <div style={{ position: "absolute", inset: 30, borderRadius: 999, background: "rgba(255,255,255,.04)", border: "2px solid rgba(255,255,255,.1)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                 <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.5)" }}>
-                  {running ? (isFree ? "MODO LIBRE" : "POMODORO ACTIVO") : "LISTO PARA INICIAR"}
+                  {running ? (isFree ? "MODO LIBRE" : "MODO MUSAI ACTIVO") : "LISTO PARA INICIAR"}
                 </p>
                 <p className="serif" style={{ fontSize: 64, lineHeight: 1, color: "#fff", marginTop: 4, letterSpacing: "-0.02em" }}>{min}:{sec}</p>
                 {!isFree && (
@@ -249,7 +249,7 @@ export function TimerScreen() {
             <div style={{ border: "1.5px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", padding: 12, borderRadius: 14, marginBottom: 10, display: "flex", gap: 10, alignItems: "center" }}>
               <ISpark s={18} stroke="rgba(255,255,255,.7)"/>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.6)" }}>
-                SESIÓN DE {timerConfig.duration.label.toUpperCase()} · MODO POMODORO
+                SESIÓN DE {timerConfig.duration.label.toUpperCase()} · MODO MUSAI
               </p>
             </div>
             <button

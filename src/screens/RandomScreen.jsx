@@ -58,9 +58,9 @@ export function RandomScreen() {
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <IDice s={24}/>
             <h2 className="serif" style={{ fontSize: 32, lineHeight: 1 }}>
-              El{" "}
+              La{" "}
               <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "0 8px", borderRadius: 8, fontFamily: "Space Grotesk", fontStyle: "normal", fontWeight: 700, fontSize: 22, letterSpacing: "-0.04em" }}>
-                Randometro
+                Musa
               </span>
             </h2>
           </div>

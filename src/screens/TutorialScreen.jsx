@@ -5,11 +5,11 @@ import { useApp } from "../data/store";
 import { IDice, ITimer, IStar, IHeart, IBrush, IArrowR } from "../components/Icons";
 
 const SLIDES = [
-  { Icon: IBrush,  col: "var(--acid)",   title: "Bienvenido a InkRush",   desc: "La app para artistas e ilustradores. Cada día, un reto nuevo para despertar tu creatividad." },
-  { Icon: IDice,   col: "var(--lilac)",  title: "El Randometro",           desc: "Combina hasta 3 parámetros y genera una idea artística única. Tienes 3 intentos por día." },
-  { Icon: ITimer,  col: "var(--rose)",   title: "Modo Pomodoro",           desc: "Elige tu tiempo de sesión: 10, 15, 30 min o libre. Trabaja con música ambiente." },
-  { Icon: IStar,   col: "var(--butter)", title: "Rareza de Ideas",         desc: "Variables: Común, Raro, Épico y Legendario. Las temporadas activan parámetros exclusivos." },
-  { Icon: IHeart,  col: "var(--mint)",   title: "Comunidad de Artistas",   desc: "Sube tus dibujos, reacciona con ❤️ ✨ 🔥, inspira y sé inspirado. Sube de nivel creando." },
+  { Icon: IBrush,  col: "var(--acid)",   title: "Bienvenido a Musai",      desc: "Tu musa diaria. Retos creativos para artistas reales. Cada día, una chispa distinta." },
+  { Icon: IDice,   col: "var(--lilac)",  title: "La Musa",                 desc: "Combina hasta 3 parámetros y genera una idea artística única. Tienes 3 visitas a la Musa al día." },
+  { Icon: ITimer,  col: "var(--rose)",   title: "Modo Musai",              desc: "Elige tu tiempo de sesión: 10, 15, 30 min o libre. La Musa está contigo. El móvil puede esperar." },
+  { Icon: IStar,   col: "var(--butter)", title: "Rareza de Ideas",         desc: "Susurro, Visión, Éxtasis y ✦ Epifanía. Las temporadas invocan una Musa distinta con variables exclusivas." },
+  { Icon: IHeart,  col: "var(--mint)",   title: "Comunidad de Artistas",   desc: "Sube tus dibujos, inspira a otros y sigue a artistas que de verdad dibujan. Sin algoritmos. Solo arte." },
 ];
 
 export function TutorialScreen() {

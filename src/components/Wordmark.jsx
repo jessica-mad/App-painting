@@ -4,7 +4,7 @@ export function Wordmark({ size = 28 }) {
       className="wordmark"
       style={{ fontSize: size, lineHeight: 1, display: "inline-flex", alignItems: "baseline" }}
     >
-      Ink<span className="rush">Rush</span>
+      Musai
     </span>
   );
 }

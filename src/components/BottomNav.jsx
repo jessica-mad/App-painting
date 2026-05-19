@@ -5,7 +5,7 @@ const NAV_ITEMS = [
   { id: "home",    icon: IHome,     label: "Inicio" },
   { id: "feed",    icon: IFeed,     label: "Feed" },
   { id: "random",  icon: IPlus,     label: "Reto",   special: true },
-  { id: "saved",   icon: IBookmark, label: "Guardar" },
+  { id: "saved",   icon: IBookmark, label: "Ideas" },
   { id: "profile", icon: IUser,     label: "Perfil" },
 ];
 

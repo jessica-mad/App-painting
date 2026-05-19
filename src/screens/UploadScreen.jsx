@@ -129,7 +129,7 @@ export function UploadScreen() {
             <div style={{ position: "relative" }}>
               <p className="serif" style={{ fontSize: 72, lineHeight: 1 }}>🚀</p>
               <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>¡Publicado!</h2>
-              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, color: "rgba(20,17,15,.65)" }}>Tu obra ya está en la comunidad InkRush.</p>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, color: "rgba(20,17,15,.65)" }}>Primera obra publicada. El Feed ya puede verte.</p>
               <div className="perforated" style={{ margin: "20px 0 16px" }}/>
               <button onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })} className="stk" style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
                 Ver en el Feed <IArrowR s={18} stroke="var(--acid)"/>
