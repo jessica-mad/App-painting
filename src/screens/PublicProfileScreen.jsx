@@ -76,7 +76,7 @@ export function PublicProfileScreen() {
 
   const goBack = () => dispatch({ type: "CLEAR_VIEW_USER" });
 
-  const level    = profile ? getUserLevel(profile.completedChallenges ?? 0) : null;
+  const level    = profile ? getUserLevel(profile.completedChallenges ?? 0, state.levels) : null;
   const avatarSrc = profile?.avatarUrl || null;
   const col      = COL_CYCLE[(userId ?? 0) % COL_CYCLE.length];
   const handle   = profile?.handle || profile?.username || "artista";

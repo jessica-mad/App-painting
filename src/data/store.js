@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { ACTIVE_SEASON } from "./parameters";
+import { ACTIVE_SEASON, LEVELS } from "./parameters";
 import { WP_ROLLS, WP_ROLLS_USED } from "../utils/api";
 import { getLang } from "../i18n";
 
@@ -102,6 +102,8 @@ export const initialState = {
   unreadNotifs:     0,
   lang:             getLang(),
   apiParams:        {},
+  levels:           LEVELS,   // overridden by /config API response
+  seasonLabels:     {},        // overridden by /config API response: { Primavera: "Spring", ... }
 };
 
 export function reducer(state, action) {
@@ -224,6 +226,13 @@ export function reducer(state, action) {
 
     case "SET_API_PARAMS":
       return { ...state, apiParams: action.params };
+
+    case "SET_CONFIG":
+      return {
+        ...state,
+        ...(action.levels?.length      && { levels: action.levels }),
+        ...(action.seasonLabels        && { seasonLabels: action.seasonLabels }),
+      };
 
     default:
       return state;

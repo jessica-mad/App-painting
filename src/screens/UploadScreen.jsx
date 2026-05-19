@@ -224,7 +224,7 @@ export function UploadScreen() {
   const [uploadError, setUploadError] = useState(null);
   const fileRef = useRef(null);
 
-  const level       = getUserLevel(profile.completedChallenges);
+  const level       = getUserLevel(profile.completedChallenges, state.levels);
   const canVideo    = profile.completedChallenges >= 10;
   const videoNeeded = Math.max(0, 10 - profile.completedChallenges);
 

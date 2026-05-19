@@ -43,7 +43,7 @@ export function ProfileScreen() {
   const { state, dispatch } = useApp();
   const t = useT();
   const { profile } = state;
-  const level = getUserLevel(profile.completedChallenges);
+  const level = getUserLevel(profile.completedChallenges, state.levels);
 
   /* Map legacy Spanish initial tab values to new keys */
   const mapLegacyTab = (raw) => {

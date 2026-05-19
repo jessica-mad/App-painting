@@ -329,20 +329,17 @@ export const DURATIONS = [
 ];
 
 // User levels
-// Frontend fallback — backend can override via wpConfig.levels (array with same shape + name_en/desc_en)
-const _LEVELS_DEFAULT = [
-  { id: 1, name: "Nuevo Artista",     name_en: "New Artist",         minChallenges: 0,  color: "#E8E8E8", emoji: "🌱", desc: "el primer paso",            desc_en: "the first step" },
-  { id: 2, name: "Artista Activo",    name_en: "Active Artist",      minChallenges: 5,  color: "#C8F0FF", emoji: "🎨", desc: "ya no hay vuelta atrás",    desc_en: "no turning back now" },
-  { id: 3, name: "Creador Constante", name_en: "Consistent Creator", minChallenges: 10, color: "#EFE8FF", emoji: "⭐", desc: "esto ya es una rutina",     desc_en: "this is a routine now" },
-  { id: 4, name: "Inspirador",        name_en: "Inspirer",           minChallenges: 20, color: "#FFE066", emoji: "✨", desc: "la gente te sigue",         desc_en: "people follow you" },
-  { id: 5, name: "Maestro del Reto",  name_en: "Challenge Master",   minChallenges: 30, color: "#FF9966", emoji: "🏆", desc: "eso ya no te lo quita nadie",desc_en: "nobody can take that away" },
+// Local fallback — same shape the /config API returns (name_en / desc_en editable from WP admin)
+export const LEVELS = [
+  { id: 1, name: "Nuevo Artista",     name_en: "New Artist",         minChallenges: 0,  color: "#E8E8E8", emoji: "🌱", desc: "el primer paso",             desc_en: "the first step" },
+  { id: 2, name: "Artista Activo",    name_en: "Active Artist",      minChallenges: 5,  color: "#C8F0FF", emoji: "🎨", desc: "ya no hay vuelta atrás",     desc_en: "no turning back now" },
+  { id: 3, name: "Creador Constante", name_en: "Consistent Creator", minChallenges: 10, color: "#EFE8FF", emoji: "⭐", desc: "esto ya es una rutina",      desc_en: "this is a routine now" },
+  { id: 4, name: "Inspirador",        name_en: "Inspirer",           minChallenges: 20, color: "#FFE066", emoji: "✨", desc: "la gente te sigue",          desc_en: "people follow you" },
+  { id: 5, name: "Maestro del Reto",  name_en: "Challenge Master",   minChallenges: 30, color: "#FF9966", emoji: "🏆", desc: "eso ya no te lo quita nadie", desc_en: "nobody can take that away" },
 ];
 
-const _wpLevels = window.InkRushConfig?.levels;
-export const LEVELS = Array.isArray(_wpLevels) && _wpLevels.length ? _wpLevels : _LEVELS_DEFAULT;
-
-// English season labels — backend can override via wpConfig.seasonLabels
-const _SEASON_EN = {
+// Local fallback for season labels — same shape the /config API returns: { Primavera: "Spring", ... }
+export const SEASON_LABELS_EN = {
   Primavera:      "Spring",
   Verano:         "Summer",
   Otoño:          "Autumn",
@@ -351,23 +348,26 @@ const _SEASON_EN = {
   Navidad:        "Christmas",
   "San Valentín": "Valentine's",
 };
-const _wpSeasonLabels = window.InkRushConfig?.seasonLabels ?? {};
 
-export function getUserLevel(completedChallenges) {
-  return [...LEVELS].reverse().find(l => completedChallenges >= l.minChallenges) || LEVELS[0];
+/** Accepts the levels array from state (API data) or falls back to local LEVELS. */
+export function getUserLevel(completedChallenges, levels = LEVELS) {
+  return [...levels].reverse().find(l => completedChallenges >= l.minChallenges) || levels[0];
 }
 
-/** Same pattern as getVarLabel — returns the level name in the current language. */
+/** Same pattern as getVarLabel — picks name_en when lang === "en". */
 export function getLevelName(level, lang) {
   if (lang === "en" && level.name_en) return level.name_en;
   return level.name;
 }
 
-/** Returns the season display name in the current language. */
-export function getSeasonName(seasonKey, lang) {
+/**
+ * Returns the season display name in the current language.
+ * seasonLabels comes from state (API data); SEASON_LABELS_EN is the local fallback.
+ */
+export function getSeasonName(seasonKey, lang, seasonLabels = {}) {
   if (!seasonKey) return "";
   if (lang !== "en") return seasonKey;
-  return _wpSeasonLabels[seasonKey] ?? _SEASON_EN[seasonKey] ?? seasonKey;
+  return seasonLabels[seasonKey] ?? SEASON_LABELS_EN[seasonKey] ?? seasonKey;
 }
 
 export function getOverallRarity(variables) {

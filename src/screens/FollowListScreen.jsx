@@ -85,7 +85,7 @@ export function FollowListScreen() {
           )}
 
           {users.map((u, i) => {
-            const level     = getUserLevel(u.completedChallenges ?? 0);
+            const level     = getUserLevel(u.completedChallenges ?? 0, state.levels);
             const avatarSrc = u.avatarUrl || null;
             const col       = COL_CYCLE[i % COL_CYCLE.length];
             const busy      = unfollowing[u.id];

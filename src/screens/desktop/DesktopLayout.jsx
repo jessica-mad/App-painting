@@ -60,7 +60,7 @@ function DeskSidebar({ current }) {
   const { state, dispatch } = useApp();
   const t = useT();
   const { profile, unreadNotifs } = state;
-  const level = getUserLevel(profile.completedChallenges);
+  const level = getUserLevel(profile.completedChallenges, state.levels);
 
   const items = [
     { id: "home",    Icon: IHome,     label: t("nav.home") },
@@ -213,7 +213,7 @@ export function DeskHome() {
   const { state, dispatch } = useApp();
   const t = useT();
   const { profile } = state;
-  const level = getUserLevel(profile.completedChallenges);
+  const level = getUserLevel(profile.completedChallenges, state.levels);
   const pct = Math.round(((profile.completedChallenges - level.minChallenges) / 10) * 100);
 
   const stats = [
@@ -562,7 +562,7 @@ export function DeskProfile() {
   const { state, dispatch } = useApp();
   const t = useT();
   const { profile } = state;
-  const level = getUserLevel(profile.completedChallenges);
+  const level = getUserLevel(profile.completedChallenges, state.levels);
 
   const PROFILE_TABS = IS_LOGGED_IN
     ? [TAB_WORKS, TAB_EDIT, TAB_ACHIEV, TAB_STATS]

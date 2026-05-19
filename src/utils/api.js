@@ -27,6 +27,11 @@ export async function fetchParameters(filters = {}) {
   return apiFetch(`/parameters${qs ? "?" + qs : ""}`);
 }
 
+/* ── Config de contenido (niveles, temporadas) ── */
+export async function fetchConfig() {
+  return apiFetch("/config");
+}
+
 /* ── Obras (artworks) ── */
 export async function fetchArtworks({ page = 1, technique, rarity, following, period } = {}) {
   const qs = new URLSearchParams({

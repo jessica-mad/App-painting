@@ -41,7 +41,7 @@ export function HomeScreen() {
   const { state, dispatch } = useApp();
   const t = useT();
   const { profile, unreadNotifs } = state;
-  const level = getUserLevel(profile.completedChallenges);
+  const level = getUserLevel(profile.completedChallenges, state.levels);
   const pct = Math.min(100, Math.round((profile.completedChallenges % 10) / 10 * 100));
 
   /* ── Search state ── */
@@ -289,8 +289,8 @@ export function HomeScreen() {
                   <ISpark s={80} stroke="var(--ink-blue)"/>
                 </div>
                 <div style={{ position: "relative" }}>
-                  <div className="stamp" style={{ background: "var(--paper-2)" }}>{t("home.season.label", { season: getSeasonName(state.activeSeason || "Primavera", state.lang) })}</div>
-                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>{t("home.season.desc", { season: getSeasonName(state.activeSeason || "Primavera", state.lang) })}</p>
+                  <div className="stamp" style={{ background: "var(--paper-2)" }}>{t("home.season.label", { season: getSeasonName(state.activeSeason || "Primavera", state.lang, state.seasonLabels) })}</div>
+                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>{t("home.season.desc", { season: getSeasonName(state.activeSeason || "Primavera", state.lang, state.seasonLabels) })}</p>
                 </div>
               </div>
 

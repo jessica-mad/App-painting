@@ -1,7 +1,7 @@
 import { useReducer, useMemo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppContext, initialState, reducer } from "./data/store";
-import { IS_LOGGED_IN, fetchNotifications } from "./utils/api";
+import { IS_LOGGED_IN, fetchNotifications, fetchConfig } from "./utils/api";
 import { TutorialScreen }       from "./screens/TutorialScreen";
 import { IntroScreen }          from "./screens/IntroScreen";
 import { LoginScreen }          from "./screens/LoginScreen";
@@ -82,6 +82,15 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const ctx = useMemo(() => ({ state, dispatch }), [state]);
   const isDesktop = useIsDesktop();
+
+  /* Fetch content config (levels, season labels) on mount — same pattern as variables */
+  useEffect(() => {
+    fetchConfig()
+      .then(data => {
+        if (data) dispatch({ type: "SET_CONFIG", levels: data.levels, seasonLabels: data.seasonLabels });
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Fetch unread notification count on mount */
   useEffect(() => {
