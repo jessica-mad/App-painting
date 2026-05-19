@@ -19,7 +19,7 @@ export function useT() {
 }
 
 export function getLang() {
-  const stored = localStorage.getItem("inkrush_lang");
+  const stored = localStorage.getItem("musai_lang");
   if (stored === "es" || stored === "en") return stored;
   return navigator.language?.startsWith("es") ? "es" : "en";
 }

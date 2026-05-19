@@ -11,7 +11,7 @@ const wpConfig = window.InkRushConfig ?? {};
 
 function getLocalRolls(maxRolls) {
   try {
-    const stored = localStorage.getItem("inkrush_daily_rolls");
+    const stored = localStorage.getItem("musai_daily_rolls");
     if (!stored) return maxRolls;
     const { date, rolls } = JSON.parse(stored);
     return date === new Date().toDateString() ? Math.min(rolls, maxRolls) : maxRolls;
@@ -21,7 +21,7 @@ function getLocalRolls(maxRolls) {
 }
 
 function saveLocalRolls(rolls) {
-  localStorage.setItem("inkrush_daily_rolls", JSON.stringify({ date: new Date().toDateString(), rolls }));
+  localStorage.setItem("musai_daily_rolls", JSON.stringify({ date: new Date().toDateString(), rolls }));
 }
 const wpUser   = parseInt(wpConfig.userId) ? {
   id:       wpConfig.userId,
@@ -34,10 +34,10 @@ const wpUser   = parseInt(wpConfig.userId) ? {
 function startScreen() {
   if (parseInt(wpConfig.profileUserId)) return "publicProfile";
   if (!wpUser) {
-    const seenIntro = localStorage.getItem("inkrush_seen_intro");
+    const seenIntro = localStorage.getItem("musai_seen_intro");
     return seenIntro ? "login" : "intro";
   }
-  const techniques = JSON.parse(localStorage.getItem("inkrush_techniques") || "[]");
+  const techniques = JSON.parse(localStorage.getItem("musai_techniques") || "[]");
   return techniques.length >= 1 ? "home" : "onboarding";
 }
 
@@ -72,9 +72,9 @@ const initialProfile = wpConfig.userId ? {
 export const initialState = {
   screen:           startScreen(),
   user:             wpUser,
-  favoriteTechniques: JSON.parse(localStorage.getItem("inkrush_techniques") || "[]"),
+  favoriteTechniques: JSON.parse(localStorage.getItem("musai_techniques") || "[]"),
   savedIdeas:       (() => {
-    const raw = JSON.parse(localStorage.getItem("inkrush_saved") || "[]")
+    const raw = JSON.parse(localStorage.getItem("musai_saved") || "[]")
       .map(idea => idea._id ? idea : { ...idea, _id: Math.random().toString(36).slice(2) });
     const seen = new Set();
     return raw.filter(idea => {
@@ -117,7 +117,7 @@ export function reducer(state, action) {
         screen: state.favoriteTechniques.length >= 1 ? "home" : "onboarding" };
 
     case "SET_TECHNIQUES": {
-      localStorage.setItem("inkrush_techniques", JSON.stringify(action.techniques));
+      localStorage.setItem("musai_techniques", JSON.stringify(action.techniques));
       return { ...state, favoriteTechniques: action.techniques, screen: "home" };
     }
 
@@ -169,14 +169,14 @@ export function reducer(state, action) {
       const prepended = [withId, ...state.savedIdeas];
       const displaced = prepended.length > MAX ? prepended[MAX] : null;
       const newSaved = prepended.slice(0, MAX);
-      localStorage.setItem("inkrush_saved", JSON.stringify(newSaved));
+      localStorage.setItem("musai_saved", JSON.stringify(newSaved));
       return { ...state, savedIdeas: newSaved, displacedIdea: displaced };
     }
 
     case "UNDO_SAVE": {
       if (!state.displacedIdea) return { ...state, displacedIdea: null };
       const restored = [...state.savedIdeas, state.displacedIdea];
-      localStorage.setItem("inkrush_saved", JSON.stringify(restored));
+      localStorage.setItem("musai_saved", JSON.stringify(restored));
       return { ...state, savedIdeas: restored, displacedIdea: null };
     }
 
@@ -184,19 +184,19 @@ export function reducer(state, action) {
       return { ...state, displacedIdea: null };
 
     case "SET_SAVED_IDEAS": {
-      localStorage.setItem("inkrush_saved", JSON.stringify(action.ideas));
+      localStorage.setItem("musai_saved", JSON.stringify(action.ideas));
       return { ...state, savedIdeas: action.ideas };
     }
 
     case "REMOVE_IDEA": {
       const filtered = state.savedIdeas.filter((_, i) => i !== action.index);
-      localStorage.setItem("inkrush_saved", JSON.stringify(filtered));
+      localStorage.setItem("musai_saved", JSON.stringify(filtered));
       return { ...state, savedIdeas: filtered };
     }
 
     case "REMOVE_IDEA_BY_ID": {
       const filtered = state.savedIdeas.filter(idea => idea._id !== action.id);
-      localStorage.setItem("inkrush_saved", JSON.stringify(filtered));
+      localStorage.setItem("musai_saved", JSON.stringify(filtered));
       return { ...state, savedIdeas: filtered };
     }
 
@@ -219,7 +219,7 @@ export function reducer(state, action) {
       return { ...state, unreadNotifs: 0 };
 
     case "SET_LANG":
-      localStorage.setItem("inkrush_lang", action.lang);
+      localStorage.setItem("musai_lang", action.lang);
       return { ...state, lang: action.lang };
 
     case "SET_API_PARAMS":

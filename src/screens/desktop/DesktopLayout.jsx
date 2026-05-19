@@ -27,7 +27,7 @@ function filterToParams(f) {
   if (f === "thisWeek")   return { period: "week" };
   return {};
 }
-function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
+function triesKey() { return "musai_tries_" + new Date().toDateString(); }
 function localTriesLeft() {
   const used = parseInt(localStorage.getItem(triesKey()) || "0");
   return Math.max(0, WP_TRIES_LIMIT - used);

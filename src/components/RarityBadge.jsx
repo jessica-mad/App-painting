@@ -1,14 +1,18 @@
 import { ICircle, IDiamond, ITriangle, IStar } from "./Icons";
+import { useT } from "../i18n";
 
-const RARITY_MAP = {
-  "Común":      { color: "#E8E1D0",        glyph: ICircle,   label: "Común" },
-  "Raro":       { color: "var(--sky)",     glyph: IDiamond,  label: "Raro" },
-  "Épico":      { color: "var(--lilac)",   glyph: ITriangle, label: "Épico" },
-  "Legendario": { color: "var(--acid)",    glyph: IStar,     label: "Legendario" },
+/* Keyed by internal backend value — stable regardless of i18n */
+const RARITY_STYLE = {
+  "Común":      { color: "#E8E1D0",      glyph: ICircle   },
+  "Raro":       { color: "var(--sky)",   glyph: IDiamond  },
+  "Épico":      { color: "var(--lilac)", glyph: ITriangle },
+  "Legendario": { color: "var(--acid)",  glyph: IStar     },
 };
 
 export function RarityBadge({ rarity, size = "sm" }) {
-  const c = RARITY_MAP[rarity] || RARITY_MAP["Común"];
+  const t = useT();
+  const label = t(`rarity.${rarity}`);
+  const c = RARITY_STYLE[rarity] || RARITY_STYLE["Común"];
   const big = size === "md";
   const Glyph = c.glyph;
   return (
@@ -19,7 +23,7 @@ export function RarityBadge({ rarity, size = "sm" }) {
       fontFamily: "JetBrains Mono", fontWeight: 700,
       fontSize: big ? 11 : 9, textTransform: "uppercase", letterSpacing: "0.06em",
     }}>
-      <Glyph s={big ? 13 : 11} sw={2}/>{c.label}
+      <Glyph s={big ? 13 : 11} sw={2}/>{label}
     </span>
   );
 }

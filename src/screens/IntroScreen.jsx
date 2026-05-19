@@ -9,19 +9,13 @@ import { useT } from "../i18n";
 const SLIDE_ICONS = [IBrush, IDice, ITimer, IHeart];
 const SLIDE_BG    = ["var(--acid)", "var(--rose)", "var(--mint)", "var(--lilac)"];
 const SLIDE_TAG   = ["// EL PROBLEMA", "// LA SOLUCIÓN", "// EL MÉTODO", "// LA COMUNIDAD"];
-const SLIDE_BODY  = [
-  "Cuántos cuadernos en blanco. Cuántas veces sin saber por dónde empezar. InkRush te da el empujón que necesitas para llenar cada página.",
-  "El Randómetro combina emociones, animales, objetos, colores y eventos. Cada tirada genera un reto único e irrepetible que desbloquea tu creatividad.",
-  "25 minutos de timer. Sin excusas, sin esperar la inspiración perfecta. El tiempo limitado libera tu mente y hace que el arte fluya.",
-  "Sube tu obra, inspira a otros y sigue a artistas que de verdad dibujan. Sin algoritmos que filtren tu trabajo. Solo arte y comunidad.",
-];
 
-/* Static export for DesktopLayout (uses Spanish strings, no hook needed) */
+/* Static export for DesktopLayout marketing panel (Spanish, no hook) */
 export const SLIDES = [
-  { bg: SLIDE_BG[0], Icon: SLIDE_ICONS[0], tag: SLIDE_TAG[0], title: "Llena tus cuadernos de una vez", body: SLIDE_BODY[0], stamp: "PARA ARTISTAS DE VERDAD" },
-  { bg: SLIDE_BG[1], Icon: SLIDE_ICONS[1], tag: SLIDE_TAG[1], title: "Captura inspiración aleatoria", body: SLIDE_BODY[1], stamp: "RANDÓMETRO 3000" },
-  { bg: SLIDE_BG[2], Icon: SLIDE_ICONS[2], tag: SLIDE_TAG[2], title: "Acepta el reto. Dibuja ahora.", body: SLIDE_BODY[2], stamp: "MODO POMODORO" },
-  { bg: SLIDE_BG[3], Icon: SLIDE_ICONS[3], tag: SLIDE_TAG[3], title: "Comparte y crece con artistas reales", body: SLIDE_BODY[3], stamp: "CERO BOTS" },
+  { bg: SLIDE_BG[0], Icon: SLIDE_ICONS[0], tag: SLIDE_TAG[0], title: "Por fin, llena tus cuadernos", body: "Cuántas páginas en blanco. Cuántas veces sin saber por dónde empezar. Musai te da la chispa que necesitas para dibujar cada día.", stamp: "PARA ARTISTAS REALES" },
+  { bg: SLIDE_BG[1], Icon: SLIDE_ICONS[1], tag: SLIDE_TAG[1], title: "Consulta a tu Musa", body: "La Musa combina emociones, animales, objetos y eventos. Cada tirada genera una idea única que desbloquea tu creatividad.", stamp: "LA MUSA" },
+  { bg: SLIDE_BG[2], Icon: SLIDE_ICONS[2], tag: SLIDE_TAG[2], title: "Acepta el reto. Dibuja ahora.", body: "25 minutos de timer. Sin excusas, sin esperar la inspiración perfecta. El tiempo limitado libera tu mente y hace que el arte fluya.", stamp: "MODO MUSAI" },
+  { bg: SLIDE_BG[3], Icon: SLIDE_ICONS[3], tag: SLIDE_TAG[3], title: "Comparte y crece con artistas reales", body: "Sube tu obra, inspira a otros y sigue a artistas que de verdad dibujan. Sin algoritmos. Solo arte y comunidad.", stamp: "CERO BOTS" },
 ];
 
 function SlideIndicators({ total, current }) {
@@ -46,16 +40,16 @@ export function IntroScreen() {
   const isLast = idx === 3;
 
   const SLIDES = [
-    { bg: SLIDE_BG[0], Icon: SLIDE_ICONS[0], tag: SLIDE_TAG[0], title: t("intro.slide1.title"), body: SLIDE_BODY[0], stamp: t("intro.slide1.label") },
-    { bg: SLIDE_BG[1], Icon: SLIDE_ICONS[1], tag: SLIDE_TAG[1], title: t("intro.slide2.title"), body: SLIDE_BODY[1], stamp: t("intro.slide2.label") },
-    { bg: SLIDE_BG[2], Icon: SLIDE_ICONS[2], tag: SLIDE_TAG[2], title: t("intro.slide3.title"), body: SLIDE_BODY[2], stamp: t("intro.slide3.label") },
-    { bg: SLIDE_BG[3], Icon: SLIDE_ICONS[3], tag: SLIDE_TAG[3], title: t("intro.slide4.title"), body: SLIDE_BODY[3], stamp: t("intro.slide4.label") },
+    { bg: SLIDE_BG[0], Icon: SLIDE_ICONS[0], tag: SLIDE_TAG[0], title: t("intro.slide1.title"), body: t("intro.slide1.sub"), stamp: t("intro.slide1.label") },
+    { bg: SLIDE_BG[1], Icon: SLIDE_ICONS[1], tag: SLIDE_TAG[1], title: t("intro.slide2.title"), body: t("intro.slide2.sub"), stamp: t("intro.slide2.label") },
+    { bg: SLIDE_BG[2], Icon: SLIDE_ICONS[2], tag: SLIDE_TAG[2], title: t("intro.slide3.title"), body: t("intro.slide3.sub"), stamp: t("intro.slide3.label") },
+    { bg: SLIDE_BG[3], Icon: SLIDE_ICONS[3], tag: SLIDE_TAG[3], title: t("intro.slide4.title"), body: t("intro.slide4.sub"), stamp: t("intro.slide4.label") },
   ];
 
   const slide = SLIDES[idx];
 
   const finish = () => {
-    localStorage.setItem("inkrush_seen_intro", "1");
+    localStorage.setItem("musai_seen_intro", "1");
     dispatch({ type: "SET_SCREEN", screen: "login" });
   };
 

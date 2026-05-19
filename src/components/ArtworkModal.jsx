@@ -40,7 +40,7 @@ function timeAgoCommentFromT(dateStr, t) {
   return t("time.c.d", { n: Math.floor(h / 24) });
 }
 
-function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
+function triesKey() { return "musai_tries_" + new Date().toDateString(); }
 function markLocalTry() {
   const used = parseInt(localStorage.getItem(triesKey()) || "0");
   localStorage.setItem(triesKey(), String(used + 1));

@@ -17,7 +17,7 @@ function filterToParams(f) {
   return {};
 }
 
-function triesKey() { return "inkrush_tries_" + new Date().toDateString(); }
+function triesKey() { return "musai_tries_" + new Date().toDateString(); }
 function localTriesLeft() {
   const used = parseInt(localStorage.getItem(triesKey()) || "0");
   return Math.max(0, WP_TRIES_LIMIT - used);
@@ -142,7 +142,7 @@ export function FeedScreen() {
   const [posts, setPosts]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [triesLeft, setTriesLeft]   = useState(() => Math.min(WP_TRIES_LEFT, localTriesLeft()));
-  const [view, setView]             = useState(() => localStorage.getItem("inkrush_feed_view") || "list");
+  const [view, setView]             = useState(() => localStorage.getItem("musai_feed_view") || "list");
   const [galleryPost, setGalleryPost] = useState(null);
   const countdown = useCountdown();
 
@@ -157,7 +157,7 @@ export function FeedScreen() {
 
   const changeView = (v) => {
     setView(v);
-    localStorage.setItem("inkrush_feed_view", v);
+    localStorage.setItem("musai_feed_view", v);
   };
 
   const removePost  = (id) => { setPosts(ps => ps.filter(p => p.id !== id)); };

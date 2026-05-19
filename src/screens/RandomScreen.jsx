@@ -208,7 +208,7 @@ function WinBanner({ rarity, onDone, t }) {
       }}>
         <div className="stripes-y" style={{ position: "absolute", inset: 0, opacity: 0.5 }}/>
         <span style={{ position: "relative", fontFamily: "JetBrains Mono", fontWeight: 800, fontSize: 11, letterSpacing: "0.18em", color: "rgba(20,17,15,.65)" }}>
-          {RARITY_GLYPH[rarity]} {rarity.toUpperCase()}
+          {RARITY_GLYPH[rarity]} {t(`rarity.${rarity}`).toUpperCase()}
         </span>
         <p className="serif" style={{ position: "relative", fontSize: 28, lineHeight: 1, margin: "8px 0 4px", textTransform: "lowercase" }}>{line}</p>
         <p className="mono" style={{ position: "relative", fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.65)", margin: 0, letterSpacing: "0.04em" }}>{sub}</p>
