@@ -27,22 +27,7 @@ export default {
   "rarity.Épico":      "Éxtasis",
   "rarity.Legendario": "✦ Epifanía",
 
-  /* ── Nombres de nivel ── */
-  "level.1": "Nuevo Artista",
-  "level.2": "Artista Activo",
-  "level.3": "Creador Constante",
-  "level.4": "Inspirador",
-  "level.5": "Maestro del Reto",
-
-  /* ── Nombres de temporada ── */
-  "season.Primavera": "Primavera",
-  "season.Verano":    "Verano",
-  "season.Otoño":     "Otoño",
-  "season.Invierno":  "Invierno",
-  "season.Halloween": "Halloween",
-  "season.Navidad":   "Navidad",
-
-  /* ── Navigation ── */
+/* ── Navigation ── */
   "nav.home":      "Inicio",
   "nav.feed":      "Feed",
   "nav.challenge": "Reto",

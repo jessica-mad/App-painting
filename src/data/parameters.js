@@ -329,16 +329,45 @@ export const DURATIONS = [
 ];
 
 // User levels
-export const LEVELS = [
-  { id: 1, name: "Nuevo Artista",    minChallenges: 0,  color: "#E8E8E8", emoji: "🌱", desc: "el primer paso" },
-  { id: 2, name: "Artista Activo",   minChallenges: 5,  color: "#C8F0FF", emoji: "🎨", desc: "ya no hay vuelta atrás" },
-  { id: 3, name: "Creador Constante",minChallenges: 10, color: "#EFE8FF", emoji: "⭐", desc: "esto ya es una rutina" },
-  { id: 4, name: "Inspirador",       minChallenges: 20, color: "#FFE066", emoji: "✨", desc: "la gente te sigue" },
-  { id: 5, name: "Maestro del Reto", minChallenges: 30, color: "#FF9966", emoji: "🏆", desc: "eso ya no te lo quita nadie" },
+// Frontend fallback — backend can override via wpConfig.levels (array with same shape + name_en/desc_en)
+const _LEVELS_DEFAULT = [
+  { id: 1, name: "Nuevo Artista",     name_en: "New Artist",         minChallenges: 0,  color: "#E8E8E8", emoji: "🌱", desc: "el primer paso",            desc_en: "the first step" },
+  { id: 2, name: "Artista Activo",    name_en: "Active Artist",      minChallenges: 5,  color: "#C8F0FF", emoji: "🎨", desc: "ya no hay vuelta atrás",    desc_en: "no turning back now" },
+  { id: 3, name: "Creador Constante", name_en: "Consistent Creator", minChallenges: 10, color: "#EFE8FF", emoji: "⭐", desc: "esto ya es una rutina",     desc_en: "this is a routine now" },
+  { id: 4, name: "Inspirador",        name_en: "Inspirer",           minChallenges: 20, color: "#FFE066", emoji: "✨", desc: "la gente te sigue",         desc_en: "people follow you" },
+  { id: 5, name: "Maestro del Reto",  name_en: "Challenge Master",   minChallenges: 30, color: "#FF9966", emoji: "🏆", desc: "eso ya no te lo quita nadie",desc_en: "nobody can take that away" },
 ];
+
+const _wpLevels = window.InkRushConfig?.levels;
+export const LEVELS = Array.isArray(_wpLevels) && _wpLevels.length ? _wpLevels : _LEVELS_DEFAULT;
+
+// English season labels — backend can override via wpConfig.seasonLabels
+const _SEASON_EN = {
+  Primavera:      "Spring",
+  Verano:         "Summer",
+  Otoño:          "Autumn",
+  Invierno:       "Winter",
+  Halloween:      "Halloween",
+  Navidad:        "Christmas",
+  "San Valentín": "Valentine's",
+};
+const _wpSeasonLabels = window.InkRushConfig?.seasonLabels ?? {};
 
 export function getUserLevel(completedChallenges) {
   return [...LEVELS].reverse().find(l => completedChallenges >= l.minChallenges) || LEVELS[0];
+}
+
+/** Same pattern as getVarLabel — returns the level name in the current language. */
+export function getLevelName(level, lang) {
+  if (lang === "en" && level.name_en) return level.name_en;
+  return level.name;
+}
+
+/** Returns the season display name in the current language. */
+export function getSeasonName(seasonKey, lang) {
+  if (!seasonKey) return "";
+  if (lang !== "en") return seasonKey;
+  return _wpSeasonLabels[seasonKey] ?? _SEASON_EN[seasonKey] ?? seasonKey;
 }
 
 export function getOverallRarity(variables) {

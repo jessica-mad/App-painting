@@ -10,7 +10,7 @@ import {
   IBrush, ITimer, IStar, IDiamond, IMusic, IPause, IPlay, IReload, ICheck,
   IArrowR, ILock, ICam, IShare, IPlus, IBolt, ICircle, IArrowL, IBell, IX,
 } from "../../components/Icons";
-import { getUserLevel, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY, SEASONS } from "../../data/parameters";
+import { getUserLevel, getLevelName, getSeasonName, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY, SEASONS } from "../../data/parameters";
 import {
   fetchArtworks, addReaction, updateProfile, fetchUserArtworks,
   WP_LOGOUT_URL, WP_LOGIN_URL, IS_LOGGED_IN, WP_USER_ID,
@@ -163,7 +163,7 @@ function DeskSidebar({ current }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontWeight: 800, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.displayName}</p>
-            <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{t(`level.${level.id}`).toUpperCase()}</p>
+            <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{getLevelName(level, state.lang).toUpperCase()}</p>
           </div>
           <ISpark s={16}/>
         </div>
@@ -228,7 +228,7 @@ export function DeskHome() {
       <DeskSidebar current="home"/>
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <DeskTopbar
-          sub={t("desk.home.streak_header", { streak: profile.streak, level: t(`level.${level.id}`).toUpperCase() })}
+          sub={t("desk.home.streak_header", { streak: profile.streak, level: getLevelName(level, state.lang).toUpperCase() })}
           title={t("desk.home.greeting", { name: profile.displayName.split(" ")[0] })}
         />
         <div className="scroll" style={{ flex: 1, padding: 28, display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 22 }}>
@@ -301,7 +301,7 @@ export function DeskHome() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{t("desk.home.level.label", { n: String(level.id).padStart(2, "0") })}</p>
-                    <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{t(`level.${level.id}`)}</p>
+                    <p className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{getLevelName(level, state.lang)}</p>
                   </div>
                   <span className="serif" style={{ fontSize: 38, lineHeight: 1 }}>{pct}%</span>
                 </div>
@@ -662,7 +662,7 @@ export function DeskProfile() {
               <h1 className="serif" style={{ fontSize: 48, lineHeight: 1, marginTop: 4 }}>{profile.displayName}</h1>
               {profile.bio && <p style={{ fontSize: 13, fontWeight: 600, marginTop: 6, maxWidth: 460 }}>{profile.bio}</p>}
               <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800 }}>{t(`level.${level.id}`)}</span>
+                <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800 }}>{getLevelName(level, state.lang)}</span>
                 <span style={{ display: "inline-flex", gap: 6, alignItems: "center", padding: "4px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: "var(--butter)", fontSize: 11, fontWeight: 800 }}><IFlame s={13}/> {profile.streak} {t("desk.home.streak.days", { n: "" }).trim()}</span>
                 <button
                   onClick={() => copyToClipboard(shareLink, () => { setCopied(true); setTimeout(() => setCopied(false), 1800); })}

@@ -4,7 +4,7 @@ import { BottomNav } from "../components/BottomNav";
 import { ArtworkModal } from "../components/ArtworkModal";
 import { useApp } from "../data/store";
 import { useT } from "../i18n";
-import { getUserLevel } from "../data/parameters";
+import { getUserLevel, getLevelName, getSeasonName } from "../data/parameters";
 import { searchUsers, searchPosts, WP_TRIES_LEFT, WP_TRIES_LIMIT, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
 import { IUser, IDice, IHeart, IInspire, IFlame, ISpark, IArrowR, IBell, ISearch, IX } from "../components/Icons";
 
@@ -106,7 +106,7 @@ export function HomeScreen() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p className="mono" style={{ fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>
-                {t("home.streak", { n: profile.streak, level: t(`level.${level.id}`).toLowerCase() })}
+                {t("home.streak", { n: profile.streak, level: getLevelName(level, state.lang).toLowerCase() })}
               </p>
               <h1 className="serif" style={{ fontSize: 30, lineHeight: 1, marginTop: 4 }}>
                 {t("home.greeting", { name: (profile.displayName || profile.username || "artista").split(" ")[0] })}
@@ -230,7 +230,7 @@ export function HomeScreen() {
               {/* Progress strip */}
               <div style={{ border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{t(`level.${level.id}`)}</p>
+                  <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{getLevelName(level, state.lang)}</p>
                   <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 3 }}>
                     {profile.completedChallenges} {t("profile.counters.challenges").toLowerCase()} · {profile.streak > 0 ? t("profile.streak.ok", { n: profile.streak }) : t("profile.streak.broken")}
                   </p>
@@ -289,8 +289,8 @@ export function HomeScreen() {
                   <ISpark s={80} stroke="var(--ink-blue)"/>
                 </div>
                 <div style={{ position: "relative" }}>
-                  <div className="stamp" style={{ background: "var(--paper-2)" }}>{t("home.season.label", { season: t(`season.${state.activeSeason || "Primavera"}`) })}</div>
-                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>{t("home.season.desc", { season: t(`season.${state.activeSeason || "Primavera"}`) })}</p>
+                  <div className="stamp" style={{ background: "var(--paper-2)" }}>{t("home.season.label", { season: getSeasonName(state.activeSeason || "Primavera", state.lang) })}</div>
+                  <p className="serif" style={{ fontSize: 16, marginTop: 8, lineHeight: 1.1 }}>{t("home.season.desc", { season: getSeasonName(state.activeSeason || "Primavera", state.lang) })}</p>
                 </div>
               </div>
 

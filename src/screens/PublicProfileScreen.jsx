@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { fetchUserProfile, fetchUserArtworks, followUser, IS_LOGGED_IN, WP_USER_ID } from "../utils/api";
-import { getUserLevel } from "../data/parameters";
+import { getUserLevel, getLevelName } from "../data/parameters";
 import { IUser, IFlame, IBrush, IArrowL, ICheck, ILink, ICopy, IHeart, IInspire } from "../components/Icons";
 import { ArtworkModal } from "../components/ArtworkModal";
 import { useT } from "../i18n";
@@ -143,7 +143,7 @@ export function PublicProfileScreen() {
                     <div style={{ display: "flex", gap: 6, marginTop: 5, flexWrap: "wrap", alignItems: "center" }}>
                       {level && (
                         <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>
-                          {t(`level.${level.id}`)}
+                          {getLevelName(level, state.lang)}
                         </span>
                       )}
                       {(profile.streak ?? 0) > 0 && (

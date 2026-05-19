@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { fetchUserFollowing, fetchUserFollowers, followUser, WP_USER_ID } from "../utils/api";
-import { getUserLevel } from "../data/parameters";
+import { getUserLevel, getLevelName } from "../data/parameters";
 import { IUser, IArrowL, IBrush, ICheck } from "../components/Icons";
 import { useT } from "../i18n";
 
@@ -122,7 +122,7 @@ export function FollowListScreen() {
                   </p>
                   <div style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
                     <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 7px", borderRadius: 999, fontSize: 9, fontWeight: 800 }}>
-                      {t(`level.${level.id}`)}
+                      {getLevelName(level, state.lang)}
                     </span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>
                       <IBrush s={10}/> {u.completedChallenges ?? 0} {t("follow.challenges")}

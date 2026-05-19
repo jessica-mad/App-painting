@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
-import { TECHNIQUES, getUserLevel } from "../data/parameters";
+import { TECHNIQUES, getUserLevel, getLevelName } from "../data/parameters";
 import { createArtwork, IS_LOGGED_IN } from "../utils/api";
 import { IArrowL, IArrowR, IBrush, ICam, ILock, IShare } from "../components/Icons";
 import { useT } from "../i18n";
@@ -332,7 +332,7 @@ export function UploadScreen() {
             <IArrowL s={16}/> {t("upload.back")}
           </button>
           <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <IBrush s={12} stroke="var(--acid)"/> {t(`level.${level.id}`)}
+            <IBrush s={12} stroke="var(--acid)"/> {getLevelName(level, state.lang)}
           </span>
         </div>
 
