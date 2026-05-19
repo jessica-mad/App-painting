@@ -360,6 +360,21 @@ export function getLevelName(level, lang) {
   return level.name;
 }
 
+// Local fallback — same shape the /config API returns: { "Común": { name, name_en }, ... }
+export const RARITY_DISPLAY = {
+  "Común":      { name: "Susurro",      name_en: "Whisper"      },
+  "Raro":       { name: "Visión",       name_en: "Vision"       },
+  "Épico":      { name: "Éxtasis",      name_en: "Ecstasy"      },
+  "Legendario": { name: "✦ Epifanía",   name_en: "✦ Epiphany"   },
+};
+
+/** Returns the rarity display name in the current language from API data or local fallback. */
+export function getRarityName(rarityKey, lang, rarityLabels = {}) {
+  const entry = rarityLabels[rarityKey] ?? RARITY_DISPLAY[rarityKey];
+  if (!entry) return rarityKey;
+  return (lang === "en" && entry.name_en) ? entry.name_en : entry.name;
+}
+
 /**
  * Returns the season display name in the current language.
  * seasonLabels comes from state (API data); SEASON_LABELS_EN is the local fallback.

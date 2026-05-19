@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { PARAM_CATEGORIES, RARITY, getOverallRarity, generatePrompt, pickVariables, getVarLabel } from "../data/parameters";
+import { PARAM_CATEGORIES, RARITY, getOverallRarity, generatePrompt, pickVariables, getVarLabel, getRarityName } from "../data/parameters";
 import { generateAIPrompt } from "../utils/api";
 import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar, IUndo } from "../components/Icons";
 import { useT } from "../i18n";
@@ -157,7 +157,7 @@ export function IdeaScreen() {
                     {aiPrompt && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{t("idea.ai.btn")}</span>}
                     {aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1s infinite" }}>{t("idea.ai.generating")}</span>}
                     <span className="stamp" style={{ background: rarity === "Legendario" ? "var(--coral)" : "var(--acid)", color: rarity === "Legendario" ? "#fff" : "var(--ink)", borderColor: rarity === "Legendario" ? "#fff" : "var(--ink)" }}>
-                      ★ {t(`rarity.${rarity}`).toLowerCase()}
+                      ★ {getRarityName(rarity, state.lang, state.rarityLabels).toLowerCase()}
                     </span>
                   </div>
                 </div>
@@ -178,7 +178,7 @@ export function IdeaScreen() {
             <span style={{ fontSize: 18, lineHeight: 1 }}>{rarityInfo.emoji}</span>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <span style={{ fontWeight: 800, fontSize: 12 }}>{t(`rarity.${rarity}`)}</span>
+                <span style={{ fontWeight: 800, fontSize: 12 }}>{getRarityName(rarity, state.lang, state.rarityLabels)}</span>
                 <span className="mono" style={{ fontSize: 9, fontWeight: 700, background: "rgba(20,17,15,.1)", padding: "1px 6px", borderRadius: 4 }}>{rarityInfo.pct} {t("idea.probability")}</span>
               </div>
               <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.6)", lineHeight: 1.3 }}>{t(`idea.headline.${rarity}`)}</p>

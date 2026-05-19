@@ -1,7 +1,8 @@
 import { ICircle, IDiamond, ITriangle, IStar } from "./Icons";
-import { useT } from "../i18n";
+import { useApp } from "../data/store";
+import { getRarityName } from "../data/parameters";
 
-/* Keyed by internal backend value — stable regardless of i18n */
+/* Keyed by internal backend value — stable regardless of language */
 const RARITY_STYLE = {
   "Común":      { color: "#E8E1D0",      glyph: ICircle   },
   "Raro":       { color: "var(--sky)",   glyph: IDiamond  },
@@ -10,8 +11,8 @@ const RARITY_STYLE = {
 };
 
 export function RarityBadge({ rarity, size = "sm" }) {
-  const t = useT();
-  const label = t(`rarity.${rarity}`);
+  const { state } = useApp();
+  const label = getRarityName(rarity, state.lang, state.rarityLabels);
   const c = RARITY_STYLE[rarity] || RARITY_STYLE["Común"];
   const big = size === "md";
   const Glyph = c.glyph;

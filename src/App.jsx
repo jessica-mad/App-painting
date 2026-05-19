@@ -87,7 +87,7 @@ export default function App() {
   useEffect(() => {
     fetchConfig()
       .then(data => {
-        if (data) dispatch({ type: "SET_CONFIG", levels: data.levels, seasonLabels: data.seasonLabels });
+        if (data) dispatch({ type: "SET_CONFIG", levels: data.levels, seasonLabels: data.seasonLabels, rarityLabels: data.rarityLabels });
       })
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

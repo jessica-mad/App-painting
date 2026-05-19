@@ -21,13 +21,7 @@ export default {
   "time.c.h":       "{n}h",
   "time.c.d":       "{n}d",
 
-  /* ── Rarity display names ── */
-  "rarity.Común":      "Whisper",
-  "rarity.Raro":       "Vision",
-  "rarity.Épico":      "Ecstasy",
-  "rarity.Legendario": "✦ Epiphany",
-
-/* ── Navigation ── */
+  /* ── Navigation ── */
   "nav.home":      "Home",
   "nav.feed":      "Feed",
   "nav.challenge": "Challenge",

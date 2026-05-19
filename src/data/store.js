@@ -104,6 +104,7 @@ export const initialState = {
   apiParams:        {},
   levels:           LEVELS,   // overridden by /config API response
   seasonLabels:     {},        // overridden by /config API response: { Primavera: "Spring", ... }
+  rarityLabels:     {},        // overridden by /config API response: { "Común": { name, name_en }, ... }
 };
 
 export function reducer(state, action) {
@@ -230,8 +231,9 @@ export function reducer(state, action) {
     case "SET_CONFIG":
       return {
         ...state,
-        ...(action.levels?.length      && { levels: action.levels }),
-        ...(action.seasonLabels        && { seasonLabels: action.seasonLabels }),
+        ...(action.levels?.length  && { levels: action.levels }),
+        ...(action.seasonLabels    && { seasonLabels: action.seasonLabels }),
+        ...(action.rarityLabels    && { rarityLabels: action.rarityLabels }),
       };
 
     default:
