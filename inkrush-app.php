@@ -3,7 +3,7 @@
  * Plugin Name: InkRush App
  * Plugin URI:  https://inkrush.app
  * Description: App de retos creativos para ilustradores. Shortcode: [inkrush_app]
- * Version:     1.2.0
+ * Version:     1.2.1
  * Author:      InkRush
  * License:     GPL-2.0+
  * Text Domain: inkrush-app
@@ -12,7 +12,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'INKRUSH_VERSION', '1.2.0' );
+define( 'INKRUSH_VERSION', '1.2.1' );
 define( 'INKRUSH_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'INKRUSH_URL',     plugin_dir_url( __FILE__ ) );
 
