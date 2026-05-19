@@ -43,14 +43,18 @@ function inkrush_page_music() {
 
         foreach ( $tracks as $track ) {
             $id  = $track['id'];
-            $url = isset( $_POST[ 'music_url_' . $id ] )
-                ? esc_url_raw( trim( $_POST[ 'music_url_' . $id ] ) )
-                : '';
+            $raw = isset( $_POST[ 'music_url_' . $id ] ) ? trim( $_POST[ 'music_url_' . $id ] ) : '';
+            $url = $raw ? esc_url_raw( $raw ) : '';
+            if ( $raw && ! $url ) {
+                $error = '❌ La URL del track "' . esc_html( $track['title'] ) . '" no es válida. Usa una URL completa (https://...).';
+            }
             $saved[ $id ] = $url;
         }
 
         update_option( 'inkrush_music_srcs', $saved );
-        $message = '✅ URLs de música guardadas correctamente.';
+        if ( ! $error ) {
+            $message = '✅ URLs de música guardadas correctamente.';
+        }
     }
 
     $tracks  = inkrush_music_tracks();
@@ -66,6 +70,9 @@ function inkrush_page_music() {
 
         <?php if ( $message ) : ?>
             <div class="notice notice-success is-dismissible"><p><?php echo esc_html( $message ); ?></p></div>
+        <?php endif; ?>
+        <?php if ( $error ) : ?>
+            <div class="notice notice-error is-dismissible"><p><?php echo esc_html( $error ); ?></p></div>
         <?php endif; ?>
 
         <!-- Resumen -->
@@ -112,7 +119,7 @@ function inkrush_page_music() {
                         <td style="padding:12px 14px;vertical-align:top;">
                             <div style="display:flex;gap:8px;align-items:center;">
                                 <input
-                                    type="url"
+                                    type="text"
                                     id="music_url_<?php echo esc_attr( $id ); ?>"
                                     name="music_url_<?php echo esc_attr( $id ); ?>"
                                     value="<?php echo esc_attr( $url ); ?>"
