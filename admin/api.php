@@ -209,6 +209,13 @@ function inkrush_register_routes() {
         'permission_callback' => '__return_true',
     ] );
 
+    /* ── Música: URLs por track ── */
+    register_rest_route( 'inkrush/v1', '/music-srcs', [
+        'methods'             => 'GET',
+        'callback'            => 'inkrush_api_get_music_srcs',
+        'permission_callback' => '__return_true',
+    ] );
+
     /* ── Búsqueda ── */
     register_rest_route( 'inkrush/v1', '/search/users', [
         'methods'             => 'GET',
@@ -1833,6 +1840,14 @@ function inkrush_api_translate_single_param( WP_REST_Request $req ) {
     inkrush_save_variables( $vars );
 
     return rest_ensure_response( [ 'success' => true, 'id' => $id, 'value_en' => $en_val ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   GET /music-srcs — URLs de audio por track
+────────────────────────────────────────────────────────────── */
+function inkrush_api_get_music_srcs() {
+    $srcs = get_option( 'inkrush_music_srcs', [] );
+    return rest_ensure_response( (object) $srcs );
 }
 
 /* ──────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useReducer, useMemo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppContext, initialState, reducer } from "./data/store";
-import { IS_LOGGED_IN, fetchNotifications, fetchConfig } from "./utils/api";
+import { IS_LOGGED_IN, fetchNotifications, fetchConfig, fetchMusicSrcs } from "./utils/api";
 import { TutorialScreen }       from "./screens/TutorialScreen";
 import { IntroScreen }          from "./screens/IntroScreen";
 import { LoginScreen }          from "./screens/LoginScreen";
@@ -88,6 +88,11 @@ export default function App() {
     fetchConfig()
       .then(data => {
         if (data) dispatch({ type: "SET_CONFIG", levels: data.levels, seasonLabels: data.seasonLabels, rarityLabels: data.rarityLabels });
+      })
+      .catch(() => {});
+    fetchMusicSrcs()
+      .then(data => {
+        if (data) dispatch({ type: "SET_MUSIC_SRCS", srcs: data });
       })
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

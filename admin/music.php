@@ -26,7 +26,7 @@ add_action( 'admin_enqueue_scripts', function( $hook ) {
     wp_enqueue_script(
         'inkrush-music-admin',
         INKRUSH_URL . 'admin/music-admin.js',
-        [ 'jquery', 'media-upload', 'thickbox' ],
+        [ 'jquery' ],
         INKRUSH_VERSION,
         true
     );
@@ -58,7 +58,7 @@ function inkrush_page_music() {
     $configured = count( array_filter( $saved ) );
     ?>
     <div class="wrap">
-        <h1>🎵 InkRush — Música del Pomodoro</h1>
+        <h1>🎵 Musai — Música del Pomodoro</h1>
         <p style="color:#555;margin-bottom:20px;max-width:640px;">
             Configura qué archivo de audio suena cuando el usuario elige cada ambiente musical en el timer Pomodoro.
             Pega una URL directa a un archivo <code>.mp3</code> / <code>.ogg</code>, o usa el selector de la Biblioteca de medios.
