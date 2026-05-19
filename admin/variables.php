@@ -89,6 +89,14 @@ function inkrush_page_variables() {
     $rarities   = ['Común','Raro','Épico','Legendario'];
     $seasons    = ['','Primavera','Verano','Otoño','Invierno','Halloween','Navidad','San Valentín'];
 
+    /* Nombres Musai — la clave BD no cambia, solo la etiqueta visible */
+    $rarity_labels = [
+        'Común'      => 'Susurro',
+        'Raro'       => 'Visión',
+        'Épico'      => 'Éxtasis',
+        'Legendario' => '✦ Epifanía',
+    ];
+
     /* ── Procesar acciones ── */
     if ( isset( $_POST['inkrush_var_action'] ) && check_admin_referer( 'inkrush_vars' ) ) {
         $action = sanitize_text_field( $_POST['inkrush_var_action'] );
@@ -186,7 +194,7 @@ function inkrush_page_variables() {
     }
     ?>
     <div class="wrap">
-        <h1>🎨 InkRush — Variables de dibujo</h1>
+        <h1>🎨 Musai — Variables de dibujo</h1>
 
         <?php if ( $message ) : ?>
             <div class="notice notice-success is-dismissible"><p><?php echo esc_html( $message ); ?></p></div>
@@ -202,7 +210,7 @@ function inkrush_page_variables() {
             </div>
             <?php foreach ( $rarities as $r ) : ?>
                 <div style="background:<?php echo esc_attr( $rarity_colors[ $r ] ); ?>;border:2px solid #111;border-radius:10px;padding:12px 16px;font-weight:900;">
-                    <?php echo esc_html( $r ); ?>: <?php echo intval( $counts[ $r ] ?? 0 ); ?>
+                    <?php echo esc_html( $rarity_labels[ $r ] ?? $r ); ?>: <?php echo intval( $counts[ $r ] ?? 0 ); ?>
                 </div>
             <?php endforeach; ?>
             <div style="background:<?php echo $missing_en > 0 ? '#FFE8A0' : '#D4F5D4'; ?>;border:2px solid #111;border-radius:10px;padding:12px 16px;font-weight:900;">
@@ -281,7 +289,7 @@ function inkrush_page_variables() {
                             <?php foreach ( $rarities as $r ) : ?>
                                 <option value="<?php echo esc_attr( $r ); ?>" <?php selected( $editing['rarity'] ?? 'Común', $r ); ?>
                                     style="background:<?php echo esc_attr( $rarity_colors[ $r ] ); ?>">
-                                    <?php echo esc_html( $r ); ?>
+                                    <?php echo esc_html( $rarity_labels[ $r ] ?? $r ); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -338,7 +346,7 @@ function inkrush_page_variables() {
                     <select name="filter_rarity" onchange="this.form.submit()" style="height:32px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 8px;">
                         <option value="">Todas</option>
                         <?php foreach ( $rarities as $r ) : ?>
-                            <option value="<?php echo esc_attr( $r ); ?>" <?php selected( $filter_rarity, $r ); ?>><?php echo esc_html( $r ); ?></option>
+                            <option value="<?php echo esc_attr( $r ); ?>" <?php selected( $filter_rarity, $r ); ?>><?php echo esc_html( $rarity_labels[ $r ] ?? $r ); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

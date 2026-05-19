@@ -25,6 +25,12 @@ function inkrush_register_routes() {
         ] ),
     ] );
 
+    /* ── Config de contenido: niveles, temporadas, rareza ── */
+    register_rest_route( 'inkrush/v1', '/config', [
+        'methods' => 'GET', 'permission_callback' => '__return_true',
+        'callback' => 'inkrush_api_get_config',
+    ] );
+
     /* ── Obras (artworks) ── */
     register_rest_route( 'inkrush/v1', '/artworks', [
         [ 'methods' => 'GET',  'callback' => 'inkrush_api_list_artworks',  'permission_callback' => '__return_true' ],
@@ -1827,4 +1833,41 @@ function inkrush_api_translate_single_param( WP_REST_Request $req ) {
     inkrush_save_variables( $vars );
 
     return rest_ensure_response( [ 'success' => true, 'id' => $id, 'value_en' => $en_val ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   GET /config — niveles, temporadas y rareza para el frontend
+────────────────────────────────────────────────────────────── */
+function inkrush_api_get_config() {
+
+    $levels = [
+        [ 'id'=>1, 'name'=>'Nuevo Artista',     'name_en'=>'New Artist',         'minChallenges'=>0  ],
+        [ 'id'=>2, 'name'=>'Artista Activo',    'name_en'=>'Active Artist',      'minChallenges'=>5  ],
+        [ 'id'=>3, 'name'=>'Creador Constante', 'name_en'=>'Consistent Creator', 'minChallenges'=>10 ],
+        [ 'id'=>4, 'name'=>'Inspirador',        'name_en'=>'Inspirer',           'minChallenges'=>20 ],
+        [ 'id'=>5, 'name'=>'Maestro del Reto',  'name_en'=>'Challenge Master',   'minChallenges'=>30 ],
+    ];
+
+    $season_labels = [
+        'Primavera'    => 'Spring',
+        'Verano'       => 'Summer',
+        'Otoño'        => 'Autumn',
+        'Invierno'     => 'Winter',
+        'Halloween'    => 'Halloween',
+        'Navidad'      => 'Christmas',
+        'San Valentín' => "Valentine's",
+    ];
+
+    $rarity_labels = [
+        'Común'      => [ 'name'=>'Susurro',     'name_en'=>'Whisper'     ],
+        'Raro'       => [ 'name'=>'Visión',      'name_en'=>'Vision'      ],
+        'Épico'      => [ 'name'=>'Éxtasis',     'name_en'=>'Ecstasy'     ],
+        'Legendario' => [ 'name'=>'✦ Epifanía',  'name_en'=>'✦ Epiphany'  ],
+    ];
+
+    return rest_ensure_response( [
+        'levels'       => $levels,
+        'seasonLabels' => $season_labels,
+        'rarityLabels' => $rarity_labels,
+    ] );
 }
