@@ -1,7 +1,7 @@
 import { useReducer, useMemo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppContext, initialState, reducer } from "./data/store";
-import { IS_LOGGED_IN, fetchNotifications, fetchConfig, fetchMusicSrcs } from "./utils/api";
+import { IS_LOGGED_IN, IS_ADMIN, fetchNotifications, fetchConfig, fetchMusicSrcs } from "./utils/api";
 import { TutorialScreen }       from "./screens/TutorialScreen";
 import { IntroScreen }          from "./screens/IntroScreen";
 import { LoginScreen }          from "./screens/LoginScreen";
@@ -110,6 +110,33 @@ export default function App() {
   /* Hard guard: if no WP session and trying to access a protected screen, force login */
   const guardedScreen = !IS_LOGGED_IN && !PUBLIC_SCREENS.has(state.screen) ? "login" : state.screen;
   const MobileScreen = MOBILE_SCREENS[guardedScreen] ?? LoginScreen;
+
+  if (isDesktop && !IS_ADMIN) {
+    return (
+      <div style={{
+        height: "100vh", display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        background: "#111", color: "#fff", textAlign: "center",
+        padding: "32px", fontFamily: "sans-serif",
+      }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🎨</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: "#DFFF23", margin: "0 0 12px" }}>
+          Ups, esto aún no está listo
+        </h1>
+        <p style={{ fontSize: 16, color: "rgba(255,255,255,.7)", maxWidth: 380, lineHeight: 1.6, margin: "0 0 32px" }}>
+          La versión de escritorio está en construcción.<br/>
+          Te invitamos a entrar desde tu <strong style={{ color: "#fff" }}>móvil</strong> para disfrutar la experiencia completa.
+        </p>
+        <div style={{
+          background: "#DFFF23", color: "#111", fontWeight: 900,
+          borderRadius: 12, padding: "12px 28px", fontSize: 15,
+          border: "2px solid #DFFF23", display: "inline-block",
+        }}>
+          📱 Abre la app desde tu móvil
+        </div>
+      </div>
+    );
+  }
 
   if (isDesktop) {
     const guardedDesktop = !IS_LOGGED_IN && !PUBLIC_SCREENS.has(state.screen) ? "login" : state.screen;
