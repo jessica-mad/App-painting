@@ -22,7 +22,17 @@ function inkrush_music_tracks() {
  */
 add_action( 'admin_enqueue_scripts', function( $hook ) {
     if ( $hook !== 'inkrush_page_inkrush-music' ) return;
-    wp_enqueue_media();
+
+    // Cargar scripts del media picker solo si la función existe y el uploader está disponible
+    if ( function_exists( 'wp_enqueue_media' ) ) {
+        try {
+            wp_enqueue_media();
+        } catch ( \Throwable $e ) {
+            // Si wp_enqueue_media() falla, el picker no estará disponible
+            // pero la página sigue funcionando (el JS tiene fallback)
+        }
+    }
+
     wp_enqueue_script(
         'inkrush-music-admin',
         INKRUSH_URL . 'admin/music-admin.js',
