@@ -334,8 +334,6 @@ export default {
   "login.google.label":     "Entrar con Google · Próximamente",
   "login.createAccount":    "Crear cuenta con email",
   "login.signIn":           "Iniciar sesión con email",
-  "login.tester.label":     "Entrar como tester · test1234",
-  "login.tester.entering":  "Entrando…",
   "login.terms":            "Al entrar aceptas los términos y la política de privacidad",
   "login.mode.email":       "// CON TU EMAIL Y CONTRASEÑA",
   "login.field.email":      "Email",
