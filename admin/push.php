@@ -143,10 +143,8 @@ function inkrush_broadcast_push( $title, $body, $url = '/', $user_ids = [] ) {
 
     if ( $user_ids ) {
         $placeholders = implode( ',', array_fill( 0, count( $user_ids ), '%d' ) );
-        $rows = $wpdb->get_results( $wpdb->prepare(
-            "SELECT endpoint, p256dh, auth FROM {$table} WHERE user_id IN ({$placeholders})",
-            ...$user_ids
-        ) );
+        $sql  = "SELECT endpoint, p256dh, auth FROM {$table} WHERE user_id IN ({$placeholders})";
+        $rows = $wpdb->get_results( call_user_func_array( [ $wpdb, 'prepare' ], array_merge( [ $sql ], array_map( 'intval', $user_ids ) ) ) );
     } else {
         $rows = $wpdb->get_results( "SELECT endpoint, p256dh, auth FROM {$table}" );
     }
