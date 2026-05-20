@@ -92,7 +92,7 @@ function inkrush_page_music() {
     }
 
     $tracks  = inkrush_music_tracks();
-    $saved   = get_option( 'inkrush_music_srcs', [] );
+    $saved   = (array) get_option( 'inkrush_music_srcs', [] );
     $configured = count( array_filter( $saved ) );
     ?>
     <div class="wrap">

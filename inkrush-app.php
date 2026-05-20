@@ -16,43 +16,17 @@ define( 'INKRUSH_VERSION', '1.3.0' );
 define( 'INKRUSH_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'INKRUSH_URL',     plugin_dir_url( __FILE__ ) );
 
-// ── DIAGNOSTIC LOG ──────────────────────────────────────────
-@ini_set( 'display_errors', 1 );
-@error_reporting( E_ALL );
-register_shutdown_function( function () {
-    $e = error_get_last();
-    if ( $e && in_array( $e['type'], [ E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR ] ) ) {
-        echo '<div style="background:red;color:#fff;padding:20px;font-family:monospace;font-size:14px;z-index:99999;position:fixed;top:0;left:0;right:0;">';
-        echo '<strong>[InkRush fatal]</strong> ' . esc_html( $e['message'] ) . '<br>';
-        echo 'Archivo: ' . esc_html( $e['file'] ) . ' · Línea: ' . $e['line'];
-        echo '</div>';
-    }
-} );
-error_log( '[InkRush] plugin loading start, PHP ' . PHP_VERSION );
-
-function inkrush_safe_require( $file ) {
-    error_log( '[InkRush] loading: ' . basename( $file ) );
-    try {
-        require_once $file;
-        error_log( '[InkRush] ok: ' . basename( $file ) );
-    } catch ( \Throwable $e ) {
-        error_log( '[InkRush] FATAL in ' . basename( $file ) . ': ' . $e->getMessage() . ' line ' . $e->getLine() );
-    }
-}
-
 if ( file_exists( INKRUSH_DIR . 'vendor/autoload.php' ) ) {
-    inkrush_safe_require( INKRUSH_DIR . 'vendor/autoload.php' );
+    require_once INKRUSH_DIR . 'vendor/autoload.php';
 }
 
-inkrush_safe_require( INKRUSH_DIR . 'admin/variables.php' );
-inkrush_safe_require( INKRUSH_DIR . 'admin/users.php' );
-inkrush_safe_require( INKRUSH_DIR . 'admin/settings.php' );
-inkrush_safe_require( INKRUSH_DIR . 'admin/music.php' );
-inkrush_safe_require( INKRUSH_DIR . 'admin/reports.php' );
-inkrush_safe_require( INKRUSH_DIR . 'admin/push.php' );
-inkrush_safe_require( INKRUSH_DIR . 'admin/api.php' );
-
-error_log( '[InkRush] all files loaded' );
+require_once INKRUSH_DIR . 'admin/variables.php';
+require_once INKRUSH_DIR . 'admin/users.php';
+require_once INKRUSH_DIR . 'admin/settings.php';
+require_once INKRUSH_DIR . 'admin/music.php';
+require_once INKRUSH_DIR . 'admin/reports.php';
+require_once INKRUSH_DIR . 'admin/push.php';
+require_once INKRUSH_DIR . 'admin/api.php';
 
 /* ──────────────────────────────────────────────────────────────
    1. ACTIVACIÓN
