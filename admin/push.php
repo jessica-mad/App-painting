@@ -89,13 +89,13 @@ function inkrush_send_push_to_user( $user_id, $title, $body, $url = '/', $icon =
     try {
         $webPush = new \Minishlink\WebPush\WebPush( [
             'VAPID' => [
-                'subject'    => get_option( 'admin_email' ),
+                'subject'    => 'mailto:' . get_option( 'admin_email' ),
                 'publicKey'  => $keys['public'],
                 'privateKey' => $keys['private'],
             ],
         ] );
 
-        $payload = wp_json_encode( compact( 'title', 'body', 'url', 'icon' ) );
+        $payload = wp_json_encode( [ 'title' => $title, 'body' => $body, 'url' => $url, 'icon' => $icon ] );
         $sent    = 0;
 
         foreach ( $rows as $row ) {
@@ -109,14 +109,20 @@ function inkrush_send_push_to_user( $user_id, $title, $body, $url = '/', $icon =
         foreach ( $webPush->flush() as $report ) {
             if ( $report->isSuccess() ) {
                 $sent++;
-            } elseif ( $report->isSubscriptionExpired() ) {
-                // Clean stale endpoint
-                $wpdb->delete( $table, [ 'endpoint' => $report->getRequest()->getUri()->__toString() ] );
+            } else {
+                error_log( '[Musai push] send failed — endpoint: ' . $report->getEndpoint()
+                    . ' | expired: ' . ( $report->isSubscriptionExpired() ? 'yes' : 'no' )
+                    . ' | reason: ' . $report->getReason()
+                    . ' | response: ' . $report->getResponseContent() );
+                if ( $report->isSubscriptionExpired() ) {
+                    $wpdb->delete( $table, [ 'endpoint' => $report->getEndpoint() ] );
+                }
             }
         }
 
         return $sent;
     } catch ( \Throwable $e ) {
+        error_log( '[Musai push] WebPush exception: ' . $e->getMessage() );
         return 0;
     }
 }
@@ -136,8 +142,11 @@ function inkrush_broadcast_push( $title, $body, $url = '/', $user_ids = [] ) {
     $table = $wpdb->prefix . 'inkrush_push_subs';
 
     if ( $user_ids ) {
-        $ids  = implode( ',', array_map( 'intval', $user_ids ) );
-        $rows = $wpdb->get_results( "SELECT endpoint, p256dh, auth FROM {$table} WHERE user_id IN ({$ids})" );
+        $placeholders = implode( ',', array_fill( 0, count( $user_ids ), '%d' ) );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT endpoint, p256dh, auth FROM {$table} WHERE user_id IN ({$placeholders})",
+            ...$user_ids
+        ) );
     } else {
         $rows = $wpdb->get_results( "SELECT endpoint, p256dh, auth FROM {$table}" );
     }
@@ -146,13 +155,13 @@ function inkrush_broadcast_push( $title, $body, $url = '/', $user_ids = [] ) {
     try {
         $webPush = new \Minishlink\WebPush\WebPush( [
             'VAPID' => [
-                'subject'    => get_option( 'admin_email' ),
+                'subject'    => 'mailto:' . get_option( 'admin_email' ),
                 'publicKey'  => $keys['public'],
                 'privateKey' => $keys['private'],
             ],
         ] );
 
-        $payload = wp_json_encode( compact( 'title', 'body', 'url', 'icon' ) );
+        $payload = wp_json_encode( [ 'title' => $title, 'body' => $body, 'url' => $url, 'icon' => $icon ] );
         $sent    = 0;
 
         foreach ( $rows as $row ) {
@@ -166,13 +175,20 @@ function inkrush_broadcast_push( $title, $body, $url = '/', $user_ids = [] ) {
         foreach ( $webPush->flush() as $report ) {
             if ( $report->isSuccess() ) {
                 $sent++;
-            } elseif ( $report->isSubscriptionExpired() ) {
-                $wpdb->delete( $table, [ 'endpoint' => $report->getRequest()->getUri()->__toString() ] );
+            } else {
+                error_log( '[Musai push] broadcast failed — endpoint: ' . $report->getEndpoint()
+                    . ' | expired: ' . ( $report->isSubscriptionExpired() ? 'yes' : 'no' )
+                    . ' | reason: ' . $report->getReason()
+                    . ' | response: ' . $report->getResponseContent() );
+                if ( $report->isSubscriptionExpired() ) {
+                    $wpdb->delete( $table, [ 'endpoint' => $report->getEndpoint() ] );
+                }
             }
         }
 
         return $sent;
     } catch ( \Throwable $e ) {
+        error_log( '[Musai push] broadcast exception: ' . $e->getMessage() );
         return 0;
     }
 }
@@ -327,7 +343,11 @@ function inkrush_page_push() {
                 'sent_count' => $sent,
                 'created_at' => current_time( 'mysql', true ),
             ], [ '%s','%s','%s','%d','%s' ] );
-            $message = "✅ Notificación enviada a {$sent} dispositivo" . ( $sent !== 1 ? 's' : '' ) . '.';
+            if ( $sent > 0 ) {
+                $message = "✅ Notificación enviada a {$sent} dispositivo" . ( $sent !== 1 ? 's' : '' ) . '.';
+            } else {
+                $error = '⚠️ El envío devolvió 0 entregas. Revisa el error_log del servidor — se registra con el prefijo [Musai push].';
+            }
         }
     }
 
