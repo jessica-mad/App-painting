@@ -123,6 +123,12 @@ add_filter( 'query_vars', function ( $vars ) {
     $vars[] = 'inkrush_push_sw';
     return $vars;
 } );
+// Prevent WordPress canonical redirect from intercepting /push-sw.js
+// (SW registration blocks any redirect, even transparent 301s)
+add_filter( 'redirect_canonical', function( $redirect_url ) {
+    if ( get_query_var( 'inkrush_push_sw' ) ) return false;
+    return $redirect_url;
+} );
 add_action( 'template_redirect', function () {
     if ( ! get_query_var( 'inkrush_push_sw' ) ) return;
     $file = INKRUSH_DIR . 'push-sw.js';
