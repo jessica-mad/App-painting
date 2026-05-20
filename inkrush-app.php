@@ -16,17 +16,32 @@ define( 'INKRUSH_VERSION', '1.3.0' );
 define( 'INKRUSH_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'INKRUSH_URL',     plugin_dir_url( __FILE__ ) );
 
-if ( file_exists( INKRUSH_DIR . 'vendor/autoload.php' ) ) {
-    require_once INKRUSH_DIR . 'vendor/autoload.php';
+// ── DIAGNOSTIC LOG ──────────────────────────────────────────
+error_log( '[InkRush] plugin loading start, PHP ' . PHP_VERSION );
+
+function inkrush_safe_require( $file ) {
+    error_log( '[InkRush] loading: ' . basename( $file ) );
+    try {
+        require_once $file;
+        error_log( '[InkRush] ok: ' . basename( $file ) );
+    } catch ( \Throwable $e ) {
+        error_log( '[InkRush] FATAL in ' . basename( $file ) . ': ' . $e->getMessage() . ' line ' . $e->getLine() );
+    }
 }
 
-require_once INKRUSH_DIR . 'admin/variables.php';
-require_once INKRUSH_DIR . 'admin/users.php';
-require_once INKRUSH_DIR . 'admin/settings.php';
-require_once INKRUSH_DIR . 'admin/music.php';
-require_once INKRUSH_DIR . 'admin/reports.php';
-require_once INKRUSH_DIR . 'admin/push.php';
-require_once INKRUSH_DIR . 'admin/api.php';
+if ( file_exists( INKRUSH_DIR . 'vendor/autoload.php' ) ) {
+    inkrush_safe_require( INKRUSH_DIR . 'vendor/autoload.php' );
+}
+
+inkrush_safe_require( INKRUSH_DIR . 'admin/variables.php' );
+inkrush_safe_require( INKRUSH_DIR . 'admin/users.php' );
+inkrush_safe_require( INKRUSH_DIR . 'admin/settings.php' );
+inkrush_safe_require( INKRUSH_DIR . 'admin/music.php' );
+inkrush_safe_require( INKRUSH_DIR . 'admin/reports.php' );
+inkrush_safe_require( INKRUSH_DIR . 'admin/push.php' );
+inkrush_safe_require( INKRUSH_DIR . 'admin/api.php' );
+
+error_log( '[InkRush] all files loaded' );
 
 /* ──────────────────────────────────────────────────────────────
    1. ACTIVACIÓN
