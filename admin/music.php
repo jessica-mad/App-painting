@@ -46,6 +46,30 @@ function inkrush_page_music() {
     $message = '';
     $error   = '';
 
+    // Migrar dominio en todas las URLs
+    if ( isset( $_POST['inkrush_migrate_domain'] ) && check_admin_referer( 'inkrush_music' ) ) {
+        $old = esc_url_raw( trim( $_POST['old_domain'] ?? '' ) );
+        $new = esc_url_raw( trim( $_POST['new_domain'] ?? '' ) );
+        $old = rtrim( $old, '/' );
+        $new = rtrim( $new, '/' );
+        if ( ! $old || ! $new ) {
+            $error = '❌ Debes rellenar ambos dominios.';
+        } else {
+            $saved   = get_option( 'inkrush_music_srcs', [] );
+            $changed = 0;
+            foreach ( $saved as $id => $url ) {
+                if ( $url && strpos( $url, $old ) !== false ) {
+                    $saved[ $id ] = str_replace( $old, $new, $url );
+                    $changed++;
+                }
+            }
+            update_option( 'inkrush_music_srcs', $saved );
+            $message = $changed
+                ? "✅ {$changed} URL" . ( $changed > 1 ? 's reemplazadas' : ' reemplazada' ) . " correctamente."
+                : '⚠️ No se encontró el dominio antiguo en ninguna URL.';
+        }
+    }
+
     // Guardar formulario
     if ( isset( $_POST['inkrush_save_music'] ) && check_admin_referer( 'inkrush_music' ) ) {
         $tracks  = inkrush_music_tracks();
@@ -84,6 +108,35 @@ function inkrush_page_music() {
         <?php if ( $error ) : ?>
             <div class="notice notice-error is-dismissible"><p><?php echo esc_html( $error ); ?></p></div>
         <?php endif; ?>
+
+        <!-- Migrador de dominio -->
+        <details style="max-width:760px;margin-bottom:20px;border:2px solid #111;border-radius:10px;overflow:hidden;">
+            <summary style="background:#111;color:#DFFF23;padding:10px 16px;font-weight:900;cursor:pointer;list-style:none;">
+                🔄 Migrar dominio en todas las URLs de música
+            </summary>
+            <div style="padding:16px;background:#FFFDF3;">
+                <p style="font-size:12px;color:#555;margin:0 0 12px;">
+                    Si migraste el sitio a otro dominio, reemplaza automáticamente el dominio viejo en todas las URLs guardadas.
+                    Incluye el protocolo: <code>https://dominio-viejo.com</code>
+                </p>
+                <form method="post" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                    <?php wp_nonce_field( 'inkrush_music' ); ?>
+                    <div>
+                        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Dominio antiguo</label>
+                        <input type="text" name="old_domain" placeholder="https://dominio-viejo.com"
+                            style="height:34px;width:240px;border:2px solid #111;border-radius:7px;padding:0 10px;font-family:monospace;font-size:12px;">
+                    </div>
+                    <div style="font-size:18px;padding-bottom:6px;">→</div>
+                    <div>
+                        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">Dominio nuevo</label>
+                        <input type="text" name="new_domain" placeholder="https://dominio-nuevo.com"
+                            style="height:34px;width:240px;border:2px solid #111;border-radius:7px;padding:0 10px;font-family:monospace;font-size:12px;">
+                    </div>
+                    <input type="submit" name="inkrush_migrate_domain" value="🔄 Reemplazar"
+                        style="height:34px;padding:0 18px;background:#DFFF23;border:2px solid #111;border-radius:7px;font-weight:900;font-size:13px;cursor:pointer;">
+                </form>
+            </div>
+        </details>
 
         <!-- Resumen -->
         <div style="display:inline-flex;align-items:center;gap:12px;background:<?php echo $configured === count( $tracks ) ? '#C9F2D6' : '#FFE9A8'; ?>;border:2px solid #111;border-radius:10px;padding:10px 18px;margin-bottom:24px;">
