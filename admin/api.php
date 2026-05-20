@@ -227,6 +227,28 @@ function inkrush_register_routes() {
         'callback'            => 'inkrush_api_search_posts',
         'permission_callback' => '__return_true',
     ] );
+
+    /* ── Push subscriptions ── */
+    register_rest_route( 'inkrush/v1', '/push/subscribe', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_push_subscribe',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
+    register_rest_route( 'inkrush/v1', '/push/unsubscribe', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_push_unsubscribe',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
+    register_rest_route( 'inkrush/v1', '/push/status', [
+        'methods'             => 'GET',
+        'callback'            => 'inkrush_api_push_status',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
+    register_rest_route( 'inkrush/v1', '/push/musai-hour', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_push_musai_hour',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -266,6 +288,11 @@ function inkrush_push_notification( $user_id, $from_user_id, $type, $post_id = n
         'is_read'      => 0,
         'created_at'   => current_time( 'mysql', true ),
     ], [ '%d', '%d', '%s', $post_id !== null ? '%d' : 'NULL', '%s', '%d', '%s' ] );
+
+    // Also send a Web Push to the device
+    if ( function_exists( 'inkrush_maybe_send_social_push' ) ) {
+        inkrush_maybe_send_social_push( $user_id, $from_user_id, $type, $post_id );
+    }
 }
 
 /**
@@ -1936,4 +1963,74 @@ function inkrush_api_get_config() {
         'seasonLabels' => $season_labels,
         'rarityLabels' => $rarity_labels,
     ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PUSH SUBSCRIPTION ENDPOINTS
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_push_subscribe( WP_REST_Request $req ) {
+    global $wpdb;
+    $uid      = get_current_user_id();
+    $endpoint = sanitize_text_field( $req->get_param('endpoint') ?? '' );
+    $p256dh   = sanitize_text_field( $req->get_param('p256dh')   ?? '' );
+    $auth     = sanitize_text_field( $req->get_param('auth')      ?? '' );
+
+    if ( ! $endpoint || ! $p256dh || ! $auth )
+        return new WP_Error( 'invalid', 'Datos de suscripción incompletos.', [ 'status' => 400 ] );
+
+    $table = $wpdb->prefix . 'inkrush_push_subs';
+    $wpdb->delete( $table, [ 'endpoint' => $endpoint ] );
+    $wpdb->insert( $table, [
+        'user_id'    => $uid,
+        'endpoint'   => $endpoint,
+        'p256dh'     => $p256dh,
+        'auth'       => $auth,
+        'created_at' => current_time( 'mysql', true ),
+    ], [ '%d', '%s', '%s', '%s', '%s' ] );
+
+    return rest_ensure_response( [ 'success' => true ] );
+}
+
+function inkrush_api_push_unsubscribe( WP_REST_Request $req ) {
+    global $wpdb;
+    $uid      = get_current_user_id();
+    $endpoint = sanitize_text_field( $req->get_param('endpoint') ?? '' );
+
+    $table = $wpdb->prefix . 'inkrush_push_subs';
+    if ( $endpoint ) {
+        $wpdb->delete( $table, [ 'user_id' => $uid, 'endpoint' => $endpoint ] );
+    } else {
+        $wpdb->delete( $table, [ 'user_id' => $uid ] );
+    }
+
+    return rest_ensure_response( [ 'success' => true ] );
+}
+
+function inkrush_api_push_status( WP_REST_Request $req ) {
+    global $wpdb;
+    $uid   = get_current_user_id();
+    $table = $wpdb->prefix . 'inkrush_push_subs';
+    $count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE user_id = %d", $uid ) );
+
+    return rest_ensure_response( [
+        'subscribed' => $count > 0,
+        'musaiHour'  => get_user_meta( $uid, 'inkrush_musai_hour', true ) ?: '',
+    ] );
+}
+
+function inkrush_api_push_musai_hour( WP_REST_Request $req ) {
+    $uid  = get_current_user_id();
+    $hour = sanitize_text_field( $req->get_param('hour') ?? '' );
+
+    if ( $hour && ! preg_match( '/^\d{2}:\d{2}$/', $hour ) )
+        return new WP_Error( 'invalid', 'Formato de hora inválido.', [ 'status' => 400 ] );
+
+    if ( $hour ) {
+        update_user_meta( $uid, 'inkrush_musai_hour', $hour );
+    } else {
+        delete_user_meta( $uid, 'inkrush_musai_hour' );
+    }
+
+    return rest_ensure_response( [ 'success' => true ] );
 }

@@ -3,6 +3,7 @@
 const cfg = window.InkRushConfig ?? {};
 const BASE  = cfg.apiUrl  ?? "";
 const NONCE = cfg.nonce   ?? "";
+export const REST_BASE = BASE;
 
 async function apiFetch(path, options = {}) {
   if (!BASE) return null;

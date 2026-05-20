@@ -3,7 +3,7 @@
  * Plugin Name: InkRush App
  * Plugin URI:  https://inkrush.app
  * Description: App de retos creativos para ilustradores. Shortcode: [inkrush_app]
- * Version:     1.2.1
+ * Version:     1.3.0
  * Author:      InkRush
  * License:     GPL-2.0+
  * Text Domain: inkrush-app
@@ -12,15 +12,20 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'INKRUSH_VERSION', '1.2.1' );
+define( 'INKRUSH_VERSION', '1.3.0' );
 define( 'INKRUSH_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'INKRUSH_URL',     plugin_dir_url( __FILE__ ) );
+
+if ( file_exists( INKRUSH_DIR . 'vendor/autoload.php' ) ) {
+    require_once INKRUSH_DIR . 'vendor/autoload.php';
+}
 
 require_once INKRUSH_DIR . 'admin/variables.php';
 require_once INKRUSH_DIR . 'admin/users.php';
 require_once INKRUSH_DIR . 'admin/settings.php';
 require_once INKRUSH_DIR . 'admin/music.php';
 require_once INKRUSH_DIR . 'admin/reports.php';
+require_once INKRUSH_DIR . 'admin/push.php';
 require_once INKRUSH_DIR . 'admin/api.php';
 
 /* ──────────────────────────────────────────────────────────────
@@ -35,6 +40,11 @@ function inkrush_activate() {
     inkrush_seed_default_variables();
     inkrush_create_notifications_table();
     inkrush_create_tries_table();
+    inkrush_create_push_tables();
+    inkrush_get_vapid_keys(); // generate VAPID keys on first activation
+    if ( ! wp_next_scheduled( 'inkrush_push_cron' ) ) {
+        wp_schedule_event( time(), 'hourly', 'inkrush_push_cron' );
+    }
     flush_rewrite_rules();
 }
 
@@ -43,7 +53,8 @@ add_action( 'init', function () {
     $v = (int) get_option( 'inkrush_db_schema_v', 0 );
     if ( $v < 1 ) { inkrush_create_notifications_table(); }
     if ( $v < 2 ) { inkrush_create_tries_table(); }
-    if ( $v < 2 ) { update_option( 'inkrush_db_schema_v', 2 ); }
+    if ( $v < 3 ) { inkrush_create_push_tables(); }
+    if ( $v < 3 ) { update_option( 'inkrush_db_schema_v', 3 ); }
 } );
 
 function inkrush_create_notifications_table() {
@@ -91,7 +102,30 @@ function inkrush_create_tries_table() {
 
 register_deactivation_hook( __FILE__, function() {
     remove_role( 'ilustrador' );
+    wp_clear_scheduled_hook( 'inkrush_push_cron' );
     flush_rewrite_rules();
+} );
+
+/* Service Worker served from site root via rewrite */
+add_action( 'init', function () {
+    add_rewrite_rule( '^push-sw\.js$', 'index.php?inkrush_push_sw=1', 'top' );
+} );
+add_filter( 'query_vars', function ( $vars ) {
+    $vars[] = 'inkrush_push_sw';
+    return $vars;
+} );
+add_action( 'template_redirect', function () {
+    if ( ! get_query_var( 'inkrush_push_sw' ) ) return;
+    $file = INKRUSH_DIR . 'push-sw.js';
+    if ( ! file_exists( $file ) ) {
+        status_header( 404 );
+        exit;
+    }
+    header( 'Content-Type: application/javascript; charset=utf-8' );
+    header( 'Service-Worker-Allowed: /' );
+    header( 'Cache-Control: no-cache' );
+    readfile( $file );
+    exit;
 } );
 
 /* ──────────────────────────────────────────────────────────────
@@ -253,6 +287,8 @@ add_shortcode( 'inkrush_app', function() {
         'triesLimit'     => $user_id ? inkrush_get_tries_limit( $user_id ) : 3,
         'triesUsedToday' => $user_id ? inkrush_count_tries_today( $user_id ) : 0,
         'recaptchaSiteKey'   => get_option( 'inkrush_recaptcha_site_key', '' ),
+        'vapidPublicKey'     => ( function_exists('inkrush_get_vapid_keys') ? ( inkrush_get_vapid_keys()['public'] ?? '' ) : '' ),
+        'pushSwUrl'          => home_url( '/push-sw.js' ),
     ] );
 
     // Enqueue reCAPTCHA script only when a site key is configured
@@ -302,8 +338,9 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'inkrush', 'Configuración', 'Configuración', 'manage_options', 'inkrush',           'inkrush_page_settings' );
     add_submenu_page( 'inkrush', 'Variables',     'Variables',     'manage_options', 'inkrush-variables', 'inkrush_page_variables' );
     add_submenu_page( 'inkrush', 'Usuarios',      'Usuarios',      'manage_options', 'inkrush-users',     'inkrush_page_users' );
-    add_submenu_page( 'inkrush', 'Música Pomodoro', '🎵 Música',   'manage_options', 'inkrush-music',     'inkrush_page_music' );
-    add_submenu_page( 'inkrush', 'Reportes',        '🚨 Reportes', 'manage_options', 'inkrush-reports',   'inkrush_page_reports' );
+    add_submenu_page( 'inkrush', 'Música Pomodoro', '🎵 Música',         'manage_options', 'inkrush-music',  'inkrush_page_music' );
+    add_submenu_page( 'inkrush', 'Notificaciones Push', '📣 Push',       'manage_options', 'inkrush-push',  'inkrush_page_push' );
+    add_submenu_page( 'inkrush', 'Reportes',        '🚨 Reportes',       'manage_options', 'inkrush-reports', 'inkrush_page_reports' );
 } );
 
 /* ──────────────────────────────────────────────────────────────

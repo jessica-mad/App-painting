@@ -3,6 +3,7 @@ import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { useApp } from "../data/store";
 import { useT } from "../i18n";
+import { PushSettings } from "../components/PushSettings";
 import { getUserLevel, getLevelName, LEVELS, TECHNIQUES } from "../data/parameters";
 import { updateProfile, checkUsername, WP_LOGOUT_URL, IS_LOGGED_IN, WP_USER_ID, fetchUserArtworks } from "../utils/api";
 import { compressImage } from "../utils/imageUtils";
@@ -442,7 +443,9 @@ export function ProfileScreen() {
                 {saved ? t("profile.edit.saved") : saving ? t("profile.edit.saving") : t("profile.edit.save")}
               </button>
 
-              <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+              <PushSettings />
+
+              <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
                 <button
                   onClick={() => dispatch({ type: "SET_SCREEN", screen: "bugReport" })}
                   className="stk-sm"
