@@ -42,16 +42,35 @@ function urlBase64ToUint8Array(base64String) {
 /* ── Register SW ──────────────────────────────────────────── */
 
 async function getRegistration() {
+  console.log("[Musai push] SW_URL:", SW_URL);
+  console.log("[Musai push] VAPID_KEY present:", !!VAPID_KEY);
+
+  // Check if the SW file is actually reachable before trying to register
   try {
-    // Check for an existing registration covering root scope
+    const probe = await fetch(SW_URL, { method: "HEAD" });
+    console.log("[Musai push] SW file HTTP status:", probe.status, probe.headers.get("content-type"));
+    if (!probe.ok) {
+      console.error("[Musai push] SW file not reachable — check permalink settings or rewrite rules");
+      return null;
+    }
+  } catch (e) {
+    console.error("[Musai push] SW file fetch error:", e);
+    return null;
+  }
+
+  try {
     const existing = await navigator.serviceWorker.getRegistration("/");
+    console.log("[Musai push] existing SW registration:", existing?.scope ?? "none");
     if (existing) return existing;
+
+    console.log("[Musai push] registering SW with scope /");
     const reg = await navigator.serviceWorker.register(SW_URL, { scope: "/" });
-    // Wait until the SW is activated before returning
+    console.log("[Musai push] SW registered, scope:", reg.scope);
     await navigator.serviceWorker.ready;
+    console.log("[Musai push] SW ready");
     return reg;
   } catch (e) {
-    console.error("[Musai push] SW registration failed:", e);
+    console.error("[Musai push] SW registration threw:", e.name, e.message);
     return null;
   }
 }
@@ -65,7 +84,7 @@ export async function subscribePush() {
   if (permission !== "granted") throw new Error("Permiso denegado");
 
   const reg = await getRegistration();
-  if (!reg) throw new Error("Service Worker no disponible");
+  if (!reg) throw new Error(`Service Worker no disponible — revisa la consola del navegador (F12) para el diagnóstico`);
 
   const sub = await reg.pushManager.subscribe({
     userVisibleOnly:      true,
