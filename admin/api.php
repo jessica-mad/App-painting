@@ -2023,8 +2023,13 @@ function inkrush_api_push_musai_hour( WP_REST_Request $req ) {
     $uid  = get_current_user_id();
     $hour = sanitize_text_field( $req->get_param('hour') ?? '' );
 
-    if ( $hour && ! preg_match( '/^\d{2}:\d{2}$/', $hour ) )
-        return new WP_Error( 'invalid', 'Formato de hora inválido.', [ 'status' => 400 ] );
+    if ( $hour ) {
+        if ( ! preg_match( '/^\d{2}:\d{2}$/', $hour ) )
+            return new WP_Error( 'invalid', 'Formato de hora inválido.', [ 'status' => 400 ] );
+        [ $hh, $mm ] = explode( ':', $hour );
+        if ( (int) $hh > 23 || (int) $mm > 59 )
+            return new WP_Error( 'invalid', 'Hora fuera de rango.', [ 'status' => 400 ] );
+    }
 
     if ( $hour ) {
         update_user_meta( $uid, 'inkrush_musai_hour', $hour );

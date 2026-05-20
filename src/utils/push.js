@@ -73,7 +73,7 @@ export async function subscribePush() {
   });
 
   const json = sub.toJSON();
-  await fetch(`${REST_BASE}push/subscribe`, {
+  await fetch(`${REST_BASE}/push/subscribe`, {
     method:  "POST",
     headers: { "Content-Type": "application/json", "X-WP-Nonce": window.InkRushConfig?.nonce ?? "" },
     body: JSON.stringify({
@@ -96,7 +96,7 @@ export async function unsubscribePush() {
   if (!sub) return;
 
   const json = sub.toJSON();
-  await fetch(`${REST_BASE}push/unsubscribe`, {
+  await fetch(`${REST_BASE}/push/unsubscribe`, {
     method:  "POST",
     headers: { "Content-Type": "application/json", "X-WP-Nonce": window.InkRushConfig?.nonce ?? "" },
     body: JSON.stringify({ endpoint: json.endpoint }),
@@ -109,7 +109,7 @@ export async function unsubscribePush() {
 
 export async function getPushStatus() {
   try {
-    const res  = await fetch(`${REST_BASE}push/status`, {
+    const res  = await fetch(`${REST_BASE}/push/status`, {
       headers: { "X-WP-Nonce": window.InkRushConfig?.nonce ?? "" },
     });
     return await res.json();
@@ -121,7 +121,7 @@ export async function getPushStatus() {
 /* ── Save Musai hour ──────────────────────────────────────── */
 
 export async function saveMusaiHour(hour) {
-  await fetch(`${REST_BASE}push/musai-hour`, {
+  await fetch(`${REST_BASE}/push/musai-hour`, {
     method:  "POST",
     headers: { "Content-Type": "application/json", "X-WP-Nonce": window.InkRushConfig?.nonce ?? "" },
     body: JSON.stringify({ hour }),

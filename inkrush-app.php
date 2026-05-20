@@ -112,6 +112,12 @@ register_deactivation_hook( __FILE__, function() {
 /* Service Worker served from site root via rewrite */
 add_action( 'init', function () {
     add_rewrite_rule( '^push-sw\.js$', 'index.php?inkrush_push_sw=1', 'top' );
+
+    // Flush rewrite rules once whenever the SW rule hasn't been registered yet
+    if ( ! get_option( 'inkrush_sw_rewrite_flushed' ) ) {
+        flush_rewrite_rules( false );
+        update_option( 'inkrush_sw_rewrite_flushed', INKRUSH_VERSION );
+    }
 } );
 add_filter( 'query_vars', function ( $vars ) {
     $vars[] = 'inkrush_push_sw';
