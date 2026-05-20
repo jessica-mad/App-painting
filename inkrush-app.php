@@ -53,8 +53,11 @@ add_action( 'init', function () {
     $v = (int) get_option( 'inkrush_db_schema_v', 0 );
     if ( $v < 1 ) { inkrush_create_notifications_table(); }
     if ( $v < 2 ) { inkrush_create_tries_table(); }
-    if ( $v < 3 ) { inkrush_create_push_tables(); }
-    if ( $v < 3 ) { update_option( 'inkrush_db_schema_v', 3 ); }
+    if ( $v < 3 ) {
+        inkrush_create_push_tables();
+        update_option( 'inkrush_db_schema_v', 3 );
+        add_action( 'shutdown', 'flush_rewrite_rules' ); // flush once after upgrade
+    }
 } );
 
 function inkrush_create_notifications_table() {

@@ -43,10 +43,15 @@ function urlBase64ToUint8Array(base64String) {
 
 async function getRegistration() {
   try {
-    const existing = await navigator.serviceWorker.getRegistration(SW_URL);
+    // Check for an existing registration covering root scope
+    const existing = await navigator.serviceWorker.getRegistration("/");
     if (existing) return existing;
-    return await navigator.serviceWorker.register(SW_URL, { scope: "/" });
-  } catch {
+    const reg = await navigator.serviceWorker.register(SW_URL, { scope: "/" });
+    // Wait until the SW is activated before returning
+    await navigator.serviceWorker.ready;
+    return reg;
+  } catch (e) {
+    console.error("[Musai push] SW registration failed:", e);
     return null;
   }
 }
@@ -84,7 +89,7 @@ export async function subscribePush() {
 /* ── Unsubscribe ──────────────────────────────────────────── */
 
 export async function unsubscribePush() {
-  const reg = await navigator.serviceWorker.getRegistration(SW_URL);
+  const reg = await navigator.serviceWorker.getRegistration("/");
   if (!reg) return;
 
   const sub = await reg.pushManager.getSubscription();

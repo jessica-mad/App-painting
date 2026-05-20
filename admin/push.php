@@ -221,14 +221,8 @@ function inkrush_push_cron_handler() {
                     // Check we haven't already sent today
                     $sent_key = 'inkrush_musai_sent_' . $today;
                     if ( ! get_user_meta( $uid, $sent_key, true ) ) {
-                        $user = get_userdata( $uid );
-                        $name = $user ? explode( ' ', $user->display_name )[0] : '';
-                        inkrush_send_push_to_user(
-                            $uid,
-                            '🎨 Es tu hora Musai',
-                            ( $name ? "{$name}, " : '' ) . '¿listo para el reto de hoy?',
-                            $app_url
-                        );
+                        [ 'title' => $mt, 'body' => $mb ] = inkrush_push_text( 'musai_hour' );
+                        inkrush_send_push_to_user( $uid, $mt, $mb, $app_url );
                         update_user_meta( $uid, $sent_key, 1 );
                     }
                 }
@@ -241,12 +235,8 @@ function inkrush_push_cron_handler() {
             if ( $streak > 0 ) {
                 $sent_key = 'inkrush_streak_warn_' . $today;
                 if ( ! get_user_meta( $uid, $sent_key, true ) ) {
-                    inkrush_send_push_to_user(
-                        $uid,
-                        '🔥 ¡Tu racha peligra!',
-                        "Tu racha de {$streak} día" . ( $streak > 1 ? 's' : '' ) . " termina a medianoche — ¡no la pierdas!",
-                        $app_url
-                    );
+                    [ 'title' => $st, 'body' => $sb ] = inkrush_push_text( 'streak_warning', [ 'streak' => $streak ] );
+                    inkrush_send_push_to_user( $uid, $st, $sb, $app_url );
                     update_user_meta( $uid, $sent_key, 1 );
                 }
             }
@@ -267,6 +257,32 @@ function inkrush_default_triggers() {
     ];
 }
 
+function inkrush_default_push_texts() {
+    return [
+        'like'           => [ 'title' => '💛 Nuevo like',           'body' => '{from} le dio like a tu obra' ],
+        'inspire'        => [ 'title' => '✨ Te inspiraron',         'body' => '{from} se inspiró con tu obra' ],
+        'try'            => [ 'title' => '🎨 Alguien lo intentó',   'body' => '{from} intentó tu reto' ],
+        'follow'         => [ 'title' => '👥 Nuevo seguidor',       'body' => '{from} ahora te sigue' ],
+        'comment'        => [ 'title' => '💬 Nuevo comentario',     'body' => '{from} comentó tu obra' ],
+        'new_post'       => [ 'title' => '🖼 Nueva obra publicada', 'body' => '{from} publicó una nueva obra' ],
+        'musai_hour'     => [ 'title' => '🎨 Es tu hora Musai',     'body' => '¿Listo para el reto de hoy?' ],
+        'streak_warning' => [ 'title' => '🔥 ¡Tu racha peligra!',  'body' => 'Tu racha de {streak} días termina a medianoche — ¡no la pierdas!' ],
+    ];
+}
+
+function inkrush_push_text( $type, $vars = [] ) {
+    $texts    = get_option( 'inkrush_push_texts', [] );
+    $defaults = inkrush_default_push_texts();
+    $entry    = $texts[ $type ] ?? $defaults[ $type ] ?? [ 'title' => '', 'body' => '' ];
+    $title    = $entry['title'];
+    $body     = $entry['body'];
+    foreach ( $vars as $k => $v ) {
+        $title = str_replace( '{' . $k . '}', $v, $title );
+        $body  = str_replace( '{' . $k . '}', $v, $body );
+    }
+    return [ 'title' => $title, 'body' => $body ];
+}
+
 /**
  * Called from inkrush_push_notification() in api.php after DB insert.
  * Sends a web push only if the corresponding trigger is enabled.
@@ -274,39 +290,14 @@ function inkrush_default_triggers() {
 function inkrush_maybe_send_social_push( $user_id, $from_user_id, $type, $post_id = null ) {
     $triggers = get_option( 'inkrush_push_triggers', inkrush_default_triggers() );
     if ( empty( $triggers[ $type ] ) ) return;
+    if ( ! in_array( $type, [ 'like', 'inspire', 'try', 'follow', 'comment', 'new_post' ], true ) ) return;
 
-    $from = get_userdata( $from_user_id );
-    $name = $from ? $from->display_name : 'Alguien';
+    $from    = get_userdata( $from_user_id );
+    $name    = $from ? $from->display_name : 'Alguien';
     $app_url = get_option( 'inkrush_page_id' ) ? get_permalink( get_option( 'inkrush_page_id' ) ) : home_url( '/' );
 
-    switch ( $type ) {
-        case 'like':
-            $title = '💛 Nuevo like';
-            $body  = "{$name} le dio like a tu obra";
-            break;
-        case 'inspire':
-            $title = '✨ Te inspiraron';
-            $body  = "{$name} se inspiró con tu obra";
-            break;
-        case 'try':
-            $title = '🎨 Alguien lo intentó';
-            $body  = "{$name} intentó tu reto";
-            break;
-        case 'follow':
-            $title = '👥 Nuevo seguidor';
-            $body  = "{$name} ahora te sigue";
-            break;
-        case 'comment':
-            $title = '💬 Nuevo comentario';
-            $body  = "{$name} comentó tu obra";
-            break;
-        case 'new_post':
-            $title = '🖼 Nueva obra';
-            $body  = "{$name} publicó una nueva obra";
-            break;
-        default:
-            return;
-    }
+    [ 'title' => $title, 'body' => $body ] = inkrush_push_text( $type, [ 'from' => $name ] );
+    if ( ! $title ) return;
 
     inkrush_send_push_to_user( $user_id, $title, $body, $app_url );
 }
@@ -352,10 +343,25 @@ function inkrush_page_push() {
         $message = '✅ Configuración guardada.';
     }
 
+    // Handle notification texts
+    if ( isset( $_POST['inkrush_push_texts_save'] ) && check_admin_referer( 'inkrush_push' ) ) {
+        $defaults = inkrush_default_push_texts();
+        $texts    = [];
+        foreach ( array_keys( $defaults ) as $k ) {
+            $texts[ $k ] = [
+                'title' => sanitize_text_field( $_POST[ 'text_title_' . $k ] ?? $defaults[ $k ]['title'] ),
+                'body'  => sanitize_text_field( $_POST[ 'text_body_'  . $k ] ?? $defaults[ $k ]['body']  ),
+            ];
+        }
+        update_option( 'inkrush_push_texts', $texts );
+        $message = '✅ Textos guardados.';
+    }
+
     $subs_count   = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->prefix}inkrush_push_subs" );
     $devs_count   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}inkrush_push_subs" );
     $triggers     = get_option( 'inkrush_push_triggers', inkrush_default_triggers() );
     $streak_hours = (int) get_option( 'inkrush_streak_warn_hours', 3 );
+    $push_texts   = get_option( 'inkrush_push_texts', [] );
     $log_rows     = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}inkrush_push_log ORDER BY created_at DESC LIMIT 20" );
     $keys         = inkrush_get_vapid_keys();
 
@@ -457,6 +463,57 @@ function inkrush_page_push() {
         </div>
 
         <!-- Log -->
+        <!-- Textos por trigger -->
+        <div style="max-width:900px;margin-top:24px;border:2px solid #111;border-radius:12px;overflow:hidden;">
+            <div style="background:#111;color:#DFFF23;padding:12px 18px;font-weight:900;">✏️ Texto de cada notificación</div>
+            <div style="padding:18px;">
+                <p style="font-size:12px;color:#555;margin:0 0 16px;">
+                    Personaliza el título y mensaje de cada tipo de notificación.<br>
+                    Variables disponibles: <code>{from}</code> = nombre del usuario que actúa · <code>{streak}</code> = días de racha
+                </p>
+                <form method="post">
+                    <?php wp_nonce_field( 'inkrush_push' ); ?>
+                    <?php
+                    $defaults   = inkrush_default_push_texts();
+                    $text_labels = [
+                        'like'           => '💛 Like en tu obra',
+                        'inspire'        => '✨ Inspiración en tu obra',
+                        'try'            => '🎨 Alguien intentó tu reto',
+                        'follow'         => '👥 Nuevo seguidor',
+                        'comment'        => '💬 Comentario en tu obra',
+                        'new_post'       => '🖼 Creador que sigues publicó',
+                        'musai_hour'     => '🕐 Hora Musai (recordatorio diario)',
+                        'streak_warning' => '🔥 Alerta de racha',
+                    ];
+                    foreach ( $text_labels as $k => $label ) :
+                        $saved_title = $push_texts[ $k ]['title'] ?? $defaults[ $k ]['title'];
+                        $saved_body  = $push_texts[ $k ]['body']  ?? $defaults[ $k ]['body'];
+                    ?>
+                    <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #eee;">
+                        <p style="font-weight:800;font-size:13px;margin:0 0 8px;"><?php echo esc_html( $label ); ?></p>
+                        <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;align-items:center;">
+                            <div>
+                                <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">Título</label>
+                                <input type="text" name="text_title_<?php echo esc_attr( $k ); ?>"
+                                    value="<?php echo esc_attr( $saved_title ); ?>"
+                                    style="width:100%;height:34px;border:2px solid #111;border-radius:7px;padding:0 10px;font-size:13px;font-weight:700;">
+                            </div>
+                            <div>
+                                <label style="font-size:11px;font-weight:700;color:#888;display:block;margin-bottom:3px;">Mensaje</label>
+                                <input type="text" name="text_body_<?php echo esc_attr( $k ); ?>"
+                                    value="<?php echo esc_attr( $saved_body ); ?>"
+                                    style="width:100%;height:34px;border:2px solid #111;border-radius:7px;padding:0 10px;font-size:13px;">
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                    <input type="submit" name="inkrush_push_texts_save" value="💾 Guardar textos"
+                        style="background:#DFFF23;border:2px solid #111;border-radius:8px;height:40px;padding:0 24px;font-weight:900;font-size:13px;cursor:pointer;">
+                </form>
+            </div>
+        </div>
+
+        <!-- Historial -->
         <div style="max-width:900px;margin-top:24px;border:2px solid #111;border-radius:12px;overflow:hidden;">
             <div style="background:#111;color:#DFFF23;padding:12px 18px;font-weight:900;">📋 Historial reciente</div>
             <?php if ( $log_rows ) : ?>
