@@ -745,13 +745,11 @@ function inkrush_api_get_user( WP_REST_Request $req ) {
 
     $challenges = (int) get_user_meta( $uid, 'inkrush_challenges_completed', true );
     $handle     = get_user_meta( $uid, 'inkrush_handle', true ) ?: '';
-    $base       = get_option( 'inkrush_profile_base', 'artista' );
     return rest_ensure_response( [
         'userId'              => $uid,
         'username'            => $user->user_login,
         'displayName'         => $user->display_name,
         'handle'              => $handle,
-        'shareLink'           => $handle ? home_url( "/{$base}/{$handle}" ) : '',
         'bio'                 => get_user_meta( $uid, 'inkrush_bio', true ) ?: '',
         'avatarUrl'           => get_user_meta( $uid, 'inkrush_avatar_url', true ) ?: get_avatar_url( $uid, ['size'=>96] ),
         'level'               => (int) get_user_meta( $uid, 'inkrush_level', true ) ?: 1,

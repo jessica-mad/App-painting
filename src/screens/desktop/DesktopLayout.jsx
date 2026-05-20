@@ -8,7 +8,7 @@ import { useT } from "../../i18n";
 import {
   IHome, IFeed, IBookmark, ISpark, IUser, IDice, IFlame, IHeart, IInspire,
   IBrush, ITimer, IStar, IDiamond, IMusic, IPause, IPlay, IReload, ICheck,
-  IArrowR, ILock, ICam, IShare, IPlus, IBolt, ICircle, IArrowL, IBell, IX,
+  IArrowR, ILock, ICam, IPlus, IBolt, ICircle, IArrowL, IBell, IX,
 } from "../../components/Icons";
 import { getUserLevel, getLevelName, getSeasonName, LEVELS, TECHNIQUES, PARAMETERS, PARAM_CATEGORIES, RARITY, SEASONS } from "../../data/parameters";
 import {
@@ -38,22 +38,6 @@ function decodeTag(t) {
   try { return decodeURIComponent(raw); } catch { return raw; }
 }
 
-function copyToClipboard(text, onDone) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(onDone).catch(() => legacyCopy(text, onDone));
-  } else {
-    legacyCopy(text, onDone);
-  }
-}
-function legacyCopy(text, onDone) {
-  const el = document.createElement("textarea");
-  el.value = text;
-  el.style.cssText = "position:fixed;opacity:0;top:0;left:0";
-  document.body.appendChild(el);
-  el.focus(); el.select();
-  try { document.execCommand("copy"); onDone?.(); } catch {}
-  document.body.removeChild(el);
-}
 
 /* ─── Sidebar ─── */
 function DeskSidebar({ current }) {
@@ -575,7 +559,6 @@ export function DeskProfile() {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarB64, setAvatarB64]         = useState(null);
   const avatarInputRef                    = useRef(null);
-  const [copied, setCopied]               = useState(false);
 
   const [editName,    setEditName]    = useState(profile.displayName);
   const [editBio,     setEditBio]     = useState(profile.bio ?? "");
@@ -624,7 +607,6 @@ export function DeskProfile() {
     else { dispatch({ type: "LOGOUT" }); }
   };
 
-  const shareLink = profile.shareLink || (window.location.origin + window.location.pathname + "?u=" + profile.username);
   const avatarSrc = avatarPreview || profile.avatarUrl || null;
 
   const tabLabel = (key) => t(`desk.profile.tab.${key}`);
@@ -664,13 +646,6 @@ export function DeskProfile() {
               <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800 }}>{getLevelName(level, state.lang)}</span>
                 <span style={{ display: "inline-flex", gap: 6, alignItems: "center", padding: "4px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: "var(--butter)", fontSize: 11, fontWeight: 800 }}><IFlame s={13}/> {profile.streak} {t("desk.home.streak.days", { n: "" }).trim()}</span>
-                <button
-                  onClick={() => copyToClipboard(shareLink, () => { setCopied(true); setTimeout(() => setCopied(false), 1800); })}
-                  className="stk-sm"
-                  style={{ display: "inline-flex", gap: 6, alignItems: "center", padding: "4px 10px", borderRadius: 999, border: "2px solid var(--ink)", background: copied ? "var(--acid)" : "var(--paper-2)", fontSize: 11, fontWeight: 800, cursor: "pointer" }}
-                >
-                  <IShare s={12}/> {copied ? "✓" : <IShare s={12}/>}
-                </button>
               </div>
             </div>
             <div style={{ display: "flex", gap: 24, padding: "0 16px" }}>

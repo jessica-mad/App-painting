@@ -149,17 +149,7 @@ add_action( 'template_redirect', function () {
 
 add_action( 'init', 'inkrush_register_cpt' );
 
-/* ── URL bonitas de perfil: /{base}/{handle} ── */
-add_action( 'init', function () {
-    $base = get_option( 'inkrush_profile_base', 'artista' );
-    if ( ! $base ) return;
-    add_rewrite_tag( '%inkrush_user%', '([^/]+)' );
-    add_rewrite_rule(
-        '^' . preg_quote( $base, '#' ) . '/([^/]+)/?$',
-        'index.php?pagename=inkrush-app&inkrush_user=$matches[1]',
-        'top'
-    );
-} );
+
 function inkrush_register_cpt() {
     register_post_type( 'inkrush_artwork', [
         'labels' => [
@@ -284,8 +274,6 @@ add_shortcode( 'inkrush_app', function() {
         'followers'    => $user_id ? (int) get_user_meta( $user_id, 'inkrush_followers_count', true ) : 0,
         'following'    => $user_id ? (int) get_user_meta( $user_id, 'inkrush_following_count', true ) : 0,
         'userHandle'   => $user_id ? ( get_user_meta( $user_id, 'inkrush_handle', true ) ?: $user->user_login ) : '',
-        'profileBase'  => get_option( 'inkrush_profile_base', 'artista' ),
-        'shareLink'    => $user_id ? home_url( '/' . get_option( 'inkrush_profile_base', 'artista' ) . '/' . ( get_user_meta( $user_id, 'inkrush_handle', true ) ?: $user->user_login ) ) : '',
         'profileUserId' => (int) get_query_var( 'inkrush_user' )
             ? (function() {
                 $handle = sanitize_text_field( get_query_var( 'inkrush_user' ) );

@@ -84,9 +84,6 @@ export function ProfileScreen() {
   const favTechs = TECHNIQUES.filter(t => state.favoriteTechniques.includes(t.id));
   const TABS = IS_LOGGED_IN ? TABS_OWNER : TABS_GUEST;
 
-  const shareLink = profile.shareLink ||
-    `${window.location.origin}${window.location.pathname.replace(/\/$/, "")}?u=${profile.username}`;
-
   useEffect(() => {
     if (tab !== TAB_SKETCHBOOK) return;
     if (!IS_LOGGED_IN) return;
@@ -245,20 +242,6 @@ export function ProfileScreen() {
             </div>
           </div>
 
-          {/* Share link */}
-          <div className="stk-sm" style={{ marginTop: 12, background: "var(--paper-2)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-            <ILink s={14}/>
-            <span className="mono" style={{ fontSize: 10, fontWeight: 700, flex: 1, color: "rgba(20,17,15,.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {shareLink.replace(/^https?:\/\//, "")}
-            </span>
-            <button
-              onClick={() => copyToClipboard(shareLink, () => { setCopied(true); setTimeout(() => setCopied(false), 1800); })}
-              style={{ background: copied ? "var(--mint)" : "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", transition: "background .2s", flexShrink: 0 }}
-            >
-              {copied ? <ICheck s={11}/> : <ICopy s={11}/>} {copied ? t("profile.copied") : t("profile.copy")}
-            </button>
-          </div>
-
           {/* Stats */}
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: 14 }}>
             {[
@@ -382,7 +365,7 @@ export function ProfileScreen() {
                 {handleStatus === "available" && t("profile.edit.handle.available")}
                 {handleStatus === "taken"     && t("profile.edit.handle.taken")}
                 {handleStatus === "invalid"   && t("profile.edit.handle.invalid")}
-                {!handleStatus && `// tu url: ${window.location.origin}/${window.InkRushConfig?.profileBase ?? "artista"}/${editHandle || (profile.handle ?? "…")}`}
+                {!handleStatus && `@${editHandle || profile.handle || "…"} · visible en el buscador`}
               </p>
 
               <label style={{ fontWeight: 800, fontSize: 12, display: "block", marginBottom: 6 }}>{t("profile.edit.bio")}</label>

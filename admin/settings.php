@@ -8,8 +8,6 @@ function inkrush_page_settings() {
         update_option( 'inkrush_active_season',    sanitize_text_field( $_POST['active_season'] ) );
         update_option( 'inkrush_rolls_per_day',    (int) $_POST['rolls_per_day'] );
         update_option( 'inkrush_max_params',       (int) $_POST['max_params'] );
-        update_option( 'inkrush_profile_base',     sanitize_title( $_POST['profile_base'] ?? 'artista' ) );
-        flush_rewrite_rules();
         if ( isset( $_POST['anthropic_api_key'] ) ) {
             $key = sanitize_text_field( $_POST['anthropic_api_key'] );
             if ( $key !== '••••••••' && $key !== '' ) {
@@ -89,20 +87,6 @@ function inkrush_page_settings() {
                         <p class="description">
                             Las variables etiquetadas con esta temporada aparecen con mayor probabilidad en el Randometro.
                             Cámbialo cuando empiece Navidad, Halloween, etc.
-                        </p>
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="profile_base">🔗 URL base de perfiles</label></th>
-                    <td>
-                        <input type="text" name="profile_base" id="profile_base"
-                            value="<?php echo esc_attr( get_option( 'inkrush_profile_base', 'artista' ) ); ?>"
-                            placeholder="artista"
-                            style="width:180px;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;">
-                        <p class="description">
-                            Prefijo para las URLs de perfil. Con <code>artista</code> quedaría:
-                            <strong><?php echo esc_url( home_url( '/artista/tuhandle' ) ); ?></strong><br>
-                            <strong style="color:darkorange;">⚠️ Tras cambiar esto, ve a Ajustes → Enlaces permanentes y pulsa Guardar para actualizar las reglas.</strong>
                         </p>
                     </td>
                 </tr>

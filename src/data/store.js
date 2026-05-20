@@ -57,7 +57,6 @@ const initialProfile = wpConfig.userId ? {
   totalTries:          wpConfig.totalTries ?? 0,
   pomodorosCompleted:  wpConfig.pomodoros ?? 0,
   socials:             wpConfig.socials ?? { instagram:"", tiktok:"", pinterest:"" },
-  shareLink:           wpConfig.shareLink ?? "",
   handle:              wpConfig.userHandle ?? "",
 } : {
   username: "jesska_art", displayName: "Jesska", avatar: "👩‍🎨",
@@ -66,7 +65,6 @@ const initialProfile = wpConfig.userId ? {
   completedChallenges: 7, streak: 4, followers: 1240, following: 89,
   totalLikes: 239, totalInspires: 158, totalTries: 73, pomodorosCompleted: 12,
   socials: { instagram: "jesska.art", tiktok: "jesska_art", pinterest: "" },
-  shareLink: "inkrush.app/artista/jesska_art",
 };
 
 export const initialState = {

@@ -67,13 +67,6 @@ export function PublicProfileScreen() {
     finally { setFollowLoading(false); }
   };
 
-  const handleCopy = async () => {
-    if (!profile?.shareLink) return;
-    await copyText(profile.shareLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
-  };
-
   const goBack = () => dispatch({ type: "CLEAR_VIEW_USER" });
 
   const level    = profile ? getUserLevel(profile.completedChallenges ?? 0, state.levels) : null;
@@ -183,18 +176,6 @@ export function PublicProfileScreen() {
                   </div>
                 )}
 
-                {/* Share URL */}
-                {profile.shareLink && (
-                  <button
-                    onClick={handleCopy}
-                    style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, background: "rgba(20,17,15,.08)", border: "1.5px solid rgba(20,17,15,.2)", borderRadius: 999, padding: "4px 10px", cursor: "pointer", maxWidth: "100%", overflow: "hidden" }}
-                  >
-                    {copied ? <ICheck s={12}/> : <ICopy s={12}/>}
-                    <span className="mono" style={{ fontSize: 9, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "rgba(20,17,15,.7)" }}>
-                      {copied ? t("public.copied") : profile.shareLink.replace(/^https?:\/\//, "")}
-                    </span>
-                  </button>
-                )}
 
                 {/* Stats */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 0, marginTop: 14, borderTop: "2px solid var(--ink)", paddingTop: 12 }}>
