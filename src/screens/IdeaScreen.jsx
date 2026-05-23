@@ -33,7 +33,7 @@ const GLOW_COLORS = {
 export function IdeaScreen() {
   const { state, dispatch } = useApp();
   const t = useT();
-  const { currentIdea, rollsLeft, activeSeason, displacedIdea } = state;
+  const { currentIdea, rollsLeft, activeSeason, displacedIdea, apiParams } = state;
 
   /* Auto-dismiss undo toast */
   useEffect(() => {
@@ -65,7 +65,8 @@ export function IdeaScreen() {
   const reroll = () => {
     if (rollsLeft <= 0 || rerolling) return;
     setRerolling(true);
-    const newIdea = pickVariables(currentIdea.params, activeSeason);
+    const paramsMap = Object.keys(apiParams).length > 0 ? apiParams : null;
+    const newIdea = pickVariables(currentIdea.params, activeSeason, paramsMap);
     setTimeout(() => {
       dispatch({ type: "SET_IDEA", idea: newIdea, params: currentIdea.params });
       setRerolling(false);

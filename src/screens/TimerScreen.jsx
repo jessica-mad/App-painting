@@ -8,17 +8,18 @@ import { IMusic, IPause, IPlay, ICheck, ISpark, IArrowR, IChevronD } from "../co
 
 const VAR_BG = ["var(--acid)", "var(--lilac)", "var(--rose)", "var(--mint)", "var(--butter)"];
 
-function HighlightedPrompt({ variables }) {
+function HighlightedPrompt({ variables, lang = "es" }) {
   if (!variables?.length) return null;
-  const text = generatePrompt(variables);
+  const text = generatePrompt(variables, lang);
   const parts = [];
   let remaining = text;
   variables.forEach((v, i) => {
-    const idx = remaining.indexOf(v.value);
+    const label = (lang === "en" && v.value_en) ? v.value_en : v.value;
+    const idx = remaining.indexOf(label);
     if (idx === -1) return;
     if (idx > 0) parts.push({ text: remaining.slice(0, idx), hi: false });
-    parts.push({ text: v.value, hi: true, bg: VAR_BG[i % VAR_BG.length] });
-    remaining = remaining.slice(idx + v.value.length);
+    parts.push({ text: label, hi: true, bg: VAR_BG[i % VAR_BG.length] });
+    remaining = remaining.slice(idx + label.length);
   });
   if (remaining) parts.push({ text: remaining, hi: false });
 
@@ -133,7 +134,7 @@ function KeywordRain({ keywords }) {
 
 export function TimerScreen() {
   const { state, dispatch } = useApp();
-  const { timerConfig, currentIdea, musicSrcs } = state;
+  const { timerConfig, currentIdea, musicSrcs, lang } = state;
 
   const isFree       = timerConfig?.duration?.seconds == null;
   const totalSeconds = timerConfig?.duration?.seconds || 1;
@@ -261,7 +262,7 @@ export function TimerScreen() {
                 {rarity && <RarityBadge rarity={rarity}/>}
               </div>
 
-              <HighlightedPrompt variables={ideaVars}/>
+              <HighlightedPrompt variables={ideaVars} lang={lang}/>
 
               {/* Word pills */}
               <div style={{ display: "flex", gap: 5, marginTop: 10, flexWrap: "wrap" }}>
