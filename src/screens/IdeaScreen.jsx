@@ -50,7 +50,7 @@ export function IdeaScreen() {
     if (!currentIdea?.variables?.length) return;
     setAiPrompt(null);
     setAiLoading(true);
-    generateAIPrompt(currentIdea.variables.map(v => v.value))
+    generateAIPrompt(currentIdea.variables.map(v => (state.lang === "en" && v.value_en) ? v.value_en : v.value), state.lang)
       .then(data => { if (data?.prompt) setAiPrompt(data.prompt); })
       .catch(() => {})
       .finally(() => setAiLoading(false));

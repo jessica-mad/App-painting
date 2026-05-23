@@ -237,6 +237,31 @@ export default {
   "idea.season":            "MUSAI · HOY",
   "idea.deckLabel":         "RAREZA ×{n}",
 
+  /* ── Timer en curso ── */
+  "timer.yourChallenge":  "// TU RETO",
+  "timer.done.title":     "¡Reto completado!",
+  "timer.done.sub":       "Increíble trabajo artista.\nSube tu resultado a la comunidad.",
+  "timer.done.upload":    "Ya terminé, subir mi obra",
+
+  /* ── Push notifications ── */
+  "push.title":            "Notificaciones push",
+  "push.ios.title":        "Para activarlas en iPhone:",
+  "push.ios.step1":        "Toca el icono <strong>□↑</strong> (compartir) en Safari",
+  "push.ios.step2":        "Elige <strong>\"Añadir a pantalla de inicio\"</strong>",
+  "push.ios.step3":        "Abre la app desde el nuevo ícono",
+  "push.ios.hint":         "Luego aquí aparecerá el botón para activarlas.",
+  "push.unsupported":      "Tu navegador no soporta notificaciones push.",
+  "push.blocked":          "Las notificaciones están bloqueadas en tu navegador. Actívalas desde los ajustes del sitio.",
+  "push.on":               "Activadas",
+  "push.off":              "Desactivadas",
+  "push.on.sub":           "Recibes likes, seguidores, comentarios y más",
+  "push.off.sub":          "Toca para activar los avisos",
+  "push.error.toggle":     "No se pudo cambiar el estado de las notificaciones.",
+  "push.musaiHour.title":  "Mi Hora Musai",
+  "push.musaiHour.sub":    "Te avisamos si aún no has hecho tu reto del día.",
+  "push.musaiHour.save":   "Guardar",
+  "push.musaiHour.saved":  "Guardada",
+
   /* ── Modo Musai (Timer setup) ── */
   "timer.setup.title":    "¿Cuánto tiempo tienes?",
   "timer.setup.sub":      "// elige duración y ambiente sonoro",

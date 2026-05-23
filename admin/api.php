@@ -1181,8 +1181,22 @@ function inkrush_api_ai_keywords( WP_REST_Request $req ) {
 
     $variables = array_map( 'sanitize_text_field', (array) $raw_vars );
     $joined    = implode( ', ', $variables );
+    $lang      = sanitize_text_field( $req->get_param( 'lang' ) ?? 'es' );
+    $in_english = ( $lang === 'en' );
 
-    $system_prompt = 'Eres un asistente creativo para artistas ilustradores. Tu única tarea es generar exactamente 8 palabras clave en español que amplíen la inspiración visual de una idea de ilustración.
+    if ( $in_english ) {
+        $system_prompt = 'You are a creative assistant for illustrators. Your only task is to generate exactly 8 single-word keywords in English that expand the visual inspiration of an illustration idea.
+
+Strict rules:
+- Return ONLY 8 words, one per line, no numbering, dashes, punctuation or explanation
+- Each keyword must be a single word (no spaces)
+- Words must be in English
+- They should evoke images, textures, atmospheres or visual elements
+- Vary the type: adjectives, visual nouns, mood words
+- Avoid repeating words already in the original idea';
+        $user_message = "Illustration idea with these concepts: {$joined}.\n\nGenerate 8 visual keywords in English:";
+    } else {
+        $system_prompt = 'Eres un asistente creativo para artistas ilustradores. Tu única tarea es generar exactamente 8 palabras clave en español que amplíen la inspiración visual de una idea de ilustración.
 
 Reglas estrictas:
 - Devuelve ÚNICAMENTE 8 palabras, una por línea, sin numeración, guiones, puntuación ni explicación
@@ -1191,8 +1205,8 @@ Reglas estrictas:
 - Deben evocar imágenes, texturas, atmósferas o elementos visuales
 - Varía el tipo: adjetivos, sustantivos visuales, palabras de ambiente
 - Evita repetir palabras que ya aparecen en la idea original';
-
-    $user_message = "Idea de ilustración con estos conceptos: {$joined}.\n\nGenera 8 palabras clave visuales en español:";
+        $user_message = "Idea de ilustración con estos conceptos: {$joined}.\n\nGenera 8 palabras clave visuales en español:";
+    }
 
     $body = wp_json_encode( [
         'model'      => 'claude-haiku-4-5-20251001',
@@ -1256,10 +1270,15 @@ function inkrush_api_ai_prompt( WP_REST_Request $req ) {
 
     $variables = array_map( 'sanitize_text_field', (array) $raw_vars );
     $joined    = implode( ', ', $variables );
+    $lang      = sanitize_text_field( $req->get_param( 'lang' ) ?? 'es' );
 
-    $system_prompt = 'Eres un generador de enunciados creativos para retos de ilustración. Dado un conjunto de conceptos, crea UNA sola frase corta y evocadora en español (máximo 20 palabras) que sirva como enunciado poético de un reto de dibujo. La frase debe ser sugerente y visual, no literal. No uses la palabra "ilustra", "dibuja" ni imperativos. Solo devuelve la frase sin comillas ni explicaciones.';
-
-    $user_message = "Conceptos: {$joined}";
+    if ( $lang === 'en' ) {
+        $system_prompt = 'You are a creative prompt generator for illustration challenges. Given a set of concepts, create ONE short evocative phrase in English (max 20 words) that serves as a poetic drawing challenge prompt. The phrase must be suggestive and visual, not literal. Do not use words like "illustrate", "draw" or imperative verbs. Return only the phrase, no quotes or explanations.';
+        $user_message = "Concepts: {$joined}";
+    } else {
+        $system_prompt = 'Eres un generador de enunciados creativos para retos de ilustración. Dado un conjunto de conceptos, crea UNA sola frase corta y evocadora en español (máximo 20 palabras) que sirva como enunciado poético de un reto de dibujo. La frase debe ser sugerente y visual, no literal. No uses la palabra "ilustra", "dibuja" ni imperativos. Solo devuelve la frase sin comillas ni explicaciones.';
+        $user_message = "Conceptos: {$joined}";
+    }
 
     $body = wp_json_encode( [
         'model'      => 'claude-haiku-4-5-20251001',

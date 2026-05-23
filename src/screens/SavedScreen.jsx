@@ -6,6 +6,7 @@ import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
 import { IBookmark, ITimer, ITrash, IGrip, IUndo } from "../components/Icons";
 import { useT } from "../i18n";
+import { getVarLabel, generatePrompt } from "../data/parameters";
 
 const MAX_SAVED = 5;
 
@@ -14,7 +15,7 @@ function decodeTag(t) {
   try { return decodeURIComponent(raw); } catch { return raw; }
 }
 
-function IdeaCard({ idea, rank, onRemove, onStart, isExiting, tFn }) {
+function IdeaCard({ idea, rank, onRemove, onStart, isExiting, tFn, lang = "es" }) {
   const controls = useDragControls();
   const rarity = idea.variables?.[0]?.rarity ?? "Común";
   const rarityColor = { Legendario: "var(--acid)", Épico: "var(--lilac)", Raro: "var(--sky)" }[rarity] ?? "rgba(20,17,15,.12)";
@@ -65,7 +66,7 @@ function IdeaCard({ idea, rank, onRemove, onStart, isExiting, tFn }) {
                   background: "var(--acid)", border: "1.5px solid var(--ink)",
                   borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 800,
                 }}>
-                  {decodeTag(v)}
+                  {typeof v === "string" ? decodeTag(v) : getVarLabel(v, lang)}
                 </span>
               ))}
             </div>
@@ -74,10 +75,7 @@ function IdeaCard({ idea, rank, onRemove, onStart, isExiting, tFn }) {
 
           {/* Description */}
           <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(20,17,15,.65)", lineHeight: 1.4, marginBottom: 10, paddingLeft: 52 }}>
-            {idea.variables?.length >= 3
-              ? <>Ilustra <b>{decodeTag(idea.variables[0])}</b> encontrando <b>{decodeTag(idea.variables[1])}</b> en <b>{decodeTag(idea.variables[2])}</b>.</>
-              : (idea.variables ?? []).map(v => decodeTag(v)).join(" + ")
-            }
+            {generatePrompt(idea.variables ?? [], lang)}
           </p>
 
           {/* Actions */}
@@ -115,6 +113,7 @@ export function SavedScreen() {
   const t = useT();
   const savedIdeas = state.savedIdeas ?? [];
   const displaced = state.displacedIdea;
+  const lang = state.lang ?? "es";
   const [exitingIds, setExitingIds] = useState(new Set());
 
   /* Auto-dismiss undo toast after 6s */
@@ -239,6 +238,7 @@ export function SavedScreen() {
                   onStart={() => startIdea(idea)}
                   onRemove={() => handleRemove(idea)}
                   tFn={t}
+                  lang={lang}
                 />
               ))}
             </Reorder.Group>

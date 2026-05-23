@@ -3,6 +3,7 @@ import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { MUSIC_TRACKS, generatePrompt, getOverallRarity } from "../data/parameters";
 import { generateAIKeywords } from "../utils/api";
+import { useT } from "../i18n";
 import { RarityBadge } from "../components/RarityBadge";
 import { IMusic, IPause, IPlay, ICheck, ISpark, IArrowR, IChevronD } from "../components/Icons";
 
@@ -134,6 +135,7 @@ function KeywordRain({ keywords }) {
 
 export function TimerScreen() {
   const { state, dispatch } = useApp();
+  const t = useT();
   const { timerConfig, currentIdea, musicSrcs, lang } = state;
 
   const isFree       = timerConfig?.duration?.seconds == null;
@@ -197,12 +199,14 @@ export function TimerScreen() {
 
   /* AI keyword rain */
   useEffect(() => {
-    const GENERIC = ["pintura","color","trazo","forma","luz","sombra","textura","boceto","paleta","composición","detalle","atmósfera"];
-    const vars = currentIdea?.variables?.map(v => v.value) ?? [];
+    const GENERIC_ES = ["pintura","color","trazo","forma","luz","sombra","textura","boceto","paleta","composición","detalle","atmósfera"];
+    const GENERIC_EN = ["painting","color","stroke","shape","light","shadow","texture","sketch","palette","composition","detail","atmosphere"];
+    const GENERIC = lang === "en" ? GENERIC_EN : GENERIC_ES;
+    const vars = currentIdea?.variables?.map(v => (lang === "en" && v.value_en) ? v.value_en : v.value) ?? [];
     const fallback = vars.length ? vars : GENERIC;
     setKeywords(fallback);
     if (!vars.length) return;
-    generateAIKeywords(vars)
+    generateAIKeywords(vars, lang)
       .then(data => { if (data?.keywords?.length >= 3) setKeywords(data.keywords); })
       .catch(() => {});
   }, [currentIdea]); // eslint-disable-line
@@ -230,11 +234,11 @@ export function TimerScreen() {
             <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.2 }}/>
             <div style={{ position: "relative" }}>
               <div className="serif" style={{ fontSize: 72, lineHeight: 1 }}>🎉</div>
-              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>¡Reto completado!</h2>
-              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, lineHeight: 1.4 }}>Increíble trabajo artista.<br/>Sube tu resultado a la comunidad.</p>
+              <h2 className="serif" style={{ fontSize: 36, lineHeight: 1, marginTop: 12 }}>{t("timer.done.title")}</h2>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, lineHeight: 1.4 }}>{t("timer.done.sub")}</p>
               <div className="perforated" style={{ margin: "20px 0 16px" }}/>
               <button onClick={finish} className="stk" style={{ width: "100%", height: 52, background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
-                Ya terminé, subir mi obra <IArrowR s={18} stroke="var(--acid)"/>
+                {t("timer.done.upload")} <IArrowR s={18} stroke="var(--acid)"/>
               </button>
             </div>
           </div>
@@ -258,7 +262,7 @@ export function TimerScreen() {
           {ideaVars.length > 0 && (
             <div style={{ border: "1.5px solid rgba(255,255,255,.2)", borderRadius: 16, padding: "14px 14px 12px", background: "rgba(255,255,255,.04)", position: "relative", marginBottom: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,.5)", letterSpacing: ".08em" }}>// TU RETO</p>
+                <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,.5)", letterSpacing: ".08em" }}>{t("timer.yourChallenge")}</p>
                 {rarity && <RarityBadge rarity={rarity}/>}
               </div>
 
@@ -387,7 +391,7 @@ export function TimerScreen() {
               onClick={finish}
               style={{ width: "100%", height: 48, borderRadius: 16, border: "2px solid rgba(255,255,255,.25)", background: "rgba(255,255,255,.08)", color: "#fff", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
             >
-              <ICheck s={16} stroke="#fff"/> Ya terminé, subir mi obra
+              <ICheck s={16} stroke="#fff"/> {t("timer.done.upload")}
             </button>
           </div>
 

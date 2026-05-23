@@ -4,8 +4,10 @@ import {
   subscribePush, unsubscribePush, getPushStatus, saveMusaiHour,
 } from "../utils/push";
 import { IS_LOGGED_IN } from "../utils/api";
+import { useT } from "../i18n";
 
 export function PushSettings() {
+  const t = useT();
   const [subscribed,  setSubscribed]  = useState(false);
   const [musaiHour,   setMusaiHour]   = useState("");
   const [loading,     setLoading]     = useState(true);
@@ -41,7 +43,7 @@ export function PushSettings() {
         setSubscribed(true);
       }
     } catch (e) {
-      setError(e.message || "No se pudo cambiar el estado de las notificaciones.");
+      setError(e.message || t("push.error.toggle"));
     } finally {
       setToggling(false);
     }
@@ -57,30 +59,30 @@ export function PushSettings() {
 
   return (
     <div style={{ borderTop: "2px solid var(--ink)", paddingTop: 20, marginTop: 4 }}>
-      <p style={{ fontWeight: 900, fontSize: 13, marginBottom: 14 }}>🔔 Notificaciones push</p>
+      <p style={{ fontWeight: 900, fontSize: 13, marginBottom: 14 }}>🔔 {t("push.title")}</p>
 
       {/* iOS without standalone — show guide */}
       {iosGuide ? (
         <div style={{ background: "#111", color: "#fff", borderRadius: 14, border: "2px solid var(--ink)", padding: "14px 16px" }}>
           <p style={{ fontWeight: 800, fontSize: 13, color: "#DFFF23", marginBottom: 10 }}>
-            Para activarlas en iPhone:
+            {t("push.ios.title")}
           </p>
           <ol style={{ paddingLeft: 18, margin: 0, lineHeight: 2.2, fontSize: 13, color: "rgba(255,255,255,.8)" }}>
-            <li>Toca el icono <strong style={{ color: "#fff" }}>□↑</strong> (compartir) en Safari</li>
-            <li>Elige <strong style={{ color: "#fff" }}>"Añadir a pantalla de inicio"</strong></li>
-            <li>Abre la app desde el nuevo ícono</li>
+            <li dangerouslySetInnerHTML={{ __html: t("push.ios.step1") }}/>
+            <li dangerouslySetInnerHTML={{ __html: t("push.ios.step2") }}/>
+            <li>{t("push.ios.step3")}</li>
           </ol>
           <p style={{ fontSize: 11, color: "rgba(255,255,255,.45)", marginTop: 10, marginBottom: 0 }}>
-            Luego aquí aparecerá el botón para activarlas.
+            {t("push.ios.hint")}
           </p>
         </div>
       ) : !supported ? (
         <p style={{ fontSize: 12, color: "rgba(20,17,15,.5)", fontWeight: 700 }}>
-          Tu navegador no soporta notificaciones push.
+          {t("push.unsupported")}
         </p>
       ) : blocked ? (
         <p style={{ fontSize: 12, color: "var(--coral)", fontWeight: 700 }}>
-          ⚠ Las notificaciones están bloqueadas en tu navegador. Actívalas desde los ajustes del sitio.
+          ⚠ {t("push.blocked")}
         </p>
       ) : loading ? null : (
         <>
@@ -96,12 +98,10 @@ export function PushSettings() {
           >
             <div>
               <p style={{ fontWeight: 800, fontSize: 13, marginBottom: 2 }}>
-                {subscribed ? "✅ Activadas" : "Desactivadas"}
+                {subscribed ? `✅ ${t("push.on")}` : t("push.off")}
               </p>
               <p style={{ fontSize: 11, color: "rgba(20,17,15,.5)", fontWeight: 600, margin: 0 }}>
-                {subscribed
-                  ? "Recibes likes, seguidores, comentarios y más"
-                  : "Toca para activar los avisos"}
+                {subscribed ? t("push.on.sub") : t("push.off.sub")}
               </p>
             </div>
             {/* Toggle pill */}
@@ -129,9 +129,9 @@ export function PushSettings() {
           {/* Musai hour — only if subscribed */}
           {subscribed && (
             <div style={{ background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 12, padding: "12px 14px" }}>
-              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>🕐 Mi Hora Musai</p>
+              <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}>🕐 {t("push.musaiHour.title")}</p>
               <p style={{ fontSize: 11, color: "rgba(20,17,15,.5)", fontWeight: 600, marginBottom: 10 }}>
-                Te avisamos si aún no has hecho tu reto del día.
+                {t("push.musaiHour.sub")}
               </p>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input
@@ -155,7 +155,7 @@ export function PushSettings() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {hourSaved ? "✓ Guardada" : "Guardar"}
+                  {hourSaved ? `✓ ${t("push.musaiHour.saved")}` : t("push.musaiHour.save")}
                 </button>
               </div>
             </div>

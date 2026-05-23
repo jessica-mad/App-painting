@@ -299,16 +299,21 @@ export const PARAMETERS = {
 };
 
 export const TECHNIQUES = [
-  { id: "acuarela", label: "Acuarela", icon: "🫧", color: "#D6F5FF" },
-  { id: "tinta", label: "Tinta", icon: "⚫", color: "#E8E8E8" },
-  { id: "digital", label: "Digital", icon: "🖊️", color: "#EFE8FF" },
-  { id: "lapiz", label: "Lápiz", icon: "✏️", color: "#FFF3D6" },
-  { id: "oleo", label: "Óleo", icon: "🎨", color: "#FFD6E7" },
-  { id: "manga", label: "Manga", icon: "🌸", color: "#FFE8F0" },
-  { id: "pixel", label: "Pixel Art", icon: "👾", color: "#D6E8FF" },
-  { id: "gouache", label: "Gouache", icon: "🖌️", color: "#D6FFE8" },
-  { id: "carboncillo", label: "Carboncillo", icon: "🪨", color: "#F0F0F0" },
+  { id: "acuarela",    label: "Acuarela",    label_en: "Watercolor",  icon: "🫧", color: "#D6F5FF" },
+  { id: "tinta",       label: "Tinta",       label_en: "Ink",         icon: "⚫", color: "#E8E8E8" },
+  { id: "digital",     label: "Digital",     label_en: "Digital",     icon: "🖊️", color: "#EFE8FF" },
+  { id: "lapiz",       label: "Lápiz",       label_en: "Pencil",      icon: "✏️", color: "#FFF3D6" },
+  { id: "oleo",        label: "Óleo",        label_en: "Oil Paint",   icon: "🎨", color: "#FFD6E7" },
+  { id: "manga",       label: "Manga",       label_en: "Manga",       icon: "🌸", color: "#FFE8F0" },
+  { id: "pixel",       label: "Pixel Art",   label_en: "Pixel Art",   icon: "👾", color: "#D6E8FF" },
+  { id: "gouache",     label: "Gouache",     label_en: "Gouache",     icon: "🖌️", color: "#D6FFE8" },
+  { id: "carboncillo", label: "Carboncillo", label_en: "Charcoal",    icon: "🪨", color: "#F0F0F0" },
 ];
+
+export function getTechLabel(tech, lang) {
+  if (lang === "en" && tech.label_en) return tech.label_en;
+  return tech.label;
+}
 
 export const MUSIC_TRACKS = [
   { id: "lofi",   icon: "🌙", title: "Midnight Lofi",    mood: "beat suave infinito", color: "#1a1a2e" },

@@ -237,6 +237,31 @@ export default {
   "idea.prompt.3":          "Illustrate {a} encountering {b} in {c}.",
   "idea.prompt.4+":         "Illustrate a scene where {vars} intertwine unexpectedly.",
 
+  /* ── Timer in progress ── */
+  "timer.yourChallenge":  "// YOUR CHALLENGE",
+  "timer.done.title":     "Challenge complete!",
+  "timer.done.sub":       "Amazing work, artist.\nShare your result with the community.",
+  "timer.done.upload":    "Done, upload my artwork",
+
+  /* ── Push notifications ── */
+  "push.title":            "Push notifications",
+  "push.ios.title":        "To enable on iPhone:",
+  "push.ios.step1":        "Tap the <strong>□↑</strong> (share) icon in Safari",
+  "push.ios.step2":        "Choose <strong>\"Add to Home Screen\"</strong>",
+  "push.ios.step3":        "Open the app from the new icon",
+  "push.ios.hint":         "Then the button to enable notifications will appear here.",
+  "push.unsupported":      "Your browser does not support push notifications.",
+  "push.blocked":          "Notifications are blocked in your browser. Enable them from site settings.",
+  "push.on":               "Enabled",
+  "push.off":              "Disabled",
+  "push.on.sub":           "You receive likes, followers, comments and more",
+  "push.off.sub":          "Tap to enable notifications",
+  "push.error.toggle":     "Could not change notification status.",
+  "push.musaiHour.title":  "My Musai Hour",
+  "push.musaiHour.sub":    "We'll remind you if you haven't done your daily challenge yet.",
+  "push.musaiHour.save":   "Save",
+  "push.musaiHour.saved":  "Saved",
+
   /* ── Musai Mode (Timer setup) ── */
   "timer.setup.title":    "How much time do you have?",
   "timer.setup.sub":      "// pick a duration and your sound environment",

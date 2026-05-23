@@ -707,7 +707,7 @@ export function PostCard({ post, idx = 0, isOwn: isOwnProp, onRemove, onUpdate, 
           <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", flexWrap: "wrap", gap: 6, zIndex: 10 }}>
             {tags.map((tag, i) => (
               <span key={i} style={{ background: "var(--acid)", border: "1.5px solid var(--ink)", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700, boxShadow: "2px 2px 0 var(--ink)" }}>
-                {decodeTag(tag)}
+                {(typeof tag === "object" && state.lang === "en" && tag.value_en) ? tag.value_en : decodeTag(tag)}
               </span>
             ))}
           </div>

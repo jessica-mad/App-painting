@@ -167,18 +167,18 @@ export async function saveMusicSrcs(srcs) {
 }
 
 /* ── IA: keyword rain ── */
-export async function generateAIKeywords(variables) {
+export async function generateAIKeywords(variables, lang = "es") {
   return apiFetch('/ai/keywords', {
     method: 'POST',
-    body: JSON.stringify({ variables }),
+    body: JSON.stringify({ variables, lang }),
   });
 }
 
 /* ── IA: creative challenge prompt ── */
-export async function generateAIPrompt(variables) {
+export async function generateAIPrompt(variables, lang = "es") {
   return apiFetch('/ai/prompt', {
     method: 'POST',
-    body: JSON.stringify({ variables }),
+    body: JSON.stringify({ variables, lang }),
   });
 }
 

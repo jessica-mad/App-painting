@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
-import { TECHNIQUES, getUserLevel, getLevelName } from "../data/parameters";
+import { TECHNIQUES, getTechLabel, getUserLevel, getLevelName } from "../data/parameters";
 import { createArtwork, IS_LOGGED_IN } from "../utils/api";
 import { IArrowL, IArrowR, IBrush, ICam, ILock, IShare } from "../components/Icons";
 import { useT } from "../i18n";
@@ -392,7 +392,7 @@ export function UploadScreen() {
                 onClick={() => setTechnique(tech.id)}
                 style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 12, border: "2px solid var(--ink)", background: technique === tech.id ? (TECH_COLORS[tech.id] || "var(--acid)") : "var(--paper-2)", fontSize: 11, fontWeight: 700, boxShadow: technique === tech.id ? "3px 3px 0 var(--ink)" : "none", display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
               >
-                <IBrush s={13}/> {tech.label}
+                <IBrush s={13}/> {getTechLabel(tech, state.lang)}
               </button>
             ))}
           </div>

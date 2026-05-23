@@ -460,8 +460,8 @@ export function ProfileScreen() {
                         <IBrush s={20}/>
                       </div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontWeight: 800, fontSize: 13 }}>{lv.name}</p>
-                        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ {t("profile.counters.challenges").toLowerCase()} · {lv.desc}</p>
+                        <p style={{ fontWeight: 800, fontSize: 13 }}>{getLevelName(lv, state.lang)}</p>
+                        <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{lv.minChallenges}+ {t("profile.counters.challenges").toLowerCase()} · {(state.lang === "en" && lv.desc_en) ? lv.desc_en : lv.desc}</p>
                       </div>
                       {unlocked
                         ? <span style={{ background: "var(--ink)", color: "var(--acid)", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800 }}>{current ? t("profile.achievements.current") : <ICheck s={12} stroke="var(--acid)"/>}</span>
