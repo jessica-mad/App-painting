@@ -24,6 +24,7 @@ export default {
   /* ── Navigation ── */
   "nav.home":      "Inicio",
   "nav.feed":      "Feed",
+  "nav.feed.locked": "Completa tu primer reto para visitar el feed",
   "nav.challenge": "Reto",
   "nav.saved":     "Guardar",
   "nav.profile":   "Mi Sketchbook",
