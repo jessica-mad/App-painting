@@ -13,3 +13,17 @@ if (mountNode) {
     </StrictMode>,
   );
 }
+
+// Click sound on all buttons
+(function () {
+  const audio = new Audio(import.meta.env.BASE_URL + "tap.MP3");
+  audio.volume = 0.35;
+  document.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest("button, [role=button], a");
+    if (!el) return;
+    const clone = new Audio(audio.src);
+    clone.volume = audio.volume;
+    clone.play().catch(() => {});
+  }, { passive: true });
+})();
+

@@ -46,6 +46,27 @@ export const IFlag     = (p) => <Icon {...p} d={<><path d="M5 3v18M5 3h12l-2 5h2
 export const ICopy     = (p) => <Icon {...p} d={<><rect x="8" y="3" width="13" height="13" rx="2"/><path d="M16 16v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h3"/></>}/>;
 export const ILink     = (p) => <Icon {...p} d={<><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></>}/>;
 
+/* Technique icons */
+export const ITinta      = (p) => <Icon {...p} d={<><path d="M9 21l3-8 8-8 3 3-8 8z"/><path d="M14 9l3 3"/><path d="M12 13l-1 4 4-1"/><path d="M12.5 14.5l1 1"/></>}/>;
+export const IPencil     = (p) => <Icon {...p} d={<><path d="M4 20l3-1 11-11-2-2L5 17z"/><path d="M14 6l2 2"/><path d="M18 4l2 2-1.5 1.5-2-2z"/></>}/>;
+export const ICharcoal   = (p) => <Icon {...p} d={<><rect x="11" y="2" width="6" height="11" rx="1" transform="rotate(28 14 7.5)"/><path d="M3 20c4-1 8-1 14-2" strokeWidth={2.5}/></>}/>;
+export const IPastel     = (p) => <Icon {...p} d={<><rect x="11" y="2" width="6" height="11" rx="1" transform="rotate(28 14 7.5)"/><path d="M3 20h2M7 19.5h2M11 19h2M15 18.5h2M19 18h1.5" strokeWidth={2.5}/></>}/>;
+export const IOil        = (p) => <Icon {...p} d={<><rect x="4" y="4" width="16" height="13" rx="1"/><ellipse cx="12" cy="10.5" rx="4" ry="3"/><path d="M9 17l-2 4M15 17l2 4M12 17v4"/></>}/>;
+export const IDigital    = (p) => <Icon {...p} d={<><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M5 8h9M5 11h6" strokeWidth={1.4}/><path d="M22 5l-2-2-7 7-1 3 3-1z"/><path d="M18 7l2 2"/></>}/>;
+export const IGouache    = (p) => <Icon {...p} d={<><path d="M14 3l4 4-6 6-3-3z"/><path d="M9 10l-3 3 3 3"/><path d="M4 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2" strokeWidth={2}/></>}/>;
+export const IMarker     = (p) => <Icon {...p} d={<><path d="M14 3l5 5-10 10H4v-5z"/><path d="M11 6l5 5"/><path d="M4 21h16" strokeDasharray="3 2"/></>}/>;
+export const IWatercolor = (p) => <Icon {...p} d={<><path d="M14 3l4 4-6 6-3-3z"/><path d="M9 10l-3 3 3 3"/><path d="M4 20h16" strokeWidth={2.5}/><circle cx="6" cy="17" r="1.2" fill="currentColor"/></>}/>;
+export const ISketchbook = (p) => <Icon {...p} d={<><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M17 3l-2 18" strokeWidth={2.2}/><path d="M9 8h3" strokeWidth={1.4} opacity="0.55"/></>}/>;
+export const ISettings   = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></>}/>;
+export const IChevronD   = (p) => <Icon {...p} d={<><path d="M6 9l6 6 6-6"/></>}/>;
+export const IGrip       = (p) => <Icon {...p} d={<><circle cx="9" cy="5"  r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="5"  r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1.4" fill="currentColor" stroke="none"/></>}/>;
+export const IUndo       = (p) => <Icon {...p} d={<><path d="M3 10h11a6 6 0 0 1 0 12h-4"/><path d="M3 10l4-4M3 10l4 4"/></>}/>;
+export const IGrid       = (p) => <Icon {...p} d={<><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></>}/>;
+export const IList       = (p) => <Icon {...p} d={<><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6"  r="1.8" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.8" fill="currentColor" stroke="none"/></>}/>;
+export const IComment    = (p) => <Icon {...p} d={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>}/>;
+export const IBell       = (p) => <Icon {...p} d={<><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>}/>;
+export const ISearch     = (p) => <Icon {...p} d={<><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></>}/>;
+
 /* Convenience bundle for spread usage */
 export const Icons = {
   home: IHome, feed: IFeed, plus: IPlus, heart: IHeart, bookmark: IBookmark,
@@ -55,6 +76,9 @@ export const Icons = {
   brush: IBrush, lock: ILock, check: ICheck, x: IX, diamond: IDiamond,
   circle: ICircle, triangle: ITriangle, cross: ICross, inspire: IInspire,
   trash: ITrash, copy: ICopy, link: ILink,
+  tinta: ITinta, pencil: IPencil, charcoal: ICharcoal, pastel: IPastel,
+  oil: IOil, digital: IDigital, gouache: IGouache, marker: IMarker,
+  watercolor: IWatercolor, sketchbook: ISketchbook, settings: ISettings, chevronD: IChevronD,
 };
 
 export default Icons;

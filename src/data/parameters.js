@@ -1,3 +1,12 @@
+/**
+ * Returns the display label for a variable in the current language.
+ * Falls back to Spanish value if no English translation is stored.
+ */
+export function getVarLabel(variable, lang) {
+  if (lang === "en" && variable.value_en) return variable.value_en;
+  return variable.value;
+}
+
 // Rarity tiers
 export const RARITY = {
   COMUN: "Común",
@@ -302,34 +311,78 @@ export const TECHNIQUES = [
 ];
 
 export const MUSIC_TRACKS = [
-  { id: "lofi", icon: "🌙", title: "Midnight Lofi", mood: "beat suave infinito", color: "#1a1a2e" },
-  { id: "rain", icon: "🌧️", title: "Rain Studio", mood: "lluvia relajante", color: "#2c5f7a" },
-  { id: "coffee", icon: "☕", title: "Coffee Shop", mood: "cafetería creativa", color: "#6b3a2a" },
-  { id: "forest", icon: "🌲", title: "Forest Sketching", mood: "bosque tranquilo", color: "#1a4a2e" },
-  { id: "piano", icon: "🎹", title: "Soft Piano", mood: "piano relajante", color: "#2a2a4a" },
-  { id: "analog", icon: "📼", title: "Analog Chill", mood: "cinta vintage", color: "#4a3a1a" },
-  { id: "synth", icon: "🪐", title: "Synth Chill", mood: "espacial suave", color: "#1a1a5a" },
-  { id: "night", icon: "🕯️", title: "Night Studio", mood: "estudio nocturno", color: "#2a1a3a" },
+  { id: "lofi",   icon: "🌙", title: "Midnight Lofi",    mood: "beat suave infinito", color: "#1a1a2e" },
+  { id: "rain",   icon: "🌧️", title: "Rain Studio",       mood: "lluvia relajante",    color: "#2c5f7a" },
+  { id: "coffee", icon: "☕", title: "Coffee Shop",        mood: "cafetería creativa",  color: "#6b3a2a" },
+  { id: "forest", icon: "🌲", title: "Forest Sketching",  mood: "bosque tranquilo",    color: "#1a4a2e" },
+  { id: "piano",  icon: "🎹", title: "Soft Piano",         mood: "piano relajante",     color: "#2a2a4a" },
+  { id: "analog", icon: "📼", title: "Analog Chill",       mood: "cinta vintage",       color: "#4a3a1a" },
+  { id: "synth",  icon: "🪐", title: "Synth Chill",        mood: "espacial suave",      color: "#1a1a5a" },
+  { id: "night",  icon: "🕯️", title: "Night Studio",       mood: "estudio nocturno",    color: "#2a1a3a" },
 ];
 
 export const DURATIONS = [
   { label: "10 min", seconds: 10 * 60, emoji: "⚡" },
   { label: "15 min", seconds: 15 * 60, emoji: "🎯" },
   { label: "30 min", seconds: 30 * 60, emoji: "🔥" },
-  { label: "Tiempo libre", seconds: null, emoji: "∞" },
+  { label: "Sin límite", seconds: null, emoji: "∞" },
 ];
 
 // User levels
+// Local fallback — same shape the /config API returns (name_en / desc_en editable from WP admin)
 export const LEVELS = [
-  { id: 1, name: "Nuevo Artista", minChallenges: 0, color: "#E8E8E8", emoji: "🌱" },
-  { id: 2, name: "Artista Activo", minChallenges: 5, color: "#C8F0FF", emoji: "🎨" },
-  { id: 3, name: "Creador Constante", minChallenges: 10, color: "#EFE8FF", emoji: "⭐" },
-  { id: 4, name: "Inspirador", minChallenges: 20, color: "#FFE066", emoji: "✨" },
-  { id: 5, name: "Maestro del Reto", minChallenges: 30, color: "#FF9966", emoji: "🏆" },
+  { id: 1, name: "Nuevo Artista",     name_en: "New Artist",         minChallenges: 0,  color: "#E8E8E8", emoji: "🌱", desc: "el primer paso",             desc_en: "the first step" },
+  { id: 2, name: "Artista Activo",    name_en: "Active Artist",      minChallenges: 5,  color: "#C8F0FF", emoji: "🎨", desc: "ya no hay vuelta atrás",     desc_en: "no turning back now" },
+  { id: 3, name: "Creador Constante", name_en: "Consistent Creator", minChallenges: 10, color: "#EFE8FF", emoji: "⭐", desc: "esto ya es una rutina",      desc_en: "this is a routine now" },
+  { id: 4, name: "Inspirador",        name_en: "Inspirer",           minChallenges: 20, color: "#FFE066", emoji: "✨", desc: "la gente te sigue",          desc_en: "people follow you" },
+  { id: 5, name: "Maestro del Reto",  name_en: "Challenge Master",   minChallenges: 30, color: "#FF9966", emoji: "🏆", desc: "eso ya no te lo quita nadie", desc_en: "nobody can take that away" },
 ];
 
-export function getUserLevel(completedChallenges) {
-  return [...LEVELS].reverse().find(l => completedChallenges >= l.minChallenges) || LEVELS[0];
+// Local fallback for season labels — same shape the /config API returns: { Primavera: "Spring", ... }
+export const SEASON_LABELS_EN = {
+  Primavera:      "Spring",
+  Verano:         "Summer",
+  Otoño:          "Autumn",
+  Invierno:       "Winter",
+  Halloween:      "Halloween",
+  Navidad:        "Christmas",
+  "San Valentín": "Valentine's",
+};
+
+/** Accepts the levels array from state (API data) or falls back to local LEVELS. */
+export function getUserLevel(completedChallenges, levels = LEVELS) {
+  return [...levels].reverse().find(l => completedChallenges >= l.minChallenges) || levels[0];
+}
+
+/** Same pattern as getVarLabel — picks name_en when lang === "en". */
+export function getLevelName(level, lang) {
+  if (lang === "en" && level.name_en) return level.name_en;
+  return level.name;
+}
+
+// Local fallback — same shape the /config API returns: { "Común": { name, name_en }, ... }
+export const RARITY_DISPLAY = {
+  "Común":      { name: "Susurro",      name_en: "Whisper"      },
+  "Raro":       { name: "Visión",       name_en: "Vision"       },
+  "Épico":      { name: "Éxtasis",      name_en: "Ecstasy"      },
+  "Legendario": { name: "✦ Epifanía",   name_en: "✦ Epiphany"   },
+};
+
+/** Returns the rarity display name in the current language from API data or local fallback. */
+export function getRarityName(rarityKey, lang, rarityLabels = {}) {
+  const entry = rarityLabels[rarityKey] ?? RARITY_DISPLAY[rarityKey];
+  if (!entry) return rarityKey;
+  return (lang === "en" && entry.name_en) ? entry.name_en : entry.name;
+}
+
+/**
+ * Returns the season display name in the current language.
+ * seasonLabels comes from state (API data); SEASON_LABELS_EN is the local fallback.
+ */
+export function getSeasonName(seasonKey, lang, seasonLabels = {}) {
+  if (!seasonKey) return "";
+  if (lang !== "en") return seasonKey;
+  return seasonLabels[seasonKey] ?? SEASON_LABELS_EN[seasonKey] ?? seasonKey;
 }
 
 export function getOverallRarity(variables) {
@@ -340,17 +393,25 @@ export function getOverallRarity(variables) {
   return RARITY.COMUN;
 }
 
-export function generatePrompt(variables) {
-  const vals = variables.map(v => v.value);
-  if (vals.length === 1) return `Ilustra: ${vals[0]}.`;
-  if (vals.length === 2) return `Ilustra ${vals[0]} con ${vals[1]}.`;
-  if (vals.length === 3) return `Ilustra ${vals[0]} encontrando ${vals[1]} en ${vals[2]}.`;
-  return `Ilustra una escena donde ${vals.join(", ")} se entrelazan de forma inesperada.`;
+export function generatePrompt(variables, lang = "es", t = null) {
+  const getLabel = v => (lang === "en" && v.value_en) ? v.value_en : v.value;
+  const vals = variables.map(getLabel);
+  if (!t) {
+    if (vals.length === 1) return `Ilustra: ${vals[0]}.`;
+    if (vals.length === 2) return `Ilustra ${vals[0]} con ${vals[1]}.`;
+    if (vals.length === 3) return `Ilustra ${vals[0]} encontrando ${vals[1]} en ${vals[2]}.`;
+    return `Ilustra una escena donde ${vals.join(", ")} se entrelazan de forma inesperada.`;
+  }
+  if (vals.length === 1) return t("idea.prompt.1", { a: vals[0] });
+  if (vals.length === 2) return t("idea.prompt.2", { a: vals[0], b: vals[1] });
+  if (vals.length === 3) return t("idea.prompt.3", { a: vals[0], b: vals[1], c: vals[2] });
+  return t("idea.prompt.4+", { vars: vals.join(", ") });
 }
 
-export function pickVariables(paramIds, activeSeason = null) {
+export function pickVariables(paramIds, activeSeason = null, paramsMap = null) {
   return paramIds.map(paramId => {
-    const pool = PARAMETERS[paramId];
+    const pool = (paramsMap && paramsMap[paramId]?.length) ? paramsMap[paramId] : PARAMETERS[paramId];
+    if (!pool?.length) return { value: paramId, rarity: RARITY.COMUN };
     let filtered = activeSeason
       ? pool.filter(v => !v.season || v.season === activeSeason)
       : pool.filter(v => !v.season);

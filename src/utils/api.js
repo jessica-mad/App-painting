@@ -3,6 +3,7 @@
 const cfg = window.InkRushConfig ?? {};
 const BASE  = cfg.apiUrl  ?? "";
 const NONCE = cfg.nonce   ?? "";
+export const REST_BASE = BASE;
 
 async function apiFetch(path, options = {}) {
   if (!BASE) return null;
@@ -27,10 +28,28 @@ export async function fetchParameters(filters = {}) {
   return apiFetch(`/parameters${qs ? "?" + qs : ""}`);
 }
 
+/* ── Config de contenido (niveles, temporadas) ── */
+export async function fetchConfig() {
+  return apiFetch("/config");
+}
+
 /* ── Obras (artworks) ── */
-export async function fetchArtworks({ page = 1, technique, rarity } = {}) {
-  const qs = new URLSearchParams({ page, ...(technique && { technique }), ...(rarity && { rarity }) }).toString();
+export async function fetchArtworks({ page = 1, technique, rarity, following, period } = {}) {
+  const qs = new URLSearchParams({
+    page,
+    ...(technique  && { technique }),
+    ...(rarity     && { rarity }),
+    ...(following  && { following }),
+    ...(period     && { period }),
+  }).toString();
   return apiFetch(`/artworks?${qs}`);
+}
+
+export async function updateArtwork(id, data) {
+  return apiFetch(`/artworks/${id}`, {
+    method: "PATCH",
+    body:   JSON.stringify(data),
+  });
 }
 
 export async function createArtwork(data) {
@@ -54,10 +73,10 @@ export async function completeChallenge() {
 }
 
 /* ── Registro e identidad ── */
-export async function registerUser({ email, password, displayName }) {
+export async function registerUser({ email, password, displayName, captchaToken }) {
   return apiFetch("/register", {
     method: "POST",
-    body:   JSON.stringify({ email, password, displayName }),
+    body:   JSON.stringify({ email, password, displayName, captchaToken }),
   });
 }
 
@@ -88,6 +107,10 @@ export async function resetRollsAdmin(userId) {
   });
 }
 
+export async function fetchArtwork(id) {
+  return apiFetch(`/artworks/${id}`);
+}
+
 export async function fetchUserArtworks(userId, page = 1) {
   return apiFetch(`/artworks?author=${userId}&page=${page}`);
 }
@@ -116,10 +139,10 @@ export async function hideArtwork(id) {
   return apiFetch(`/artworks/${id}/hide`, { method: "POST" });
 }
 
-export async function reportArtwork(id, reason = "") {
+export async function reportArtwork(id, reason = "", text = "") {
   return apiFetch(`/artworks/${id}/report`, {
     method: "POST",
-    body:   JSON.stringify({ reason }),
+    body:   JSON.stringify({ reason, text }),
   });
 }
 
@@ -131,6 +154,18 @@ export async function republishArtwork(id) {
   return apiFetch(`/artworks/${id}/republish`, { method: "POST" });
 }
 
+/* ── Música: URLs por track ── */
+export async function fetchMusicSrcs() {
+  return apiFetch("/music-srcs");
+}
+
+export async function saveMusicSrcs(srcs) {
+  return apiFetch("/music-srcs", {
+    method: "POST",
+    body:   JSON.stringify(srcs),
+  });
+}
+
 /* ── IA: keyword rain ── */
 export async function generateAIKeywords(variables) {
   return apiFetch('/ai/keywords', {
@@ -139,12 +174,97 @@ export async function generateAIKeywords(variables) {
   });
 }
 
+/* ── IA: creative challenge prompt ── */
+export async function generateAIPrompt(variables) {
+  return apiFetch('/ai/prompt', {
+    method: 'POST',
+    body: JSON.stringify({ variables }),
+  });
+}
+
+/* ── Disponibilidad de handle ── */
+export async function checkUsername(username) {
+  return apiFetch(`/check-username?username=${encodeURIComponent(username)}`);
+}
+
+/* ── "Lo intentaré" daily tries ── */
+export async function useTryAPI(variables = null) {
+  return apiFetch('/tries/use', {
+    method: 'POST',
+    body:   JSON.stringify({ variables }),
+  });
+}
+
+/* ── Notificaciones ── */
+export async function fetchNotifications() {
+  return apiFetch("/notifications");
+}
+
+export async function markNotificationsRead() {
+  return apiFetch("/notifications", { method: "POST" });
+}
+
+/* ── Comentarios ── */
+export async function fetchComments(artworkId) {
+  return apiFetch(`/artworks/${artworkId}/comments`);
+}
+
+export async function postComment(artworkId, text) {
+  return apiFetch(`/artworks/${artworkId}/comments`, {
+    method: "POST",
+    body:   JSON.stringify({ text }),
+  });
+}
+
+export async function deleteComment(artworkId, commentId) {
+  return apiFetch(`/artworks/${artworkId}/comments/${commentId}`, { method: "DELETE" });
+}
+
+/* ── Traducción con IA ── */
+export async function translateText(text, targetLang = "en") {
+  return apiFetch("/translate", {
+    method: "POST",
+    body: JSON.stringify({ text, target_lang: targetLang }),
+  });
+}
+
+/* ── Recuperar contraseña ── */
+export async function forgotPassword(email) {
+  return apiFetch('/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+/* ── Búsqueda ── */
+export async function searchUsers(q) {
+  return apiFetch(`/search/users?q=${encodeURIComponent(q)}`);
+}
+
+export async function searchPosts(q) {
+  return apiFetch(`/search/posts?q=${encodeURIComponent(q)}`);
+}
+
+/* ── Bug reports ── */
+export async function submitBugReport({ title, description, expected, files, deviceInfo }) {
+  const fd = new FormData();
+  fd.append("title", title);
+  fd.append("description", description);
+  fd.append("expected", expected ?? "");
+  fd.append("device_info", JSON.stringify(deviceInfo));
+  files.forEach((f, i) => fd.append(`file_${i}`, f, f.name));
+  return apiFetch("/bug-reports", { method: "POST", body: fd });
+}
+
 /* ── Config de WP ── */
-export const WP_USER_ID      = cfg.userId      ?? 0;
+export const WP_USER_ID      = parseInt(cfg.userId ?? 0);
 export const IS_LOGGED_IN    = WP_USER_ID > 0;
 export const WP_LOGIN_URL    = cfg.loginUrl    ?? "/wp-login.php";
 export const WP_LOGOUT_URL   = cfg.logoutUrl   ?? "/wp-login.php?action=logout";
-export const WP_ROLLS        = cfg.rolls       ?? 3;
-export const WP_ROLLS_USED   = cfg.rollsUsedToday ?? 0;
-export const WP_SEASON       = cfg.activeSeason ?? "";
-export const IS_ADMIN        = cfg.isAdmin     ?? false;
+export const WP_ROLLS        = cfg.rolls           ?? 3;
+export const WP_ROLLS_USED   = cfg.rollsUsedToday  ?? 0;
+export const WP_SEASON       = cfg.activeSeason    ?? "";
+export const IS_ADMIN        = cfg.isAdmin         ?? false;
+export const WP_TRIES_LIMIT  = cfg.triesLimit      ?? 3;
+export const WP_TRIES_USED   = cfg.triesUsedToday  ?? 0;
+export const WP_TRIES_LEFT   = Math.max(0, (cfg.triesLimit ?? 3) - (cfg.triesUsedToday ?? 0));
