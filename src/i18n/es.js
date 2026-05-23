@@ -354,6 +354,20 @@ export default {
   "intro.slide4.title":  "Comparte y crece con artistas reales",
   "intro.slide4.sub":    "Sube tu obra, inspira a otros y sigue a artistas que de verdad dibujan. Sin algoritmos. Solo arte y comunidad.",
   "intro.slide4.label":  "SIN BOTS",
+  "intro.tag1":          "// EL PROBLEMA",
+  "intro.tag2":          "// LA SOLUCIÓN",
+  "intro.tag3":          "// EL MÉTODO",
+  "intro.tag4":          "// LA COMUNIDAD",
+
+  /* ── Login hero ── */
+  "login.eyebrow1":      "// Empecemos antes de que cambies de idea",
+  "login.eyebrow2":      "// La hoja ya está esperando.",
+  "login.eyebrow3":      "// Hola. Empecemos.",
+  "login.eyebrow4":      "// El Randómetro no va a esperarte toda la vida.",
+  "login.headline1":     "Retos creativos para artistas reales.",
+  "login.headline2":     "Deja de planear dibujar. Dibuja.",
+  "login.tagline1":      "Dile adiós a la hoja en blanco, deja de planear y empieza a dibujar.",
+  "login.tagline2":      "La app para eliminar los bloqueos creativos e inspirarte con una comunidad de artistas.",
 
   /* ── Login ── */
   "login.divider":          "O CON EMAIL",

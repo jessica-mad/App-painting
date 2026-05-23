@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SLIDES } from "../IntroScreen";
 import { Wordmark } from "../../components/Wordmark";
 import { RarityBadge } from "../../components/RarityBadge";
 import { useApp } from "../../data/store";
@@ -874,8 +873,17 @@ export function DeskProfile() {
 
 /* ─── Desktop marketing slideshow panel ─── */
 function DeskMarketingPanel() {
+  const t = useT();
   const [idx, setIdx] = useState(0);
   const timerRef = useRef(null);
+  const SLIDE_ICONS = [IBrush, IDice, ITimer, IHeart];
+  const SLIDE_BG    = ["var(--acid)", "var(--rose)", "var(--mint)", "var(--lilac)"];
+  const SLIDES = [
+    { bg: SLIDE_BG[0], Icon: SLIDE_ICONS[0], tag: t("intro.tag1"), title: t("intro.slide1.title"), body: t("intro.slide1.sub"), stamp: t("intro.slide1.label") },
+    { bg: SLIDE_BG[1], Icon: SLIDE_ICONS[1], tag: t("intro.tag2"), title: t("intro.slide2.title"), body: t("intro.slide2.sub"), stamp: t("intro.slide2.label") },
+    { bg: SLIDE_BG[2], Icon: SLIDE_ICONS[2], tag: t("intro.tag3"), title: t("intro.slide3.title"), body: t("intro.slide3.sub"), stamp: t("intro.slide3.label") },
+    { bg: SLIDE_BG[3], Icon: SLIDE_ICONS[3], tag: t("intro.tag4"), title: t("intro.slide4.title"), body: t("intro.slide4.sub"), stamp: t("intro.slide4.label") },
+  ];
   const slide = SLIDES[idx];
 
   function resetTimer() {

@@ -8,20 +8,12 @@ import { IBrush, ISpark, IStar, ILock, IArrowL, IUser, ICheck } from "../compone
 
 const RECAPTCHA_SITE_KEY = window.InkRushConfig?.recaptchaSiteKey || "";
 
-const EYEBROWS = [
-  "// Empecemos antes de que cambies de idea",
-  "// La hoja ya está esperando.",
-  "// Hola. Empecemos.",
-  "// El Randómetro no va a esperarte toda la vida.",
-];
-const HEADLINES = [
-  "Retos creativos para artistas reales.",
-  "Deja de planear dibujar. Dibuja.",
-];
-
 export function LoginScreen() {
   const { dispatch } = useApp();
   const t = useT();
+
+  const EYEBROWS = [t("login.eyebrow1"), t("login.eyebrow2"), t("login.eyebrow3"), t("login.eyebrow4")];
+  const HEADLINES = [t("login.headline1"), t("login.headline2")];
   const [mode, setMode]           = useState("main"); // main | login | register | forgot
   const [email, setEmail]         = useState("");
   const [password, setPassword]   = useState("");
@@ -279,10 +271,10 @@ export function LoginScreen() {
               {HEADLINES[headlineIdx]}
             </h2>
             <p style={{ fontWeight: 600, fontSize: 12, marginTop: 8, lineHeight: 1.5, color: "rgba(20,17,15,.7)" }}>
-              Dile adiós a la hoja en blanco, deja de planear y empieza a dibujar.
+              {t("login.tagline1")}
             </p>
             <p style={{ fontWeight: 600, fontSize: 11, marginTop: 4, lineHeight: 1.4, color: "rgba(20,17,15,.55)" }}>
-              La app para eliminar los bloqueos creativos e inspirarte con una comunidad de artistas.
+              {t("login.tagline2")}
             </p>
           </div>
         </div>

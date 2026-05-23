@@ -354,6 +354,20 @@ export default {
   "intro.slide4.title":  "Share and grow with real artists",
   "intro.slide4.sub":    "Share your work, inspire others and follow artists who actually draw. No algorithms. Just art and community.",
   "intro.slide4.label":  "NO BOTS",
+  "intro.tag1":          "// THE PROBLEM",
+  "intro.tag2":          "// THE SOLUTION",
+  "intro.tag3":          "// THE METHOD",
+  "intro.tag4":          "// THE COMMUNITY",
+
+  /* ── Login hero ── */
+  "login.eyebrow1":      "// Let's start before you change your mind",
+  "login.eyebrow2":      "// The blank page is already waiting.",
+  "login.eyebrow3":      "// Hello. Let's go.",
+  "login.eyebrow4":      "// The Randomizer won't wait for you forever.",
+  "login.headline1":     "Creative challenges for real artists.",
+  "login.headline2":     "Stop planning to draw. Draw.",
+  "login.tagline1":      "Say goodbye to the blank page, stop planning and start drawing.",
+  "login.tagline2":      "The app to eliminate creative blocks and get inspired with a community of artists.",
 
   /* ── Login ── */
   "login.divider":          "OR WITH EMAIL",
