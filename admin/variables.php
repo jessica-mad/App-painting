@@ -89,6 +89,14 @@ function inkrush_page_variables() {
     $rarities   = ['Común','Raro','Épico','Legendario'];
     $seasons    = ['','Primavera','Verano','Otoño','Invierno','Halloween','Navidad','San Valentín'];
 
+    /* Nombres Musai — la clave BD no cambia, solo la etiqueta visible */
+    $rarity_labels = [
+        'Común'      => 'Susurro',
+        'Raro'       => 'Visión',
+        'Épico'      => 'Éxtasis',
+        'Legendario' => '✦ Epifanía',
+    ];
+
     /* ── Procesar acciones ── */
     if ( isset( $_POST['inkrush_var_action'] ) && check_admin_referer( 'inkrush_vars' ) ) {
         $action = sanitize_text_field( $_POST['inkrush_var_action'] );
@@ -98,6 +106,7 @@ function inkrush_page_variables() {
                 'id'       => inkrush_uid(),
                 'category' => sanitize_text_field( $_POST['var_category'] ),
                 'value'    => sanitize_text_field( strtolower( $_POST['var_value'] ) ),
+                'value_en' => sanitize_text_field( strtolower( $_POST['var_value_en'] ?? '' ) ),
                 'rarity'   => sanitize_text_field( $_POST['var_rarity'] ),
                 'season'   => sanitize_text_field( $_POST['var_season'] ),
             ];
@@ -119,6 +128,7 @@ function inkrush_page_variables() {
                 if ( $v['id'] === $edit_id ) {
                     $v['category'] = sanitize_text_field( $_POST['var_category'] );
                     $v['value']    = sanitize_text_field( strtolower( $_POST['var_value'] ) );
+                    $v['value_en'] = sanitize_text_field( strtolower( $_POST['var_value_en'] ?? '' ) );
                     $v['rarity']   = sanitize_text_field( $_POST['var_rarity'] );
                     $v['season']   = sanitize_text_field( $_POST['var_season'] );
                     break;
@@ -137,6 +147,7 @@ function inkrush_page_variables() {
                         'id'       => $item['id'],
                         'category' => sanitize_text_field( $item['category'] ?? '' ),
                         'value'    => sanitize_text_field( strtolower( $item['value'] ?? '' ) ),
+                        'value_en' => sanitize_text_field( strtolower( $item['value_en'] ?? '' ) ),
                         'rarity'   => sanitize_text_field( $item['rarity'] ?? 'Común' ),
                         'season'   => sanitize_text_field( $item['season'] ?? '' ),
                     ];
@@ -183,23 +194,72 @@ function inkrush_page_variables() {
     }
     ?>
     <div class="wrap">
-        <h1>🎨 InkRush — Variables de dibujo</h1>
+        <h1>🎨 Musai — Variables de dibujo</h1>
 
         <?php if ( $message ) : ?>
             <div class="notice notice-success is-dismissible"><p><?php echo esc_html( $message ); ?></p></div>
         <?php endif; ?>
 
+        <?php
+        $missing_en = count( array_filter( $vars, fn( $v ) => empty( $v['value_en'] ) ) );
+        ?>
         <!-- Estadísticas rápidas -->
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;align-items:center;">
             <div style="background:#DFFF23;border:2px solid #111;border-radius:10px;padding:12px 20px;font-weight:900;">
                 Total: <?php echo count( $vars ); ?>
             </div>
             <?php foreach ( $rarities as $r ) : ?>
                 <div style="background:<?php echo esc_attr( $rarity_colors[ $r ] ); ?>;border:2px solid #111;border-radius:10px;padding:12px 16px;font-weight:900;">
-                    <?php echo esc_html( $r ); ?>: <?php echo intval( $counts[ $r ] ?? 0 ); ?>
+                    <?php echo esc_html( $rarity_labels[ $r ] ?? $r ); ?>: <?php echo intval( $counts[ $r ] ?? 0 ); ?>
                 </div>
             <?php endforeach; ?>
+            <div style="background:<?php echo $missing_en > 0 ? '#FFE8A0' : '#D4F5D4'; ?>;border:2px solid #111;border-radius:10px;padding:12px 16px;font-weight:900;">
+                🇬🇧 Sin EN: <?php echo $missing_en; ?>
+            </div>
+            <?php if ( $missing_en > 0 ) : ?>
+                <button id="inkrush-auto-translate" type="button"
+                    style="background:#111;color:#DFFF23;border:2px solid #111;border-radius:10px;padding:12px 18px;font-weight:900;cursor:pointer;">
+                    🌐 Auto-traducir todo al inglés (<?php echo $missing_en; ?>)
+                </button>
+                <span id="inkrush-translate-status" style="font-weight:700;font-size:13px;color:#555;display:none;"></span>
+            <?php endif; ?>
         </div>
+        <script>
+        (function() {
+            var btn = document.getElementById('inkrush-auto-translate');
+            if (!btn) return;
+            btn.addEventListener('click', function() {
+                btn.disabled = true;
+                btn.textContent = '⏳ Traduciendo...';
+                var status = document.getElementById('inkrush-translate-status');
+                if (status) { status.style.display = 'inline'; status.textContent = 'Contactando con la IA...'; }
+                fetch('<?php echo esc_url( rest_url( 'inkrush/v1/parameters/translate-missing' ) ); ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': '<?php echo wp_create_nonce( 'wp_rest' ); ?>',
+                    },
+                    body: JSON.stringify({}),
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.translated !== undefined) {
+                        if (status) status.textContent = '✅ ' + data.translated + ' variable(s) traducidas. Recargando...';
+                        setTimeout(function() { location.reload(); }, 1500);
+                    } else {
+                        btn.disabled = false;
+                        btn.textContent = '🌐 Auto-traducir todo al inglés';
+                        if (status) status.textContent = '❌ Error: ' + (data.message || JSON.stringify(data));
+                    }
+                })
+                .catch(function(e) {
+                    btn.disabled = false;
+                    btn.textContent = '🌐 Auto-traducir todo al inglés';
+                    if (status) status.textContent = '❌ Error de red: ' + e.message;
+                });
+            });
+        })();
+        </script>
 
         <!-- ── Formulario añadir / editar ── -->
         <div style="background:#f9f9f9;border:2px solid #111;border-radius:12px;padding:20px;max-width:700px;margin-bottom:24px;">
@@ -224,21 +284,27 @@ function inkrush_page_variables() {
                         </select>
                     </div>
                     <div>
-                        <label style="font-weight:700;display:block;margin-bottom:4px;">Valor de la variable</label>
-                        <input type="text" name="var_value" required placeholder="ej: bosque encantado"
-                            value="<?php echo esc_attr( $editing['value'] ?? '' ); ?>"
-                            style="width:100%;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;">
-                    </div>
-                    <div>
                         <label style="font-weight:700;display:block;margin-bottom:4px;">Rareza</label>
                         <select name="var_rarity" style="width:100%;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 8px;">
                             <?php foreach ( $rarities as $r ) : ?>
                                 <option value="<?php echo esc_attr( $r ); ?>" <?php selected( $editing['rarity'] ?? 'Común', $r ); ?>
                                     style="background:<?php echo esc_attr( $rarity_colors[ $r ] ); ?>">
-                                    <?php echo esc_html( $r ); ?>
+                                    <?php echo esc_html( $rarity_labels[ $r ] ?? $r ); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <div>
+                        <label style="font-weight:700;display:block;margin-bottom:4px;">🇪🇸 Valor (Español)</label>
+                        <input type="text" name="var_value" required placeholder="ej: bosque encantado"
+                            value="<?php echo esc_attr( $editing['value'] ?? '' ); ?>"
+                            style="width:100%;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;">
+                    </div>
+                    <div>
+                        <label style="font-weight:700;display:block;margin-bottom:4px;">🇬🇧 Valor (English)</label>
+                        <input type="text" name="var_value_en" placeholder="e.g. enchanted forest"
+                            value="<?php echo esc_attr( $editing['value_en'] ?? '' ); ?>"
+                            style="width:100%;height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;">
                     </div>
                     <div>
                         <label style="font-weight:700;display:block;margin-bottom:4px;">Temporada / Evento (opcional)</label>
@@ -280,7 +346,7 @@ function inkrush_page_variables() {
                     <select name="filter_rarity" onchange="this.form.submit()" style="height:32px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 8px;">
                         <option value="">Todas</option>
                         <?php foreach ( $rarities as $r ) : ?>
-                            <option value="<?php echo esc_attr( $r ); ?>" <?php selected( $filter_rarity, $r ); ?>><?php echo esc_html( $r ); ?></option>
+                            <option value="<?php echo esc_attr( $r ); ?>" <?php selected( $filter_rarity, $r ); ?>><?php echo esc_html( $rarity_labels[ $r ] ?? $r ); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -305,20 +371,35 @@ function inkrush_page_variables() {
         <table class="wp-list-table widefat fixed striped" style="border:2px solid #111;">
             <thead>
                 <tr>
-                    <th style="width:140px;font-weight:900;">Parámetro</th>
-                    <th style="font-weight:900;">Variable</th>
-                    <th style="width:110px;font-weight:900;">Rareza</th>
-                    <th style="width:120px;font-weight:900;">Temporada</th>
-                    <th style="width:140px;font-weight:900;">Acciones</th>
+                    <th style="width:120px;font-weight:900;">Parámetro</th>
+                    <th style="font-weight:900;">🇪🇸 Español</th>
+                    <th style="font-weight:900;">🇬🇧 English</th>
+                    <th style="width:100px;font-weight:900;">Rareza</th>
+                    <th style="width:100px;font-weight:900;">Temporada</th>
+                    <th style="width:160px;font-weight:900;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ( $visible as $v ) :
-                    $bg = $rarity_colors[ $v['rarity'] ] ?? '#fff';
+                    $bg     = $rarity_colors[ $v['rarity'] ] ?? '#fff';
+                    $has_en = ! empty( $v['value_en'] );
                 ?>
                 <tr style="background:<?php echo esc_attr( $bg ); ?>20;">
                     <td style="font-weight:700;"><?php echo esc_html( $v['category'] ); ?></td>
                     <td style="font-weight:600;text-transform:capitalize;"><?php echo esc_html( $v['value'] ); ?></td>
+                    <td style="font-weight:600;text-transform:capitalize;">
+                        <?php if ( $has_en ) : ?>
+                            <?php echo esc_html( $v['value_en'] ); ?>
+                        <?php else : ?>
+                            <span style="color:#bbb;font-style:italic;font-size:12px;">sin traducción</span>
+                            <button type="button"
+                                class="button button-small inkrush-translate-row"
+                                data-id="<?php echo esc_attr( $v['id'] ); ?>"
+                                style="margin-left:6px;font-size:11px;">
+                                🌐
+                            </button>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <span style="background:<?php echo esc_attr( $bg ); ?>;border:2px solid #111;border-radius:20px;padding:2px 10px;font-weight:900;font-size:12px;">
                             <?php echo esc_html( $v['rarity'] ); ?>
@@ -340,10 +421,45 @@ function inkrush_page_variables() {
                 </tr>
                 <?php endforeach; ?>
                 <?php if ( empty( $visible ) ) : ?>
-                    <tr><td colspan="5" style="text-align:center;padding:24px;color:#888;font-weight:700;">No hay variables con estos filtros.</td></tr>
+                    <tr><td colspan="6" style="text-align:center;padding:24px;color:#888;font-weight:700;">No hay variables con estos filtros.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
+        <script>
+        (function() {
+            document.querySelectorAll('.inkrush-translate-row').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var id   = btn.getAttribute('data-id');
+                    var cell = btn.closest('td');
+                    btn.disabled = true;
+                    btn.textContent = '⏳';
+                    fetch('<?php echo esc_url( rest_url( 'inkrush/v1/parameters/' ) ); ?>' + id + '/translate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-WP-Nonce': '<?php echo wp_create_nonce( 'wp_rest' ); ?>',
+                        },
+                        body: JSON.stringify({}),
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.value_en) {
+                            cell.innerHTML = '<span style="font-weight:600;text-transform:capitalize;">' + data.value_en + '</span>';
+                        } else {
+                            btn.disabled = false;
+                            btn.textContent = '🌐';
+                            alert('Error: ' + (data.message || JSON.stringify(data)));
+                        }
+                    })
+                    .catch(function(e) {
+                        btn.disabled = false;
+                        btn.textContent = '🌐';
+                        alert('Error de red: ' + e.message);
+                    });
+                });
+            });
+        })();
+        </script>
 
         <!-- ── Importar JSON ── -->
         <details style="margin-top:24px;border:2px solid #111;border-radius:12px;padding:16px;max-width:700px;">

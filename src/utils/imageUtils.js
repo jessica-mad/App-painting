@@ -1,5 +1,5 @@
-/* Compress an image File to JPEG at medium-low quality, max 1080px wide */
-export function compressImage(file, { maxPx = 1080, quality = 0.55 } = {}) {
+/* Compress an image File to JPEG at good quality, max 1200px (retina-friendly) */
+export function compressImage(file, { maxPx = 1200, quality = 0.8 } = {}) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);

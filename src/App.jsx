@@ -1,7 +1,7 @@
 import { useReducer, useMemo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppContext, initialState, reducer } from "./data/store";
-import { IS_LOGGED_IN } from "./utils/api";
+import { IS_LOGGED_IN, IS_ADMIN, fetchNotifications, fetchConfig, fetchMusicSrcs } from "./utils/api";
 import { TutorialScreen }       from "./screens/TutorialScreen";
 import { IntroScreen }          from "./screens/IntroScreen";
 import { LoginScreen }          from "./screens/LoginScreen";
@@ -17,7 +17,8 @@ import { ProfileScreen }        from "./screens/ProfileScreen";
 import { PublicProfileScreen }  from "./screens/PublicProfileScreen";
 import { FollowListScreen }     from "./screens/FollowListScreen";
 import { SavedScreen }          from "./screens/SavedScreen";
-import { AdminScreen }          from "./screens/AdminScreen";
+import { BugReportScreen }          from "./screens/BugReportScreen";
+import { NotificationsScreen }     from "./screens/NotificationsScreen";
 import { DeskHome, DeskFeed, DeskProfile, DeskLogin, DeskFlowWrapper } from "./screens/desktop/DesktopLayout";
 
 const MOBILE_SCREENS = {
@@ -36,7 +37,8 @@ const MOBILE_SCREENS = {
   publicProfile: PublicProfileScreen,
   followList:    FollowListScreen,
   saved:         SavedScreen,
-  admin:         AdminScreen,
+  bugReport:     BugReportScreen,
+  notifications: NotificationsScreen,
 };
 
 /* On desktop, screens without a dedicated layout use DeskFlowWrapper to keep sidebar visible */
@@ -59,7 +61,8 @@ const DESKTOP_FLOW = {
   saved:         SavedScreen,
   publicProfile: PublicProfileScreen,
   followList:    FollowListScreen,
-  admin:         AdminScreen,
+  bugReport:     BugReportScreen,
+  notifications: NotificationsScreen,
 };
 
 function useIsDesktop() {
@@ -80,9 +83,60 @@ export default function App() {
   const ctx = useMemo(() => ({ state, dispatch }), [state]);
   const isDesktop = useIsDesktop();
 
+  /* Fetch content config (levels, season labels) on mount — same pattern as variables */
+  useEffect(() => {
+    fetchConfig()
+      .then(data => {
+        if (data) dispatch({ type: "SET_CONFIG", levels: data.levels, seasonLabels: data.seasonLabels, rarityLabels: data.rarityLabels });
+      })
+      .catch(() => {});
+    fetchMusicSrcs()
+      .then(data => {
+        if (data) dispatch({ type: "SET_MUSIC_SRCS", srcs: data });
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Fetch unread notification count on mount */
+  useEffect(() => {
+    if (!IS_LOGGED_IN) return;
+    fetchNotifications()
+      .then(res => {
+        if (res?.unread > 0) dispatch({ type: "SET_UNREAD_NOTIFS", count: res.unread });
+      })
+      .catch(() => {});
+  }, []);
+
   /* Hard guard: if no WP session and trying to access a protected screen, force login */
   const guardedScreen = !IS_LOGGED_IN && !PUBLIC_SCREENS.has(state.screen) ? "login" : state.screen;
   const MobileScreen = MOBILE_SCREENS[guardedScreen] ?? LoginScreen;
+
+  if (isDesktop && !IS_ADMIN) {
+    return (
+      <div style={{
+        height: "100vh", display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        background: "#111", color: "#fff", textAlign: "center",
+        padding: "32px", fontFamily: "sans-serif",
+      }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🎨</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: "#DFFF23", margin: "0 0 12px" }}>
+          Ups, esto aún no está listo
+        </h1>
+        <p style={{ fontSize: 16, color: "rgba(255,255,255,.7)", maxWidth: 380, lineHeight: 1.6, margin: "0 0 32px" }}>
+          La versión de escritorio está en construcción.<br/>
+          Te invitamos a entrar desde tu <strong style={{ color: "#fff" }}>móvil</strong> para disfrutar la experiencia completa.
+        </p>
+        <div style={{
+          background: "#DFFF23", color: "#111", fontWeight: 900,
+          borderRadius: 12, padding: "12px 28px", fontSize: 15,
+          border: "2px solid #DFFF23", display: "inline-block",
+        }}>
+          📱 Abre la app desde tu móvil
+        </div>
+      </div>
+    );
+  }
 
   if (isDesktop) {
     const guardedDesktop = !IS_LOGGED_IN && !PUBLIC_SCREENS.has(state.screen) ? "login" : state.screen;
