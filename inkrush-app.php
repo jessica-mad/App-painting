@@ -349,6 +349,7 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'inkrush', 'Música Pomodoro', '🎵 Música',         'manage_options', 'inkrush-music',  'inkrush_page_music' );
     add_submenu_page( 'inkrush', 'Notificaciones Push', '📣 Push',       'manage_options', 'inkrush-push',  'inkrush_page_push' );
     add_submenu_page( 'inkrush', 'Reportes',        '🚨 Reportes',       'manage_options', 'inkrush-reports', 'inkrush_page_reports' );
+    add_submenu_page( 'inkrush', 'Analytics',       '📊 Analytics',      'manage_options', 'inkrush-analytics', 'inkrush_page_analytics' );
 } );
 
 /* ──────────────────────────────────────────────────────────────

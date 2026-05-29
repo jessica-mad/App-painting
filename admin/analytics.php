@@ -33,18 +33,6 @@ function inkrush_create_analytics_table() {
    ADMIN PAGE
 ────────────────────────────────────────────────────────────── */
 
-add_action( 'admin_menu', 'inkrush_analytics_menu' );
-function inkrush_analytics_menu() {
-    add_submenu_page(
-        'inkrush',
-        '📊 Analytics',
-        '📊 Analytics',
-        'manage_options',
-        'inkrush-analytics',
-        'inkrush_page_analytics'
-    );
-}
-
 function inkrush_page_analytics() {
     global $wpdb;
 
