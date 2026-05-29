@@ -4,6 +4,7 @@ import { Wordmark } from "../components/Wordmark";
 import { useApp } from "../data/store";
 import { useT } from "../i18n";
 import { IS_LOGGED_IN, registerUser, loginUser, forgotPassword } from "../utils/api";
+import { track } from "../utils/track";
 import { IBrush, ISpark, IStar, ILock, IArrowL, IUser, ICheck } from "../components/Icons";
 
 const RECAPTCHA_SITE_KEY = window.InkRushConfig?.recaptchaSiteKey || "";
@@ -71,6 +72,7 @@ export function LoginScreen() {
     setError(""); setLoading(true);
     try {
       await registerUser({ email, password, displayName: name, captchaToken });
+      track('register', { method: 'email' });
       setSuccess("¡Cuenta creada! Entrando…");
       setTimeout(() => window.location.reload(), 1000);
     } catch (e) {
@@ -94,6 +96,7 @@ export function LoginScreen() {
     setError(""); setLoading(true);
     try {
       await loginUser({ email, password });
+      track('login', { method: 'email' });
       setSuccess("¡Bienvenido! Cargando…");
       setTimeout(() => window.location.reload(), 800);
     } catch (e) {

@@ -5,6 +5,7 @@ import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, RARITY, getOverallRarity, generatePrompt, pickVariables, getVarLabel, getRarityName } from "../data/parameters";
 import { generateAIPrompt } from "../utils/api";
+import { track } from "../utils/track";
 import { IArrowL, IDice, IBookmark, IBrush, IHeart, IFlame, IStar, IUndo } from "../components/Icons";
 import { useT } from "../i18n";
 
@@ -59,12 +60,14 @@ export function IdeaScreen() {
   const saveIdea = () => {
     dispatch({ type: "SAVE_IDEA", idea: currentIdea });
     setSaved(true);
+    track('idea_saved', { rarity: getOverallRarity(variables) });
     setTimeout(() => setSaved(false), 1800);
   };
 
   const reroll = () => {
     if (rollsLeft <= 0 || rerolling) return;
     setRerolling(true);
+    track('idea_rerolled', {});
     const paramsMap = Object.keys(apiParams).length > 0 ? apiParams : null;
     const newIdea = pickVariables(currentIdea.params, activeSeason, paramsMap);
     setTimeout(() => {

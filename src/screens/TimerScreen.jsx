@@ -3,6 +3,7 @@ import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { MUSIC_TRACKS, generatePrompt, getOverallRarity } from "../data/parameters";
 import { generateAIKeywords } from "../utils/api";
+import { track } from "../utils/track";
 import { useT } from "../i18n";
 import { RarityBadge } from "../components/RarityBadge";
 import { IMusic, IPause, IPlay, ICheck, ISpark, IArrowR, IChevronD } from "../components/Icons";
@@ -149,6 +150,8 @@ export function TimerScreen() {
   const [musicOpen, setMusicOpen] = useState(false);
   const [keywords,  setKeywords]  = useState([]);
   const audioRef = useRef(null);
+  const finishedRef  = useRef(false);
+  const secondsRef   = useRef(isFree ? 0 : (timerConfig?.duration?.seconds ?? 0));
 
   const availableTracks = useMemo(
     () => MUSIC_TRACKS.filter(t => musicSrcs?.[t.id]),
@@ -158,13 +161,30 @@ export function TimerScreen() {
     timerConfig?.music ?? availableTracks[0] ?? null
   );
 
+  /* Track timer_started on mount */
+  useEffect(() => {
+    const ideaVarsOnMount = state.currentIdea?.variables ?? [];
+    track('timer_started', {
+      duration: timerConfig?.duration?.seconds ?? 'free',
+      music: state.currentIdea ? (timerConfig?.music?.id ?? 'none') : 'none',
+      hasIdea: ideaVarsOnMount.length > 0,
+    });
+    return () => {
+      if (!finishedRef.current) {
+        track('timer_abandoned', { atSecond: secondsRef.current });
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* Countdown / count-up */
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => {
       setSeconds(s => {
-        if (!isFree && s <= 1) { clearInterval(id); setRunning(false); setFinished(true); return 0; }
-        return isFree ? s + 1 : s - 1;
+        const next = isFree ? s + 1 : s - 1;
+        secondsRef.current = next;
+        if (!isFree && s <= 1) { clearInterval(id); setRunning(false); setFinished(true); finishedRef.current = true; return 0; }
+        return next;
       });
     }, 1000);
     return () => clearInterval(id);
@@ -220,7 +240,11 @@ export function TimerScreen() {
   const sec = String(seconds % 60).padStart(2, "0");
   /* Remaining fraction: 1 = full circle (start), 0 = empty (done) */
   const frac    = isFree ? 1 : seconds / totalSeconds;
-  const finish  = () => dispatch({ type: "COMPLETE_CHALLENGE" });
+  const finish  = () => {
+    track('timer_completed', { duration: timerConfig?.duration?.seconds ?? 'free' });
+    finishedRef.current = true;
+    dispatch({ type: "COMPLETE_CHALLENGE" });
+  };
 
   const ideaVars  = currentIdea?.variables ?? [];
   const rarity    = ideaVars.length ? getOverallRarity(ideaVars) : null;

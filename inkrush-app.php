@@ -26,6 +26,7 @@ require_once INKRUSH_DIR . 'admin/settings.php';
 require_once INKRUSH_DIR . 'admin/music.php';
 require_once INKRUSH_DIR . 'admin/reports.php';
 require_once INKRUSH_DIR . 'admin/push.php';
+require_once INKRUSH_DIR . 'admin/analytics.php';
 require_once INKRUSH_DIR . 'admin/api.php';
 
 /* ──────────────────────────────────────────────────────────────
@@ -57,6 +58,10 @@ add_action( 'init', function () {
         inkrush_create_push_tables();
         update_option( 'inkrush_db_schema_v', 3 );
         add_action( 'shutdown', 'flush_rewrite_rules' ); // flush once after upgrade
+    }
+    if ( $v < 4 ) {
+        inkrush_create_analytics_table();
+        update_option( 'inkrush_db_schema_v', 4 );
     }
 } );
 

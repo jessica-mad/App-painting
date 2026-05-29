@@ -249,6 +249,13 @@ function inkrush_register_routes() {
         'callback'            => 'inkrush_api_push_musai_hour',
         'permission_callback' => 'is_user_logged_in',
     ] );
+
+    /* ── Analytics: event tracking ── */
+    register_rest_route( 'inkrush/v1', '/track', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_track_events',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -2055,4 +2062,68 @@ function inkrush_api_push_musai_hour( WP_REST_Request $req ) {
     }
 
     return rest_ensure_response( [ 'success' => true ] );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ANALYTICS: BATCH EVENT TRACKING
+────────────────────────────────────────────────────────────── */
+
+function inkrush_api_track_events( WP_REST_Request $req ) {
+    global $wpdb;
+
+    $uid        = get_current_user_id();
+    $session_id = sanitize_text_field( $req->get_param('session_id') ?? '' );
+    $device_raw = sanitize_text_field( $req->get_param('device') ?? 'mobile' );
+    $device     = in_array( $device_raw, [ 'mobile', 'desktop' ], true ) ? $device_raw : 'mobile';
+    $events     = $req->get_param('events');
+
+    if ( ! $session_id ) {
+        return new WP_Error( 'missing_session', 'session_id requerido.', [ 'status' => 400 ] );
+    }
+    if ( ! is_array( $events ) || empty( $events ) ) {
+        return new WP_Error( 'missing_events', 'events array requerido.', [ 'status' => 400 ] );
+    }
+
+    /* Cap at 50 events per request */
+    $events = array_slice( $events, 0, 50 );
+
+    $table    = $wpdb->prefix . 'inkrush_events';
+    $inserted = 0;
+    $now      = current_time( 'mysql', true );
+
+    foreach ( $events as $ev ) {
+        if ( ! is_array( $ev ) ) continue;
+
+        $event_name = sanitize_text_field( $ev['event'] ?? '' );
+        if ( ! $event_name ) continue;
+        $event_name = substr( $event_name, 0, 200 );
+
+        $props = null;
+        if ( isset( $ev['props'] ) && is_array( $ev['props'] ) ) {
+            $props = wp_json_encode( $ev['props'], JSON_UNESCAPED_UNICODE );
+        }
+
+        /* Use provided timestamp if valid, else fall back to now */
+        $ts = isset( $ev['ts'] ) ? (int) $ev['ts'] : 0;
+        $created_at = ( $ts > 0 ) ? gmdate( 'Y-m-d H:i:s', $ts ) : $now;
+
+        $wpdb->insert(
+            $table,
+            [
+                'user_id'    => $uid,
+                'session_id' => $session_id,
+                'event'      => $event_name,
+                'props'      => $props,
+                'device'     => $device,
+                'created_at' => $created_at,
+            ],
+            [ '%d', '%s', '%s', '%s', '%s', '%s' ]
+        );
+
+        if ( $wpdb->insert_id ) {
+            $inserted++;
+        }
+    }
+
+    return rest_ensure_response( [ 'success' => true, 'inserted' => $inserted ] );
 }

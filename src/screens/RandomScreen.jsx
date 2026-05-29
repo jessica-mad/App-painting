@@ -6,6 +6,7 @@ import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, PARAMETERS, pickVariables, getVarLabel, getRarityName } from "../data/parameters";
 import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
 import { WP_ROLLS, fetchParameters, useRoll } from "../utils/api";
+import { track } from "../utils/track";
 import { useT } from "../i18n";
 
 const CAT_ICONS = {
@@ -301,6 +302,7 @@ export function RandomScreen() {
 
       dispatch({ type: "SET_IDEA", idea: results, params: [...selectedParams] });
       setWin(overall);
+      track('roll', { params: selectedParams, rarity: overall });
 
       if (overall === "Común") {
         setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "idea" }), 600);

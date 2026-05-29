@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { TECHNIQUES, getTechLabel, getUserLevel, getLevelName } from "../data/parameters";
 import { createArtwork, IS_LOGGED_IN } from "../utils/api";
+import { track } from "../utils/track";
 import { IArrowL, IArrowR, IBrush, ICam, ILock, IShare } from "../components/Icons";
 import { useT } from "../i18n";
 
@@ -223,6 +224,16 @@ export function UploadScreen() {
   const [done,        setDone]        = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const fileRef = useRef(null);
+  const uploadedRef = useRef(false);
+
+  /* Track upload_abandoned on unmount if upload was not completed */
+  useEffect(() => {
+    return () => {
+      if (!uploadedRef.current) {
+        track('upload_abandoned', {});
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const level       = getUserLevel(profile.completedChallenges, state.levels);
   const canVideo    = profile.completedChallenges >= 10;
@@ -272,6 +283,8 @@ export function UploadScreen() {
           images,
         });
       }
+      uploadedRef.current = true;
+      track('upload_completed', { technique, hasVideo: false });
       setDone(true);
       setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "feed" }), 1600);
     } catch (err) {

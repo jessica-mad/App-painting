@@ -4,6 +4,7 @@ import { useApp } from "../data/store";
 import { DURATIONS, MUSIC_TRACKS } from "../data/parameters";
 import { IArrowL, ITimer, IMusic, IPlay, IPause } from "../components/Icons";
 import { useT } from "../i18n";
+import { track } from "../utils/track";
 
 export function TimerSetupScreen() {
   const { state, dispatch } = useApp();
@@ -18,10 +19,10 @@ export function TimerSetupScreen() {
   const availableTracks = MUSIC_TRACKS.filter(t => state.musicSrcs?.[t.id]);
   const hasMusicConfigured = availableTracks.length > 0;
 
-  const togglePreview = (track) => {
-    const src = state.musicSrcs?.[track.id];
+  const togglePreview = (trackObj) => {
+    const src = state.musicSrcs?.[trackObj.id];
     if (!src) return;
-    if (previewId === track.id) {
+    if (previewId === trackObj.id) {
       previewRef.current?.pause();
       setPreviewId(null);
     } else {
@@ -30,31 +31,34 @@ export function TimerSetupScreen() {
         previewRef.current.currentTime = 0;
         previewRef.current.play().catch(() => {});
       }
-      setPreviewId(track.id);
-      setMusic(track);
+      setPreviewId(trackObj.id);
+      setMusic(trackObj);
       setMusicOn(true);
+      track('music_selected', { track: trackObj.id });
     }
   };
 
-  const selectTrack = (track) => {
+  const selectTrack = (trackObj) => {
     const wasPlaying = previewId !== null;
     if (previewRef.current) { previewRef.current.pause(); }
     setPreviewId(null);
-    setMusic(track);
+    setMusic(trackObj);
     setMusicOn(true);
+    track('music_selected', { track: trackObj.id });
     if (wasPlaying) {
-      const src = state.musicSrcs?.[track.id];
+      const src = state.musicSrcs?.[trackObj.id];
       if (src && previewRef.current) {
         previewRef.current.src = src;
         previewRef.current.currentTime = 0;
         previewRef.current.play().catch(() => {});
-        setPreviewId(track.id);
+        setPreviewId(trackObj.id);
       }
     }
   };
 
   const start = () => {
     if (previewRef.current) { previewRef.current.pause(); }
+    track('timer_setup_completed', { duration: duration?.seconds ?? 'free', music: music?.id ?? 'none' });
     dispatch({ type: "SET_TIMER_CONFIG", config: { duration, music, musicOn } });
     dispatch({ type: "SET_SCREEN", screen: "timer" });
   };

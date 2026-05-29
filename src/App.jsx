@@ -1,7 +1,8 @@
-import { useReducer, useMemo, useEffect, useState } from "react";
+import { useReducer, useMemo, useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppContext, initialState, reducer } from "./data/store";
 import { IS_LOGGED_IN, IS_ADMIN, fetchNotifications, fetchConfig, fetchMusicSrcs } from "./utils/api";
+import { track, trackScreenView } from "./utils/track";
 import { TutorialScreen }       from "./screens/TutorialScreen";
 import { IntroScreen }          from "./screens/IntroScreen";
 import { LoginScreen }          from "./screens/LoginScreen";
@@ -82,6 +83,17 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const ctx = useMemo(() => ({ state, dispatch }), [state]);
   const isDesktop = useIsDesktop();
+  const initialScreenRef = useRef(state.screen);
+
+  /* Track app_open on mount */
+  useEffect(() => {
+    track('app_open', { screen: initialScreenRef.current });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Track screen changes */
+  useEffect(() => {
+    trackScreenView(state.screen);
+  }, [state.screen]);
 
   /* Fetch content config (levels, season labels) on mount — same pattern as variables */
   useEffect(() => {
