@@ -42,6 +42,8 @@ body {
 .serif { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; }
 .mono  { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .tag   { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+.rad-bold  { font-family: 'Radikal', 'Space Grotesk', sans-serif; font-weight: 700; }
+.rad-light { font-family: 'Radikal', 'Space Grotesk', sans-serif; font-weight: 300; }
 
 /* ── Scroll helper (horizontal or vertical) ── */
 .scroll { overflow: auto; scrollbar-width: none; -ms-overflow-style: none; }
