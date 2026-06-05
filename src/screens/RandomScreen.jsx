@@ -284,7 +284,8 @@ export function RandomScreen() {
     setSlots([null, null, null]);
     setWin(null);
 
-    const results = pickVariables(selectedParams, activeSeason, paramsMap);
+    const prevValues = (state.currentIdea?.variables ?? []).map(v => v.value);
+    const results = pickVariables(selectedParams, activeSeason, paramsMap, prevValues);
 
     [350, 600, 850].slice(0, selectedParams.length).forEach((tv, i) => {
       setTimeout(() => {

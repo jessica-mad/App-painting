@@ -69,7 +69,8 @@ export function IdeaScreen() {
     setRerolling(true);
     track('idea_rerolled', {});
     const paramsMap = Object.keys(apiParams).length > 0 ? apiParams : null;
-    const newIdea = pickVariables(currentIdea.params, activeSeason, paramsMap);
+    const prevValues = (currentIdea.variables ?? []).map(v => v.value);
+    const newIdea = pickVariables(currentIdea.params, activeSeason, paramsMap, prevValues);
     setTimeout(() => {
       dispatch({ type: "SET_IDEA", idea: newIdea, params: currentIdea.params });
       setRerolling(false);
