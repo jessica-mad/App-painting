@@ -472,7 +472,7 @@ export function RandomScreen() {
 
         <div className="scroll" style={{
           flex: 1,
-          padding: phase === "idea_shown" ? "10px 22px 14px" : "10px 22px 90px",
+          padding: phase === "idea_shown" ? "16px 22px 8px" : "10px 22px 90px",
         }}>
 
           {/* Category chips — hidden once result is displayed */}
@@ -518,7 +518,37 @@ export function RandomScreen() {
           </div>
           )}
 
-          {/* Arcade cabinet */}
+          {/* ── idea_shown: solo la caja blanca con los resultados ── */}
+          {phase === "idea_shown" ? (
+            <div style={{ background: "var(--paper-2)", borderRadius: 20, padding: 16, border: "3px solid var(--ink)", boxShadow: "var(--shadow-lg)", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(transparent 0 2px, rgba(20,17,15,0.03) 2px 3px)", pointerEvents: "none" }}/>
+              <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {[0, 1, 2].map(i => {
+                  const v = slots[i];
+                  const isActive = !!selectedParams[i];
+                  const tint = v ? RARITY_BG[v.rarity] : "var(--paper-2)";
+                  return (
+                    <div key={i} style={{ minHeight: 130, background: tint, borderRadius: 12, position: "relative", overflow: "hidden", border: "2px solid var(--ink)", transition: "background 0.3s", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 8, gap: 6 }}>
+                      {v ? (
+                        <>
+                          <span className="mono" style={{ fontWeight: 800, fontSize: 8, letterSpacing: "0.08em", opacity: 0.6, textAlign: "center" }}>
+                            {RARITY_GLYPH[v.rarity]} {v.rarity.toUpperCase()}
+                          </span>
+                          <span className="serif" style={{ fontSize: 18, lineHeight: 1.1, textAlign: "center" }}>{getVarLabel(v, state.lang)}</span>
+                          <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)", textAlign: "center" }}>
+                            {selectedParams[i] ? t(`random.cat.${selectedParams[i]}`).toUpperCase() : ""}
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ fontWeight: 800, fontSize: 28, color: "rgba(20,17,15,.15)" }}>?</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+          /* ── Full arcade cabinet ── */
           <div style={{ position: "relative", width: "100%" }}>
             {/* Machine body — 22px right gap so lever ball overlaps machine edge */}
             <div style={{
@@ -695,6 +725,7 @@ export function RandomScreen() {
               />
             </div>
           </div>
+          )} {/* end of full-machine vs result-box conditional */}
         </div>
 
         {/* ── Reveal-first: action buttons ── */}
@@ -709,9 +740,7 @@ export function RandomScreen() {
                 flexShrink: 0,
                 padding: "12px 16px",
                 paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
-                background: "rgba(255,253,243,0.95)",
-                backdropFilter: "blur(12px)",
-                borderTop: "2px solid var(--ink)",
+                background: "var(--paper)",
               }}
             >
               <div style={{ display: "grid", gridTemplateColumns: "1fr 46px", gap: 8, marginBottom: 8 }}>
@@ -759,7 +788,7 @@ export function RandomScreen() {
           )}
         </AnimatePresence>
 
-        <BottomNav current="random"/>
+        {phase !== "idea_shown" && <BottomNav current="random"/>}
       </div>
 
       <style>{`
