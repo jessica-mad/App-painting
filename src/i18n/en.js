@@ -225,6 +225,7 @@ export default {
   "idea.ai.btn":            "✦ AI",
   "idea.ai.generating":     "generating...",
   "random.reveal.cta":      "See result →",
+  "random.play.again":      "Play again",
   "idea.reroll":            "Not this one. Give me another.",
   "idea.reroll.disabled":   "No visits left",
   "idea.savedLimit":        "5/5 limit — last inspiration removed",

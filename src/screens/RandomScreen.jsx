@@ -327,10 +327,15 @@ export function RandomScreen() {
         setRolling(false);
         const overall = computeOverall(results);
         dispatch({ type: "SET_IDEA", idea: results, params: [...selectedParams] });
-        setPendingResults(results);
-        setWin(overall);
-        setPhase("rarity_shown");
         track('roll', { params: selectedParams, rarity: overall });
+        if (overall === "Común") {
+          // No suspense banner for common — reveal directly after short flash
+          runReveal(results);
+        } else {
+          setPendingResults(results);
+          setWin(overall);
+          setPhase("rarity_shown");
+        }
       }, 1500);
     } else {
       // Classic: animate slots → rarity flash → IdeaScreen
@@ -358,12 +363,11 @@ export function RandomScreen() {
     dispatch({ type: "SET_SCREEN", screen: "idea" });
   };
 
-  // Reveal-first: rarity banner done → animate slots revealing variables
-  const handleRevealDone = () => {
+  // Reveal-first: animate slots landing then show inline idea panel
+  const runReveal = (results) => {
     setWin(null);
     setPhase("landing");
-    const results = pendingResults;
-    [350, 600, 850].slice(0, selectedParams.length).forEach((tv, i) => {
+    [350, 600, 850].slice(0, results.length).forEach((tv, i) => {
       setTimeout(() => {
         setSlots(prev => { const n = [...prev]; n[i] = results[i]; return n; });
       }, tv);
@@ -379,6 +383,21 @@ export function RandomScreen() {
           .catch(() => {}).finally(() => setAiLoading(false));
       }
     }, 950);
+  };
+
+  // Reveal-first: called when user taps "Ver resultado" on the WinBanner
+  const handleRevealDone = () => runReveal(pendingResults);
+
+  // Reset back to the pick-categories state (keep rolls count unchanged)
+  const resetGame = () => {
+    setPhase("idle");
+    setSlots([null, null, null]);
+    setWin(null);
+    setPendingResults(null);
+    setAiPrompt(null);
+    setAiLoading(false);
+    setInlineSaved(false);
+    setInlineRerolling(false);
   };
 
   const saveInline = () => {
@@ -451,9 +470,14 @@ export function RandomScreen() {
           </p>
         </div>
 
-        <div className="scroll" style={{ flex: 1, padding: "10px 22px 90px" }}>
+        <div className="scroll" style={{
+          flex: phase === "idea_shown" ? "0 0 auto" : 1,
+          maxHeight: phase === "idea_shown" ? "42%" : undefined,
+          padding: phase === "idea_shown" ? "10px 22px 14px" : "10px 22px 90px",
+        }}>
 
-          {/* Category chips */}
+          {/* Category chips — hidden once result is displayed */}
+          {phase !== "idea_shown" && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
             {PARAM_CATEGORIES.map((cat) => {
               const active  = selectedParams.includes(cat.id);
@@ -493,6 +517,7 @@ export function RandomScreen() {
               );
             })}
           </div>
+          )}
 
           {/* Arcade cabinet */}
           <div style={{ position: "relative", width: "100%" }}>
@@ -758,9 +783,16 @@ export function RandomScreen() {
               <button
                 onClick={() => dispatch({ type: "SET_SCREEN", screen: "setupTimer" })}
                 className="stk"
-                style={{ width: "100%", height: 52, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "var(--shadow-lg)", cursor: "pointer", marginBottom: 12 }}
+                style={{ width: "100%", height: 52, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "var(--shadow-lg)", cursor: "pointer", marginBottom: 8 }}
               >
                 <IBrush s={18}/> {t("idea.accept")}
+              </button>
+
+              <button
+                onClick={resetGame}
+                style={{ width: "100%", height: 42, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}
+              >
+                {t("random.play.again")}
               </button>
             </motion.div>
           )}
