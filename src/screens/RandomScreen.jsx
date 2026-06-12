@@ -2,10 +2,11 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
+import { RarityBadge } from "../components/RarityBadge";
 import { useApp } from "../data/store";
-import { PARAM_CATEGORIES, PARAMETERS, pickVariables, getVarLabel, getRarityName } from "../data/parameters";
-import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark } from "../components/Icons";
-import { WP_ROLLS, fetchParameters, useRoll } from "../utils/api";
+import { PARAM_CATEGORIES, PARAMETERS, RARITY as RARITY_ENUM, pickVariables, getVarLabel, getRarityName, getOverallRarity, generatePrompt } from "../data/parameters";
+import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark, IBookmark, IUndo } from "../components/Icons";
+import { WP_ROLLS, fetchParameters, useRoll, generateAIPrompt } from "../utils/api";
 import { track } from "../utils/track";
 import { useT } from "../i18n";
 
@@ -183,12 +184,13 @@ function Sparkles({ count = 8 }) {
 }
 
 /* ── Banner de victoria (Raro / Épico / Legendario) ───────────────────── */
-function WinBanner({ rarity, onDone, t }) {
+function WinBanner({ rarity, onDone, showCta, ctaLabel, t }) {
   const { state } = useApp();
   useEffect(() => {
+    if (showCta) return; // manual dismiss via button
     const timer = setTimeout(onDone, 2600);
     return () => clearTimeout(timer);
-  }, [onDone]);
+  }, [onDone, showCta]);
 
   const line = t(`random.win.${rarity}.line`);
   const sub  = t(`random.win.${rarity}.sub`);
@@ -198,7 +200,7 @@ function WinBanner({ rarity, onDone, t }) {
     <div className="rnd-win-banner" style={{
       position: "absolute", inset: 0, display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center", zIndex: 15,
-      pointerEvents: "none",
+      pointerEvents: showCta ? "auto" : "none",
       background: "rgba(20,17,15,0.45)",
       backdropFilter: "blur(2px)",
     }}>
@@ -214,20 +216,43 @@ function WinBanner({ rarity, onDone, t }) {
         </span>
         <p className="serif" style={{ position: "relative", fontSize: 28, lineHeight: 1, margin: "8px 0 4px", textTransform: "lowercase" }}>{line}</p>
         <p className="mono" style={{ position: "relative", fontSize: 10, fontWeight: 700, color: "rgba(20,17,15,.65)", margin: 0, letterSpacing: "0.04em" }}>{sub}</p>
+        {showCta && (
+          <button
+            onClick={onDone}
+            style={{
+              position: "relative", marginTop: 14,
+              background: "var(--ink)", color: RARITY_BG[rarity],
+              border: "2px solid var(--ink)", borderRadius: 12,
+              fontWeight: 800, fontSize: 13, padding: "8px 20px",
+              cursor: "pointer",
+            }}
+          >
+            {ctaLabel || "Ver resultado"}
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
+const CAT_MAP_ICONS = { Emociones: IHeart, Animales: IFlame, Lugares: IStar, Objetos: IBrush, Eventos: IStar, Acciones: IBrush };
+const VAR_COLORS = { "Común": "var(--paper-2)", "Raro": "var(--sky)", "Épico": "var(--lilac)", "Legendario": "var(--acid)" };
+
 /* ── Pantalla principal ─────────────────────────────────────────────────── */
 export function RandomScreen() {
   const { state, dispatch } = useApp();
   const t = useT();
-  const { selectedParams, rollsLeft, activeSeason, apiParams } = state;
-  const [rolling, setRolling] = useState(false);
-  const [slots, setSlots]     = useState([null, null, null]);
-  const [win, setWin]         = useState(null);
-  const [toast, setToast]     = useState(null);
+  const { selectedParams, rollsLeft, activeSeason, apiParams, slotFlow } = state;
+  const [rolling, setRolling]       = useState(false);
+  const [slots, setSlots]           = useState([null, null, null]);
+  const [win, setWin]               = useState(null);
+  const [toast, setToast]           = useState(null);
+  const [phase, setPhase]           = useState("idle"); // reveal_first phases: idle | rarity_shown | landing | idea_shown
+  const [pendingResults, setPendingResults] = useState(null);
+  const [inlineSaved, setInlineSaved]       = useState(false);
+  const [inlineRerolling, setInlineRerolling] = useState(false);
+  const [aiPrompt, setAiPrompt]     = useState(null);
+  const [aiLoading, setAiLoading]   = useState(false);
   const toastTimer  = useRef(null);
   const totalRolls  = WP_ROLLS || 3;
 
@@ -283,37 +308,104 @@ export function RandomScreen() {
     setRolling(true);
     setSlots([null, null, null]);
     setWin(null);
+    setPhase("idle");
+    setAiPrompt(null);
 
     const prevValues = (state.currentIdea?.variables ?? []).map(v => v.value);
     const results = pickVariables(selectedParams, activeSeason, paramsMap, prevValues);
 
+    const computeOverall = (res) => {
+      const rarities = res.slice(0, selectedParams.length).map(r => r.rarity);
+      return rarities.includes("Legendario") ? "Legendario"
+        : rarities.includes("Épico") ? "Épico"
+        : rarities.includes("Raro") ? "Raro" : "Común";
+    };
+
+    if (slotFlow === "reveal_first") {
+      // Spin animation (empty slots), then show rarity banner before revealing variables
+      setTimeout(() => {
+        setRolling(false);
+        const overall = computeOverall(results);
+        dispatch({ type: "SET_IDEA", idea: results, params: [...selectedParams] });
+        setPendingResults(results);
+        setWin(overall);
+        setPhase("rarity_shown");
+        track('roll', { params: selectedParams, rarity: overall });
+      }, 1500);
+    } else {
+      // Classic: animate slots → rarity flash → IdeaScreen
+      [350, 600, 850].slice(0, selectedParams.length).forEach((tv, i) => {
+        setTimeout(() => {
+          setSlots(prev => { const n = [...prev]; n[i] = results[i]; return n; });
+        }, tv);
+      });
+      setTimeout(() => {
+        setRolling(false);
+        const overall = computeOverall(results);
+        dispatch({ type: "SET_IDEA", idea: results, params: [...selectedParams] });
+        setWin(overall);
+        track('roll', { params: selectedParams, rarity: overall });
+        if (overall === "Común") {
+          setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "idea" }), 600);
+        }
+      }, 1500);
+    }
+  };
+
+  // Classic flow: after WinBanner → IdeaScreen
+  const handleWinDone = () => {
+    setWin(null);
+    dispatch({ type: "SET_SCREEN", screen: "idea" });
+  };
+
+  // Reveal-first: rarity banner done → animate slots revealing variables
+  const handleRevealDone = () => {
+    setWin(null);
+    setPhase("landing");
+    const results = pendingResults;
     [350, 600, 850].slice(0, selectedParams.length).forEach((tv, i) => {
       setTimeout(() => {
         setSlots(prev => { const n = [...prev]; n[i] = results[i]; return n; });
       }, tv);
     });
-
     setTimeout(() => {
-      setRolling(false);
-      const landed = results.slice(0, selectedParams.length);
-      const rarities = landed.map(r => r.rarity);
-      const overall = rarities.includes("Legendario") ? "Legendario"
-        : rarities.includes("Épico") ? "Épico"
-        : rarities.includes("Raro") ? "Raro" : "Común";
-
-      dispatch({ type: "SET_IDEA", idea: results, params: [...selectedParams] });
-      setWin(overall);
-      track('roll', { params: selectedParams, rarity: overall });
-
-      if (overall === "Común") {
-        setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "idea" }), 600);
+      setPhase("idea_shown");
+      if (results?.length) {
+        setAiLoading(true);
+        generateAIPrompt(
+          results.map(v => (state.lang === "en" && v.value_en) ? v.value_en : v.value),
+          state.lang
+        ).then(data => { if (data?.prompt) setAiPrompt(data.prompt); })
+          .catch(() => {}).finally(() => setAiLoading(false));
       }
-    }, 1500);
+    }, 950);
   };
 
-  const handleWinDone = () => {
-    setWin(null);
-    dispatch({ type: "SET_SCREEN", screen: "idea" });
+  const saveInline = () => {
+    if (!state.currentIdea) return;
+    dispatch({ type: "SAVE_IDEA", idea: state.currentIdea });
+    setInlineSaved(true);
+    track('idea_saved', { rarity: getOverallRarity(state.currentIdea.variables) });
+    setTimeout(() => setInlineSaved(false), 1800);
+  };
+
+  const rerollInline = () => {
+    if (rollsLeft <= 0 || inlineRerolling || !state.currentIdea) return;
+    setInlineRerolling(true);
+    const pm = Object.keys(apiParams).length > 0 ? apiParams : null;
+    const prev = (state.currentIdea.variables ?? []).map(v => v.value);
+    const newIdea = pickVariables(state.currentIdea.params, activeSeason, pm, prev);
+    setTimeout(() => {
+      dispatch({ type: "SET_IDEA", idea: newIdea, params: state.currentIdea.params });
+      setSlots(newIdea.slice(0, selectedParams.length));
+      setAiPrompt(null);
+      setAiLoading(true);
+      generateAIPrompt(newIdea.map(v => (state.lang === "en" && v.value_en) ? v.value_en : v.value), state.lang)
+        .then(data => { if (data?.prompt) setAiPrompt(data.prompt); })
+        .catch(() => {}).finally(() => setAiLoading(false));
+      setInlineRerolling(false);
+      track('idea_rerolled', {});
+    }, 380);
   };
 
   return (
@@ -520,7 +612,15 @@ export function RandomScreen() {
                 {win === "Común"      && (
                   <div className="rnd-win-flash" style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.4)", pointerEvents: "none", zIndex: 8 }}/>
                 )}
-                {win && win !== "Común" && <WinBanner rarity={win} onDone={handleWinDone} t={t}/>}
+                {win && win !== "Común" && (
+                  <WinBanner
+                    rarity={win}
+                    onDone={slotFlow === "reveal_first" ? handleRevealDone : handleWinDone}
+                    showCta={slotFlow === "reveal_first"}
+                    ctaLabel={t("random.reveal.cta")}
+                    t={t}
+                  />
+                )}
               </div>
 
               {/* Coin tray */}
@@ -572,6 +672,99 @@ export function RandomScreen() {
             </div>
           </div>
         </div>
+
+        {/* ── Reveal-first: inline idea section ── */}
+        <AnimatePresence>
+          {phase === "idea_shown" && state.currentIdea && (
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              className="scroll"
+              style={{
+                flex: 1, minHeight: 0,
+                padding: "12px 16px 0",
+                background: "var(--paper)",
+                borderTop: "2px solid var(--ink)",
+              }}
+            >
+              {/* Variable cards */}
+              {state.currentIdea.variables.map((variable, i) => {
+                const catId = state.currentIdea.params[i];
+                const CatIcon = CAT_MAP_ICONS[catId] || IHeart;
+                const bg = VAR_COLORS[variable.rarity] || "var(--paper-2)";
+                return (
+                  <motion.div
+                    key={`${variable.value}-${i}`}
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.07, type: "spring", stiffness: 380, damping: 28 }}
+                    className="stk"
+                    style={{ background: bg, padding: 10, marginBottom: 8, display: "flex", gap: 10, alignItems: "center" }}
+                  >
+                    <div style={{ width: 38, height: 38, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <CatIcon s={18}/>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>// {catId ? t(`random.cat.${catId}`).toUpperCase() : ""}</p>
+                      <p style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.1, marginTop: 2, textTransform: "lowercase" }}>{getVarLabel(variable, state.lang)}</p>
+                    </div>
+                    <RarityBadge rarity={variable.rarity}/>
+                  </motion.div>
+                );
+              })}
+
+              {/* Prompt */}
+              <div style={{ background: "var(--butter)", border: "2.5px solid var(--ink)", borderRadius: 18, padding: "14px 16px", marginBottom: 10, position: "relative" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span className="tag">{t("idea.spoken")}</span>
+                  {aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1s infinite" }}>{t("idea.ai.generating")}</span>}
+                  {aiPrompt && !aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{t("idea.ai.btn")}</span>}
+                </div>
+                <p className="serif" style={{ fontSize: 18, lineHeight: 1.15 }}>
+                  {aiPrompt ?? generatePrompt(state.currentIdea.variables, state.lang, t)}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 46px", gap: 8, marginBottom: 8 }}>
+                <button
+                  onClick={rerollInline}
+                  disabled={rollsLeft <= 0 || inlineRerolling}
+                  className="stk"
+                  style={{
+                    height: 42, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 12,
+                    fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    cursor: rollsLeft > 0 && !inlineRerolling ? "pointer" : "not-allowed",
+                    opacity: rollsLeft <= 0 ? 0.4 : 1,
+                  }}
+                >
+                  {inlineRerolling
+                    ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}><IDice s={14}/></motion.div>
+                    : <IDice s={14}/>
+                  }
+                  {rollsLeft > 0 ? t("idea.reroll") : t("idea.reroll.disabled")}
+                </button>
+                <button
+                  onClick={saveInline}
+                  className="stk"
+                  style={{ background: inlineSaved ? "var(--acid)" : "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background .2s" }}
+                >
+                  <IBookmark s={18}/>
+                </button>
+              </div>
+
+              <button
+                onClick={() => dispatch({ type: "SET_SCREEN", screen: "setupTimer" })}
+                className="stk"
+                style={{ width: "100%", height: 52, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "var(--shadow-lg)", cursor: "pointer", marginBottom: 12 }}
+              >
+                <IBrush s={18}/> {t("idea.accept")}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <BottomNav current="random"/>
       </div>

@@ -224,6 +224,7 @@ export default {
   "idea.headline.Legendario":"Epifanía. Esto no pasa todos los días. No lo desperdicies.",
   "idea.ai.btn":            "✦ IA",
   "idea.ai.generating":     "generando...",
+  "random.reveal.cta":      "Ver resultado →",
   "idea.reroll":            "Este no. Dame otro.",
   "idea.reroll.disabled":   "Sin visitas",
   "idea.savedLimit":        "Límite 5/5 — se eliminó la última inspiración guardada",

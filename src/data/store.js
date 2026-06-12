@@ -99,6 +99,7 @@ export const initialState = {
   profileInitialTab: null,
   unreadNotifs:     0,
   lang:             getLang(),
+  slotFlow:         wpConfig.slotFlow ?? "classic",
   apiParams:        {},
   levels:           LEVELS,   // overridden by /config API response
   seasonLabels:     {},        // overridden by /config API response: { Primavera: "Spring", ... }

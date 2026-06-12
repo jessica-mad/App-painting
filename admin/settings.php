@@ -8,6 +8,7 @@ function inkrush_page_settings() {
         update_option( 'inkrush_active_season',    sanitize_text_field( $_POST['active_season'] ) );
         update_option( 'inkrush_rolls_per_day',    (int) $_POST['rolls_per_day'] );
         update_option( 'inkrush_max_params',       (int) $_POST['max_params'] );
+        update_option( 'inkrush_slot_flow',        in_array( $_POST['slot_flow'] ?? '', ['classic', 'reveal_first'] ) ? $_POST['slot_flow'] : 'classic' );
         if ( isset( $_POST['anthropic_api_key'] ) ) {
             $key = sanitize_text_field( $_POST['anthropic_api_key'] );
             if ( $key !== '••••••••' && $key !== '' ) {
@@ -87,6 +88,24 @@ function inkrush_page_settings() {
                         <p class="description">
                             Las variables etiquetadas con esta temporada aparecen con mayor probabilidad en el Randometro.
                             Cámbialo cuando empiece Navidad, Halloween, etc.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="slot_flow">🎰 Flujo del Randómetro</label></th>
+                    <td>
+                        <select name="slot_flow" id="slot_flow"
+                            style="height:36px;border:2px solid #111;border-radius:8px;font-weight:700;padding:0 10px;">
+                            <option value="classic" <?php selected( get_option('inkrush_slot_flow','classic'), 'classic' ); ?>>
+                                Clásico — Rareza → IdeaScreen separada
+                            </option>
+                            <option value="reveal_first" <?php selected( get_option('inkrush_slot_flow','classic'), 'reveal_first' ); ?>>
+                                Revelar primero — Rareza → Variables → Todo en una pantalla
+                            </option>
+                        </select>
+                        <p class="description">
+                            <strong>Clásico:</strong> la ruleta gira, muestra la rareza y lleva a una pantalla separada con el resultado.<br>
+                            <strong>Revelar primero:</strong> la ruleta gira, revela la rareza (suspense), luego desvela las variables en la misma pantalla con los controles de acción.
                         </p>
                     </td>
                 </tr>

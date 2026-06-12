@@ -297,6 +297,7 @@ add_shortcode( 'inkrush_app', function() {
         'recaptchaSiteKey'   => get_option( 'inkrush_recaptcha_site_key', '' ),
         'vapidPublicKey'     => ( function_exists('inkrush_get_vapid_keys') ? ( inkrush_get_vapid_keys()['public'] ?? '' ) : '' ),
         'pushSwUrl'          => home_url( '/push-sw.js' ),
+        'slotFlow'           => get_option( 'inkrush_slot_flow', 'classic' ),
     ] );
 
     // Enqueue reCAPTCHA script only when a site key is configured

@@ -224,6 +224,7 @@ export default {
   "idea.headline.Legendario":"Epiphany. This doesn't happen every day. Don't waste it.",
   "idea.ai.btn":            "✦ AI",
   "idea.ai.generating":     "generating...",
+  "random.reveal.cta":      "See result →",
   "idea.reroll":            "Not this one. Give me another.",
   "idea.reroll.disabled":   "No visits left",
   "idea.savedLimit":        "5/5 limit — last inspiration removed",
