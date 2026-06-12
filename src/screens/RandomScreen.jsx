@@ -471,8 +471,7 @@ export function RandomScreen() {
         </div>
 
         <div className="scroll" style={{
-          flex: phase === "idea_shown" ? "0 0 auto" : 1,
-          maxHeight: phase === "idea_shown" ? "42%" : undefined,
+          flex: 1,
           padding: phase === "idea_shown" ? "10px 22px 14px" : "10px 22px 90px",
         }}>
 
@@ -698,68 +697,30 @@ export function RandomScreen() {
           </div>
         </div>
 
-        {/* ── Reveal-first: inline idea section ── */}
+        {/* ── Reveal-first: action buttons ── */}
         <AnimatePresence>
           {phase === "idea_shown" && state.currentIdea && (
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 320, damping: 28 }}
-              className="scroll"
               style={{
-                flex: 1, minHeight: 0,
-                padding: "12px 16px 0",
-                background: "var(--paper)",
+                flexShrink: 0,
+                padding: "12px 16px",
+                paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+                background: "rgba(255,253,243,0.95)",
+                backdropFilter: "blur(12px)",
                 borderTop: "2px solid var(--ink)",
               }}
             >
-              {/* Variable cards */}
-              {state.currentIdea.variables.map((variable, i) => {
-                const catId = state.currentIdea.params[i];
-                const CatIcon = CAT_MAP_ICONS[catId] || IHeart;
-                const bg = VAR_COLORS[variable.rarity] || "var(--paper-2)";
-                return (
-                  <motion.div
-                    key={`${variable.value}-${i}`}
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.07, type: "spring", stiffness: 380, damping: 28 }}
-                    className="stk"
-                    style={{ background: bg, padding: 10, marginBottom: 8, display: "flex", gap: 10, alignItems: "center" }}
-                  >
-                    <div style={{ width: 38, height: 38, borderRadius: 10, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <CatIcon s={18}/>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.5)" }}>// {catId ? t(`random.cat.${catId}`).toUpperCase() : ""}</p>
-                      <p style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.1, marginTop: 2, textTransform: "lowercase" }}>{getVarLabel(variable, state.lang)}</p>
-                    </div>
-                    <RarityBadge rarity={variable.rarity}/>
-                  </motion.div>
-                );
-              })}
-
-              {/* Prompt */}
-              <div style={{ background: "var(--butter)", border: "2.5px solid var(--ink)", borderRadius: 18, padding: "14px 16px", marginBottom: 10, position: "relative" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span className="tag">{t("idea.spoken")}</span>
-                  {aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)", animation: "pulse 1s infinite" }}>{t("idea.ai.generating")}</span>}
-                  {aiPrompt && !aiLoading && <span className="mono" style={{ fontSize: 8, fontWeight: 700, color: "rgba(20,17,15,.4)" }}>{t("idea.ai.btn")}</span>}
-                </div>
-                <p className="serif" style={{ fontSize: 18, lineHeight: 1.15 }}>
-                  {aiPrompt ?? generatePrompt(state.currentIdea.variables, state.lang, t)}
-                </p>
-              </div>
-
-              {/* Actions */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 46px", gap: 8, marginBottom: 8 }}>
                 <button
                   onClick={rerollInline}
                   disabled={rollsLeft <= 0 || inlineRerolling}
                   className="stk"
                   style={{
-                    height: 42, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 12,
+                    height: 44, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 12,
                     fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     cursor: rollsLeft > 0 && !inlineRerolling ? "pointer" : "not-allowed",
                     opacity: rollsLeft <= 0 ? 0.4 : 1,
@@ -790,7 +751,7 @@ export function RandomScreen() {
 
               <button
                 onClick={resetGame}
-                style={{ width: "100%", height: 42, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: "pointer", marginBottom: 12 }}
+                style={{ width: "100%", height: 42, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
               >
                 {t("random.play.again")}
               </button>
