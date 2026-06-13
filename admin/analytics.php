@@ -131,7 +131,7 @@ function inkrush_page_analytics() {
         $music_counts[] = (int) $row->n;
     }
 
-    /* ── Events by user (pivot) ── */
+    /* ── Events by session (pivot) ── */
     // Top event types to show as columns (max 10)
     $col_events = $wpdb->get_col( $wpdb->prepare(
         "SELECT event FROM {$table}
@@ -140,25 +140,36 @@ function inkrush_page_analytics() {
         $since
     ) );
 
-    // Per-user, per-event counts
-    $user_event_rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT user_id, event, COUNT(*) as n
+    // Per-session, per-event counts + metadata
+    $session_meta = $wpdb->get_results( $wpdb->prepare(
+        "SELECT session_id, user_id, device,
+                MIN(created_at) as first_seen,
+                MAX(created_at) as last_seen
          FROM {$table}
          WHERE created_at >= %s {$excl_sql}
-         GROUP BY user_id, event",
+         GROUP BY session_id, user_id, device
+         ORDER BY last_seen DESC
+         LIMIT 30",
         $since
     ) );
 
-    // Pivot: user_id => [ event => count ]
-    $pivot = [];
-    foreach ( $user_event_rows as $r ) {
-        if ( ! isset( $pivot[ $r->user_id ] ) ) $pivot[ $r->user_id ] = [];
-        $pivot[ $r->user_id ][ $r->event ] = (int) $r->n;
+    // Per-session, per-event counts
+    $session_ids = array_column( $session_meta, 'session_id' );
+    $session_events = [];
+    if ( $session_ids ) {
+        $placeholders = implode( ',', array_fill( 0, count( $session_ids ), '%s' ) );
+        $args = array_merge( [ $since ], $session_ids );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT session_id, event, COUNT(*) as n
+             FROM {$table}
+             WHERE created_at >= %s AND session_id IN ({$placeholders})
+             GROUP BY session_id, event",
+            ...$args
+        ) );
+        foreach ( $rows as $r ) {
+            $session_events[ $r->session_id ][ $r->event ] = (int) $r->n;
+        }
     }
-    // Sort by total events desc
-    uasort( $pivot, function( $a, $b ) {
-        return array_sum( $b ) - array_sum( $a );
-    } );
 
     /* Inline styles */
     $card_style = 'border:2px solid #111;border-radius:12px;background:#FFFDF3;padding:20px 24px;';
@@ -293,39 +304,44 @@ function inkrush_page_analytics() {
 
       <!-- Row 5: Music popularity -->
       <div style="<?php echo $card_style; ?>margin-bottom:24px;">
-        <h3 style="margin:0 0 16px;">Música popular</h3>
+        <h3 style="margin:0 0 12px;">Música popular</h3>
         <?php if ( empty( $music_rows ) ) : ?>
           <p style="color:#888;font-size:13px;">Sin datos de música en el período seleccionado.</p>
         <?php else : ?>
-          <canvas id="inkrush-chart-music" height="80"></canvas>
+          <canvas id="inkrush-chart-music" height="40"></canvas>
         <?php endif; ?>
       </div>
 
-      <!-- Row 6: Events by user -->
+      <!-- Row 6: Sessions × events -->
       <div style="<?php echo $card_style; ?>margin-bottom:24px;overflow-x:auto;">
-        <h3 style="margin:0 0 4px;">Eventos por usuario</h3>
-        <p style="font-size:12px;color:#888;margin:0 0 16px;">Top 10 eventos · últimos <?php echo $range; ?> días</p>
-        <?php if ( empty( $pivot ) ) : ?>
+        <h3 style="margin:0 0 4px;">Sesiones recientes</h3>
+        <p style="font-size:12px;color:#888;margin:0 0 16px;">Últimas 30 · top 10 eventos como columnas</p>
+        <?php if ( empty( $session_meta ) ) : ?>
           <p style="color:#888;font-size:13px;">Sin datos en el período seleccionado.</p>
         <?php else : ?>
         <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;">
           <thead>
             <tr style="border-bottom:2px solid #111;">
-              <th style="text-align:left;padding:5px 10px;min-width:120px;">Usuario</th>
+              <th style="text-align:left;padding:5px 10px;min-width:110px;">Usuario</th>
+              <th style="text-align:left;padding:5px 8px;font-family:monospace;">Sesión</th>
+              <th style="text-align:left;padding:5px 8px;">Dispositivo</th>
               <th style="text-align:right;padding:5px 8px;background:#f5f0e0;font-weight:900;">Total</th>
               <?php foreach ( $col_events as $ce ) : ?>
-              <th style="text-align:right;padding:5px 8px;font-size:11px;color:#555;max-width:90px;overflow:hidden;text-overflow:ellipsis;" title="<?php echo esc_attr( $ce ); ?>">
+              <th style="text-align:right;padding:5px 8px;font-size:11px;color:#555;" title="<?php echo esc_attr( $ce ); ?>">
                 <?php echo esc_html( $ce ); ?>
               </th>
               <?php endforeach; ?>
+              <th style="text-align:left;padding:5px 8px;color:#888;font-weight:400;">Última actividad</th>
             </tr>
           </thead>
           <tbody>
-            <?php foreach ( $pivot as $uid => $events ) :
-                $user   = get_userdata( $uid );
-                $login  = $user ? $user->user_login : 'ID:' . $uid;
-                $edit   = $user ? get_edit_user_link( $uid ) : '#';
-                $row_total = array_sum( $events );
+            <?php foreach ( $session_meta as $sr ) :
+                $user      = get_userdata( $sr->user_id );
+                $login     = $user ? $user->user_login : 'ID:' . $sr->user_id;
+                $edit      = $user ? get_edit_user_link( $sr->user_id ) : '#';
+                $evts      = $session_events[ $sr->session_id ] ?? [];
+                $row_total = array_sum( $evts );
+                $short_sid = substr( $sr->session_id, 0, 8 );
             ?>
             <tr style="border-bottom:1px solid #e8e1d0;">
               <td style="padding:5px 10px;">
@@ -333,15 +349,18 @@ function inkrush_page_analytics() {
                   <?php echo esc_html( $login ); ?>
                 </a>
               </td>
+              <td style="padding:5px 8px;font-family:monospace;color:#888;"><?php echo esc_html( $short_sid ); ?>…</td>
+              <td style="padding:5px 8px;"><?php echo esc_html( $sr->device ); ?></td>
               <td style="padding:5px 8px;text-align:right;font-weight:900;background:#f5f0e0;"><?php echo $row_total; ?></td>
               <?php foreach ( $col_events as $ce ) :
-                  $val = $events[ $ce ] ?? 0;
+                  $val = $evts[ $ce ] ?? 0;
                   $opacity = $val > 0 ? min( 1, 0.15 + ( $val / max( 1, $row_total ) ) * 0.85 ) : 0;
               ?>
               <td style="padding:5px 8px;text-align:right;<?php echo $val > 0 ? "background:rgba(223,255,35,{$opacity});font-weight:700;" : 'color:#ccc;'; ?>">
                 <?php echo $val > 0 ? $val : '—'; ?>
               </td>
               <?php endforeach; ?>
+              <td style="padding:5px 8px;color:#888;"><?php echo esc_html( $sr->last_seen ); ?></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
