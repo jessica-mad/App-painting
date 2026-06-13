@@ -36,22 +36,35 @@ function inkrush_create_analytics_table() {
 function inkrush_page_analytics() {
     global $wpdb;
 
+    /* ── Save excluded users ── */
+    if ( isset( $_POST['inkrush_save_exclude'] ) && check_admin_referer( 'inkrush_analytics_exclude' ) ) {
+        $raw = sanitize_text_field( $_POST['exclude_user_ids'] ?? '' );
+        $ids = implode( ',', array_filter( array_map( 'intval', explode( ',', $raw ) ) ) );
+        update_option( 'inkrush_analytics_exclude_users', $ids );
+    }
+
     $range = isset( $_GET['range'] ) ? (int) $_GET['range'] : 30;
     if ( ! in_array( $range, [ 7, 30, 90 ], true ) ) $range = 30;
 
     $table    = $wpdb->prefix . 'inkrush_events';
     $since    = gmdate( 'Y-m-d H:i:s', strtotime( "-{$range} days" ) );
-    $since_dt = gmdate( 'Y-m-d', strtotime( "-{$range} days" ) );
+
+    /* ── Exclusion list ── */
+    $excluded_raw = get_option( 'inkrush_analytics_exclude_users', '' );
+    $excluded_ids = array_filter( array_map( 'intval', explode( ',', $excluded_raw ) ) );
+    $excl_sql     = $excluded_ids
+        ? 'AND user_id NOT IN (' . implode( ',', $excluded_ids ) . ')'
+        : '';
 
     /* ── KPI queries ── */
     $active_users = (int) $wpdb->get_var( $wpdb->prepare(
-        "SELECT COUNT(DISTINCT user_id) FROM {$table} WHERE created_at >= %s", $since
+        "SELECT COUNT(DISTINCT user_id) FROM {$table} WHERE created_at >= %s {$excl_sql}", $since
     ) );
     $sessions = (int) $wpdb->get_var( $wpdb->prepare(
-        "SELECT COUNT(DISTINCT session_id) FROM {$table} WHERE created_at >= %s", $since
+        "SELECT COUNT(DISTINCT session_id) FROM {$table} WHERE created_at >= %s {$excl_sql}", $since
     ) );
     $total_events = (int) $wpdb->get_var( $wpdb->prepare(
-        "SELECT COUNT(*) FROM {$table} WHERE created_at >= %s", $since
+        "SELECT COUNT(*) FROM {$table} WHERE created_at >= %s {$excl_sql}", $since
     ) );
     $avg_sessions = $active_users > 0 ? round( $sessions / $active_users, 1 ) : 0;
 
@@ -59,7 +72,7 @@ function inkrush_page_analytics() {
     $daily_rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT DATE(created_at) as day, COUNT(DISTINCT user_id) as users
          FROM {$table}
-         WHERE created_at >= %s
+         WHERE created_at >= %s {$excl_sql}
          GROUP BY day ORDER BY day",
         $since
     ) );
@@ -68,7 +81,7 @@ function inkrush_page_analytics() {
     $screen_rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT props, COUNT(*) as n
          FROM {$table}
-         WHERE event='screen_view' AND created_at >= %s
+         WHERE event='screen_view' AND created_at >= %s {$excl_sql}
          GROUP BY props ORDER BY n DESC LIMIT 10",
         $since
     ) );
@@ -85,7 +98,7 @@ function inkrush_page_analytics() {
     $event_rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT event, COUNT(*) as total, COUNT(DISTINCT user_id) as users
          FROM {$table}
-         WHERE created_at >= %s
+         WHERE created_at >= %s {$excl_sql}
          GROUP BY event ORDER BY total DESC LIMIT 15",
         $since
     ) );
@@ -95,7 +108,7 @@ function inkrush_page_analytics() {
     $funnel_counts = [];
     foreach ( $funnel_events as $fe ) {
         $funnel_counts[ $fe ] = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table} WHERE event = %s AND created_at >= %s",
+            "SELECT COUNT(*) FROM {$table} WHERE event = %s AND created_at >= %s {$excl_sql}",
             $fe, $since
         ) );
     }
@@ -105,7 +118,7 @@ function inkrush_page_analytics() {
     $music_rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT props, COUNT(*) as n
          FROM {$table}
-         WHERE event='music_selected' AND created_at >= %s
+         WHERE event='music_selected' AND created_at >= %s {$excl_sql}
          GROUP BY props ORDER BY n DESC",
         $since
     ) );
@@ -118,22 +131,34 @@ function inkrush_page_analytics() {
         $music_counts[] = (int) $row->n;
     }
 
-    /* ── Recent sessions ── */
-    $session_rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT
-            e.session_id,
-            e.user_id,
-            e.device,
-            COUNT(*) as event_count,
-            MIN(e.created_at) as first_seen,
-            MAX(e.created_at) as last_seen
-         FROM {$table} e
-         WHERE e.created_at >= %s
-         GROUP BY e.session_id, e.user_id, e.device
-         ORDER BY last_seen DESC
-         LIMIT 20",
+    /* ── Events by user (pivot) ── */
+    // Top event types to show as columns (max 10)
+    $col_events = $wpdb->get_col( $wpdb->prepare(
+        "SELECT event FROM {$table}
+         WHERE created_at >= %s {$excl_sql}
+         GROUP BY event ORDER BY COUNT(*) DESC LIMIT 10",
         $since
     ) );
+
+    // Per-user, per-event counts
+    $user_event_rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT user_id, event, COUNT(*) as n
+         FROM {$table}
+         WHERE created_at >= %s {$excl_sql}
+         GROUP BY user_id, event",
+        $since
+    ) );
+
+    // Pivot: user_id => [ event => count ]
+    $pivot = [];
+    foreach ( $user_event_rows as $r ) {
+        if ( ! isset( $pivot[ $r->user_id ] ) ) $pivot[ $r->user_id ] = [];
+        $pivot[ $r->user_id ][ $r->event ] = (int) $r->n;
+    }
+    // Sort by total events desc
+    uasort( $pivot, function( $a, $b ) {
+        return array_sum( $b ) - array_sum( $a );
+    } );
 
     /* Inline styles */
     $card_style = 'border:2px solid #111;border-radius:12px;background:#FFFDF3;padding:20px 24px;';
@@ -144,6 +169,28 @@ function inkrush_page_analytics() {
       <h1 style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
         📊 Analytics
       </h1>
+
+      <!-- Exclude users -->
+      <div style="<?php echo $card_style; ?>margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <span style="font-weight:800;font-size:13px;white-space:nowrap;">🚫 Excluir usuarios</span>
+        <form method="post" style="display:flex;align-items:center;gap:10px;flex:1;min-width:240px;">
+          <?php wp_nonce_field( 'inkrush_analytics_exclude' ); ?>
+          <input type="text" name="exclude_user_ids"
+            value="<?php echo esc_attr( $excluded_raw ); ?>"
+            placeholder="IDs separados por coma, ej: 1,5,12"
+            style="flex:1;height:34px;border:2px solid #111;border-radius:8px;padding:0 10px;font-family:monospace;font-size:13px;">
+          <button type="submit" name="inkrush_save_exclude" style="<?php echo $btn_base; ?>background:<?php echo $accent; ?>">
+            Guardar
+          </button>
+        </form>
+        <span style="font-size:12px;color:#666;">
+          Tu ID: <strong><?php echo get_current_user_id(); ?></strong>
+          (<?php echo esc_html( wp_get_current_user()->user_login ); ?>)
+          <?php if ( $excluded_ids ) : ?>
+            · Excluyendo: <strong><?php echo implode( ', ', $excluded_ids ); ?></strong>
+          <?php endif; ?>
+        </span>
+      </div>
 
       <!-- Date range selector -->
       <form method="get" style="margin-bottom:24px;">
@@ -254,42 +301,52 @@ function inkrush_page_analytics() {
         <?php endif; ?>
       </div>
 
-      <!-- Row 6: Recent sessions -->
-      <div style="<?php echo $card_style; ?>margin-bottom:24px;">
-        <h3 style="margin:0 0 16px;">Sesiones recientes</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <!-- Row 6: Events by user -->
+      <div style="<?php echo $card_style; ?>margin-bottom:24px;overflow-x:auto;">
+        <h3 style="margin:0 0 4px;">Eventos por usuario</h3>
+        <p style="font-size:12px;color:#888;margin:0 0 16px;">Top 10 eventos · últimos <?php echo $range; ?> días</p>
+        <?php if ( empty( $pivot ) ) : ?>
+          <p style="color:#888;font-size:13px;">Sin datos en el período seleccionado.</p>
+        <?php else : ?>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;">
           <thead>
             <tr style="border-bottom:2px solid #111;">
-              <th style="text-align:left;padding:4px 8px;">Usuario</th>
-              <th style="text-align:left;padding:4px 8px;">Sesión</th>
-              <th style="text-align:left;padding:4px 8px;">Dispositivo</th>
-              <th style="text-align:right;padding:4px 8px;">Eventos</th>
-              <th style="text-align:left;padding:4px 8px;">Primera vista</th>
-              <th style="text-align:left;padding:4px 8px;">Última vista</th>
+              <th style="text-align:left;padding:5px 10px;min-width:120px;">Usuario</th>
+              <th style="text-align:right;padding:5px 8px;background:#f5f0e0;font-weight:900;">Total</th>
+              <?php foreach ( $col_events as $ce ) : ?>
+              <th style="text-align:right;padding:5px 8px;font-size:11px;color:#555;max-width:90px;overflow:hidden;text-overflow:ellipsis;" title="<?php echo esc_attr( $ce ); ?>">
+                <?php echo esc_html( $ce ); ?>
+              </th>
+              <?php endforeach; ?>
             </tr>
           </thead>
           <tbody>
-            <?php foreach ( $session_rows as $sr ) :
-                $user = get_userdata( $sr->user_id );
-                $login = $user ? $user->user_login : 'ID:' . $sr->user_id;
-                $edit_url = $user ? get_edit_user_link( $sr->user_id ) : '#';
-                $short_session = substr( $sr->session_id, 0, 8 );
+            <?php foreach ( $pivot as $uid => $events ) :
+                $user   = get_userdata( $uid );
+                $login  = $user ? $user->user_login : 'ID:' . $uid;
+                $edit   = $user ? get_edit_user_link( $uid ) : '#';
+                $row_total = array_sum( $events );
             ?>
             <tr style="border-bottom:1px solid #e8e1d0;">
-              <td style="padding:5px 8px;">
-                <a href="<?php echo esc_url( $edit_url ); ?>" style="font-weight:700;color:#111;">
+              <td style="padding:5px 10px;">
+                <a href="<?php echo esc_url( $edit ); ?>" style="font-weight:700;color:#111;text-decoration:none;">
                   <?php echo esc_html( $login ); ?>
                 </a>
               </td>
-              <td style="padding:5px 8px;font-family:monospace;color:#555;"><?php echo esc_html( $short_session ); ?>…</td>
-              <td style="padding:5px 8px;"><?php echo esc_html( $sr->device ); ?></td>
-              <td style="padding:5px 8px;text-align:right;font-weight:700;"><?php echo (int) $sr->event_count; ?></td>
-              <td style="padding:5px 8px;color:#555;"><?php echo esc_html( $sr->first_seen ); ?></td>
-              <td style="padding:5px 8px;color:#555;"><?php echo esc_html( $sr->last_seen ); ?></td>
+              <td style="padding:5px 8px;text-align:right;font-weight:900;background:#f5f0e0;"><?php echo $row_total; ?></td>
+              <?php foreach ( $col_events as $ce ) :
+                  $val = $events[ $ce ] ?? 0;
+                  $opacity = $val > 0 ? min( 1, 0.15 + ( $val / max( 1, $row_total ) ) * 0.85 ) : 0;
+              ?>
+              <td style="padding:5px 8px;text-align:right;<?php echo $val > 0 ? "background:rgba(223,255,35,{$opacity});font-weight:700;" : 'color:#ccc;'; ?>">
+                <?php echo $val > 0 ? $val : '—'; ?>
+              </td>
+              <?php endforeach; ?>
             </tr>
             <?php endforeach; ?>
           </tbody>
         </table>
+        <?php endif; ?>
       </div>
 
     </div>
@@ -391,3 +448,4 @@ function inkrush_page_analytics() {
     </script>
     <?php
 }
+
