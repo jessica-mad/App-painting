@@ -298,6 +298,8 @@ add_shortcode( 'inkrush_app', function() {
         'vapidPublicKey'     => ( function_exists('inkrush_get_vapid_keys') ? ( inkrush_get_vapid_keys()['public'] ?? '' ) : '' ),
         'pushSwUrl'          => home_url( '/push-sw.js' ),
         'slotFlow'           => get_option( 'inkrush_slot_flow', 'classic' ),
+        'tutorialDone'       => $user_id ? (bool) get_user_meta( $user_id, 'inkrush_tutorial_done', true ) : false,
+        'tutorialPending'    => $user_id ? (bool) get_user_meta( $user_id, 'inkrush_tutorial_pending', true ) : false,
     ] );
 
     // Enqueue reCAPTCHA script only when a site key is configured

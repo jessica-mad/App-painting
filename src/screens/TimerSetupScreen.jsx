@@ -56,11 +56,17 @@ export function TimerSetupScreen() {
     }
   };
 
+  const inTutorial = state.tutorialStep !== null;
+
   const start = () => {
     if (previewRef.current) { previewRef.current.pause(); }
-    track('timer_setup_completed', { duration: duration?.seconds ?? 'free', music: music?.id ?? 'none' });
+    if (!inTutorial) track('timer_setup_completed', { duration: duration?.seconds ?? 'free', music: music?.id ?? 'none' });
     dispatch({ type: "SET_TIMER_CONFIG", config: { duration, music, musicOn } });
-    dispatch({ type: "SET_SCREEN", screen: "timer" });
+    if (inTutorial) {
+      dispatch({ type: "TUTORIAL_GOTO", step: 8, screen: "timer" });
+    } else {
+      dispatch({ type: "SET_SCREEN", screen: "timer" });
+    }
   };
 
   return (
@@ -82,7 +88,7 @@ export function TimerSetupScreen() {
           <p style={{ fontWeight: 800, fontSize: 12, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
             <ITimer s={14}/> {t("timer.setup.duration")}
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
+          <div data-tutorial="tut-duration" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
             {DURATIONS.map((d) => (
               <button
                 key={d.label}
@@ -103,7 +109,7 @@ export function TimerSetupScreen() {
 
           {/* Music */}
           {!hasMusicConfigured && (
-            <div className="stk-sm" style={{ background: "var(--paper-2)", border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 4 }}>
+            <div data-tutorial="tut-music" className="stk-sm" style={{ background: "var(--paper-2)", border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 4 }}>
               <p style={{ fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
                 <IMusic s={14}/> {t("timer.setup.music")} <span style={{ fontFamily: "JetBrains Mono", fontSize: 9, background: "rgba(20,17,15,.1)", padding: "2px 6px", borderRadius: 4 }}>{t("timer.setup.music.soon")}</span>
               </p>
@@ -113,7 +119,7 @@ export function TimerSetupScreen() {
             </div>
           )}
           {hasMusicConfigured && (
-            <>
+            <div data-tutorial="tut-music">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <div>
                   <p style={{ fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
@@ -223,7 +229,7 @@ export function TimerSetupScreen() {
                   {availableTracks.findIndex(t => t.id === music.id) + 1}/{availableTracks.length}
                 </span>
               </div>
-            </>
+            </div>
           )}
         </div>
 

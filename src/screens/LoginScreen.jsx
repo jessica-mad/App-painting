@@ -37,7 +37,7 @@ export function LoginScreen() {
   }, []);
 
   if (IS_LOGGED_IN) {
-    dispatch({ type: "SET_SCREEN", screen: "onboarding" });
+    dispatch({ type: "SET_SCREEN", screen: "home" });
     return null;
   }
 

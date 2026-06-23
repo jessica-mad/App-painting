@@ -64,6 +64,26 @@ function inkrush_page_users() {
         }
     }
 
+    /* Activar tutorial (fuerza que lo vea en el próximo login) */
+    if ( isset( $_POST['inkrush_activate_tutorial'] ) ) {
+        $uid = (int) $_POST['tutorial_uid'];
+        if ( check_admin_referer( 'inkrush_tutorial_' . $uid ) ) {
+            delete_user_meta( $uid, 'inkrush_tutorial_done' );
+            update_user_meta( $uid, 'inkrush_tutorial_pending', 1 );
+            $message = '🎓 Tutorial activado para el usuario #' . $uid . '. Lo verá en su próxima visita.';
+        }
+    }
+
+    /* Marcar tutorial como completado (saltar para usuario existente) */
+    if ( isset( $_POST['inkrush_mark_tutorial_done'] ) ) {
+        $uid = (int) $_POST['tutorial_uid'];
+        if ( check_admin_referer( 'inkrush_tutorial_' . $uid ) ) {
+            update_user_meta( $uid, 'inkrush_tutorial_done', 1 );
+            delete_user_meta( $uid, 'inkrush_tutorial_pending' );
+            $message = '✅ Tutorial marcado como completado para el usuario #' . $uid . '.';
+        }
+    }
+
     $message    = isset( $message ) ? $message : '';
     $level_config = inkrush_get_level_config();
 
@@ -190,7 +210,8 @@ function inkrush_page_users() {
                     <th style="width:90px;">Retos</th>
                     <th style="width:100px;">Inspiraciones</th>
                     <th style="width:80px;">Racha</th>
-                    <th style="width:130px;">Acciones</th>
+                    <th style="width:110px;">Tutorial</th>
+                    <th style="width:160px;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -198,12 +219,22 @@ function inkrush_page_users() {
                     <tr><td colspan="6" style="text-align:center;padding:24px;color:#888;">Aún no hay ilustradores registrados.</td></tr>
                 <?php endif; ?>
                 <?php foreach ( $ilustradores as $user ) :
-                    $challenges = (int) get_user_meta( $user->ID, 'inkrush_challenges_completed', true );
-                    $inspires   = (int) get_user_meta( $user->ID, 'inkrush_inspires_received', true );
-                    $streak     = (int) get_user_meta( $user->ID, 'inkrush_streak', true );
-                    $lvl        = (int) get_user_meta( $user->ID, 'inkrush_level', true ) ?: 1;
-                    $lvl_cfg    = $level_config[ $lvl ] ?? $level_config[1];
-                    $is_editing = ( isset( $_GET['edit_user'] ) && (int) $_GET['edit_user'] === $user->ID );
+                    $challenges       = (int) get_user_meta( $user->ID, 'inkrush_challenges_completed', true );
+                    $inspires         = (int) get_user_meta( $user->ID, 'inkrush_inspires_received', true );
+                    $streak           = (int) get_user_meta( $user->ID, 'inkrush_streak', true );
+                    $lvl              = (int) get_user_meta( $user->ID, 'inkrush_level', true ) ?: 1;
+                    $lvl_cfg          = $level_config[ $lvl ] ?? $level_config[1];
+                    $tutorial_done    = (bool) get_user_meta( $user->ID, 'inkrush_tutorial_done', true );
+                    $tutorial_pending = (bool) get_user_meta( $user->ID, 'inkrush_tutorial_pending', true );
+                    $is_editing       = ( isset( $_GET['edit_user'] ) && (int) $_GET['edit_user'] === $user->ID );
+
+                    if ( $tutorial_pending ) {
+                        $tut_badge = '<span style="background:#FFF3CD;border:2px solid #111;border-radius:20px;padding:2px 8px;font-weight:900;font-size:11px;white-space:nowrap;">⏳ Pendiente</span>';
+                    } elseif ( $tutorial_done ) {
+                        $tut_badge = '<span style="background:#D4EDDA;border:2px solid #111;border-radius:20px;padding:2px 8px;font-weight:900;font-size:11px;white-space:nowrap;">✅ Hecho</span>';
+                    } else {
+                        $tut_badge = '<span style="background:#F8F9FA;border:2px solid #ccc;border-radius:20px;padding:2px 8px;font-weight:700;font-size:11px;color:#888;white-space:nowrap;">— Sin iniciar</span>';
+                    }
                 ?>
                 <tr>
                     <td>
@@ -218,6 +249,7 @@ function inkrush_page_users() {
                     <td style="text-align:center;font-weight:900;"><?php echo $challenges; ?></td>
                     <td style="text-align:center;font-weight:900;"><?php echo $inspires; ?> ✨</td>
                     <td style="text-align:center;font-weight:900;"><?php echo $streak; ?> 🔥</td>
+                    <td style="text-align:center;"><?php echo $tut_badge; ?></td>
                     <td>
                         <a href="<?php echo esc_url( admin_url( 'admin.php?page=inkrush-users&edit_user=' . $user->ID ) ); ?>"
                             class="button button-small">✏️ Editar</a>
@@ -227,8 +259,33 @@ function inkrush_page_users() {
                             <button type="submit" name="inkrush_reset_rolls" class="button button-small"
                                 style="background:#DFFF23;border-color:#111;font-weight:900;"
                                 onclick="return confirm('¿Resetear intentos diarios de <?php echo esc_js($user->display_name); ?>?');">
-                                🎲 Reset intentos
+                                🎲 Rolls
                             </button>
+                        </form>
+                        <form method="post" style="display:inline;margin-left:4px;">
+                            <?php wp_nonce_field( 'inkrush_tutorial_' . $user->ID ); ?>
+                            <input type="hidden" name="tutorial_uid" value="<?php echo $user->ID; ?>">
+                            <?php if ( ! $tutorial_done || $tutorial_pending ) : ?>
+                                <button type="submit" name="inkrush_activate_tutorial" class="button button-small"
+                                    style="background:#C8F0FF;border-color:#111;font-weight:900;"
+                                    title="El usuario verá el tutorial la próxima vez que entre a la app">
+                                    🎓 Activar
+                                </button>
+                            <?php else : ?>
+                                <button type="submit" name="inkrush_activate_tutorial" class="button button-small"
+                                    style="background:#C8F0FF;border-color:#111;font-weight:900;"
+                                    onclick="return confirm('¿Reactivar el tutorial para <?php echo esc_js($user->display_name); ?>? Lo verá la próxima vez que entre.');"
+                                    title="Reactivar tutorial (ya lo completó antes)">
+                                    🔄 Reactivar
+                                </button>
+                            <?php endif; ?>
+                            <?php if ( ! $tutorial_done ) : ?>
+                                <button type="submit" name="inkrush_mark_tutorial_done" class="button button-small"
+                                    style="margin-left:4px;"
+                                    title="Marcar como completado para que no vea el tutorial">
+                                    ✓ Saltar
+                                </button>
+                            <?php endif; ?>
                         </form>
                     </td>
                 </tr>

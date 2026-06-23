@@ -6,8 +6,8 @@ import { track, trackScreenView } from "./utils/track";
 import { TutorialScreen }       from "./screens/TutorialScreen";
 import { IntroScreen }          from "./screens/IntroScreen";
 import { LoginScreen }          from "./screens/LoginScreen";
-import { OnboardingScreen }     from "./screens/OnboardingScreen";
 import { HomeScreen }           from "./screens/HomeScreen";
+import { TutorialOverlay }      from "./components/TutorialOverlay";
 import { RandomScreen }         from "./screens/RandomScreen";
 import { IdeaScreen }           from "./screens/IdeaScreen";
 import { TimerSetupScreen }     from "./screens/TimerSetupScreen";
@@ -26,7 +26,6 @@ const MOBILE_SCREENS = {
   intro:         IntroScreen,
   tutorial:      TutorialScreen,
   login:         LoginScreen,
-  onboarding:    OnboardingScreen,
   home:          HomeScreen,
   random:        RandomScreen,
   idea:          IdeaScreen,
@@ -53,7 +52,6 @@ const DESKTOP_FULL = {
 };
 
 const DESKTOP_FLOW = {
-  onboarding:    OnboardingScreen,
   random:        RandomScreen,
   idea:          IdeaScreen,
   setupTimer:    TimerSetupScreen,
@@ -173,6 +171,7 @@ export default function App() {
               }
             </motion.div>
           </AnimatePresence>
+          <TutorialOverlay/>
         </div>
       </AppContext.Provider>
     );
@@ -192,6 +191,7 @@ export default function App() {
             <MobileScreen/>
           </motion.div>
         </AnimatePresence>
+        <TutorialOverlay/>
       </div>
     </AppContext.Provider>
   );

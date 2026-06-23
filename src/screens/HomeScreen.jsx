@@ -228,7 +228,7 @@ export function HomeScreen() {
           {!searchMode && (
             <>
               {/* Progress strip */}
-              <div style={{ border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+              <div data-tutorial="tut-streak" style={{ border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{getLevelName(level, state.lang)}</p>
                   <p className="mono" style={{ fontSize: 9, fontWeight: 600, color: "rgba(20,17,15,.5)", marginTop: 3 }}>
@@ -244,7 +244,7 @@ export function HomeScreen() {
               </div>
 
               {/* Big CTA */}
-              <div className="stk" style={{ background: "var(--acid)", marginBottom: 14, borderRadius: 22, overflow: "hidden", position: "relative", boxShadow: "var(--shadow-lg)" }}>
+              <div data-tutorial="tut-muse-cta" className="stk" style={{ background: "var(--acid)", marginBottom: 14, borderRadius: 22, overflow: "hidden", position: "relative", boxShadow: "var(--shadow-lg)" }}>
                 <div className="stripes-y" style={{ position: "absolute", inset: 0 }}/>
                 <div style={{ position: "relative", padding: "20px 20px 16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>

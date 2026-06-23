@@ -413,7 +413,7 @@ export function generatePrompt(variables, lang = "es", t = null) {
   return t("idea.prompt.4+", { vars: vals.join(", ") });
 }
 
-export function pickVariables(paramIds, activeSeason = null, paramsMap = null, excludeValues = []) {
+export function pickVariables(paramIds, activeSeason = null, paramsMap = null, excludeValues = [], forceRarity = null) {
   return paramIds.map((paramId, i) => {
     const pool = (paramsMap && paramsMap[paramId]?.length) ? paramsMap[paramId] : PARAMETERS[paramId];
     if (!pool?.length) return { value: paramId, rarity: RARITY.COMUN };
@@ -422,12 +422,22 @@ export function pickVariables(paramIds, activeSeason = null, paramsMap = null, e
       : pool.filter(v => !v.season);
     if (filtered.length === 0) filtered = pool;
 
+    // Restrict to forceRarity when provided (e.g. tutorial forces Común)
+    if (forceRarity) {
+      const rarityPool = filtered.filter(v => v.rarity === forceRarity);
+      if (rarityPool.length > 0) filtered = rarityPool;
+    }
+
     // Exclude the previous value for this slot (if pool is large enough)
     const excluded = excludeValues[i];
     const candidates = filtered.length > 1 && excluded
       ? filtered.filter(v => v.value !== excluded)
       : filtered;
     const finalPool = candidates.length > 0 ? candidates : filtered;
+
+    if (forceRarity) {
+      return finalPool[Math.floor(Math.random() * finalPool.length)];
+    }
 
     // Weighted random: Legendario 5%, Épico 15%, Raro 30%, Común 50%
     const weights = { [RARITY.COMUN]: 50, [RARITY.RARO]: 30, [RARITY.EPICO]: 15, [RARITY.LEGENDARIO]: 5 };

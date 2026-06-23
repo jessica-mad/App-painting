@@ -240,10 +240,16 @@ export function TimerScreen() {
   const sec = String(seconds % 60).padStart(2, "0");
   /* Remaining fraction: 1 = full circle (start), 0 = empty (done) */
   const frac    = isFree ? 1 : seconds / totalSeconds;
+  const inTutorial = state.tutorialStep !== null;
+
   const finish  = () => {
-    track('timer_completed', { duration: timerConfig?.duration?.seconds ?? 'free' });
     finishedRef.current = true;
-    dispatch({ type: "COMPLETE_CHALLENGE" });
+    if (inTutorial) {
+      dispatch({ type: "TUTORIAL_GOTO", step: 10, screen: "upload" });
+    } else {
+      track('timer_completed', { duration: timerConfig?.duration?.seconds ?? 'free' });
+      dispatch({ type: "COMPLETE_CHALLENGE" });
+    }
   };
 
   const ideaVars  = currentIdea?.variables ?? [];
@@ -309,6 +315,7 @@ export function TimerScreen() {
 
               {/* Rain toggle — pill switch style */}
               <button
+                data-tutorial="tut-brainstorm"
                 onClick={() => setRainOn(r => !r)}
                 style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", color: "#fff", textAlign: "left", padding: 0, cursor: "pointer" }}
               >
@@ -412,6 +419,7 @@ export function TimerScreen() {
             )}
 
             <button
+              data-tutorial="tut-done-btn"
               onClick={finish}
               style={{ width: "100%", height: 48, borderRadius: 16, border: "2px solid rgba(255,255,255,.25)", background: "rgba(255,255,255,.08)", color: "#fff", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
             >

@@ -1,7 +1,8 @@
 import { createContext, useContext } from "react";
 import { ACTIVE_SEASON, LEVELS } from "./parameters";
-import { WP_ROLLS, WP_ROLLS_USED } from "../utils/api";
+import { WP_ROLLS, WP_ROLLS_USED, WP_TUTORIAL_DONE, WP_TUTORIAL_PENDING, markTutorialDone } from "../utils/api";
 import { getLang } from "../i18n";
+import { TUTORIAL_STEPS } from "./tutorial";
 
 export const AppContext = createContext(null);
 export function useApp() { return useContext(AppContext); }
@@ -37,8 +38,14 @@ function startScreen() {
     const seenIntro = localStorage.getItem("musai_seen_intro");
     return seenIntro ? "login" : "intro";
   }
-  const techniques = JSON.parse(localStorage.getItem("musai_techniques") || "[]");
-  return techniques.length >= 1 ? "home" : "onboarding";
+  return "home";
+}
+
+function shouldShowTutorial() {
+  if (!wpUser) return false;
+  if (WP_TUTORIAL_PENDING) return true;
+  if (WP_TUTORIAL_DONE) return false;
+  return !localStorage.getItem("musai_tutorial_done");
 }
 
 const initialProfile = wpConfig.userId ? {
@@ -100,6 +107,7 @@ export const initialState = {
   unreadNotifs:     0,
   lang:             getLang(),
   slotFlow:         wpConfig.slotFlow ?? "classic",
+  tutorialStep:     shouldShowTutorial() ? 0 : null,
   apiParams:        {},
   levels:           LEVELS,   // overridden by /config API response
   seasonLabels:     {},        // overridden by /config API response: { Primavera: "Spring", ... }
@@ -115,8 +123,7 @@ export function reducer(state, action) {
       return { ...state, profileInitialTab: null };
 
     case "LOGIN":
-      return { ...state, user: action.user,
-        screen: state.favoriteTechniques.length >= 1 ? "home" : "onboarding" };
+      return { ...state, user: action.user, screen: "home" };
 
     case "SET_TECHNIQUES": {
       localStorage.setItem("musai_techniques", JSON.stringify(action.techniques));
@@ -234,6 +241,29 @@ export function reducer(state, action) {
         ...(action.seasonLabels    && { seasonLabels: action.seasonLabels }),
         ...(action.rarityLabels    && { rarityLabels: action.rarityLabels }),
       };
+
+    case "TUTORIAL_NEXT": {
+      const step = TUTORIAL_STEPS[state.tutorialStep];
+      const nextStep = state.tutorialStep + 1;
+      const nextScreen = step?.nextScreen ?? state.screen;
+      return {
+        ...state,
+        tutorialStep: nextStep < TUTORIAL_STEPS.length ? nextStep : null,
+        screen: nextScreen,
+      };
+    }
+
+    case "TUTORIAL_GOTO": {
+      const nextScreen = action.screen ?? state.screen;
+      return { ...state, tutorialStep: action.step, screen: nextScreen };
+    }
+
+    case "TUTORIAL_SKIP":
+    case "TUTORIAL_END": {
+      localStorage.setItem("musai_tutorial_done", "1");
+      markTutorialDone().catch(() => {});
+      return { ...state, tutorialStep: null, screen: "home" };
+    }
 
     default:
       return state;

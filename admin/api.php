@@ -256,6 +256,20 @@ function inkrush_register_routes() {
         'callback'            => 'inkrush_api_track_events',
         'permission_callback' => 'is_user_logged_in',
     ] );
+
+    /* ── Tutorial: marcar como completado o saltado ── */
+    register_rest_route( 'inkrush/v1', '/tutorial/done', [
+        'methods'             => 'POST',
+        'callback'            => 'inkrush_api_tutorial_done',
+        'permission_callback' => 'is_user_logged_in',
+    ] );
+}
+
+function inkrush_api_tutorial_done( $request ) {
+    $user_id = get_current_user_id();
+    update_user_meta( $user_id, 'inkrush_tutorial_done', 1 );
+    delete_user_meta( $user_id, 'inkrush_tutorial_pending' );
+    return rest_ensure_response( [ 'ok' => true ] );
 }
 
 /* ──────────────────────────────────────────────────────────────

@@ -333,12 +333,46 @@ export default {
   "public.copied":              "¡Copiado!",
   "public.editProfile":         "Editar perfil",
 
-  /* ── Onboarding ── */
-  "onboarding.step":     "PASO 1 / 1",
-  "onboarding.title":    "Elige tus 3 técnicas favoritas",
-  "onboarding.subtitle": "// PERSONALIZA TU EXPERIENCIA · CAMBIABLE LUEGO",
-  "onboarding.selected": "SELECCIONADAS",
-  "onboarding.start":    "¡Comenzar a crear!",
+  /* ── Tutorial ── */
+  "tut.next":   "Siguiente →",
+  "tut.skip":   "Saltar tutorial",
+  "tut.finish": "¡Empezar de verdad!",
+
+  "tut.0.title": "Bienvenida a Unlck Art",
+  "tut.0.body":  "Vamos a hacer un recorrido rápido por la app para que sepas cómo funciona todo antes de empezar de verdad. Primero: esta es tu racha. Cada día que completes un reto, crece. Mantenla viva y desbloquea nuevos niveles.",
+
+  "tut.1.title": "La Musa te espera",
+  "tut.1.body":  "Cada día tienes un número de visitas a la Musa. Ella combinará categorías de tu elección para darte una idea creativa única. Vamos a probarlo ahora.",
+
+  "tut.2.title": "Elige tus ingredientes",
+  "tut.2.body":  "Selecciona hasta 3 categorías. La Musa las combinará para generar tu reto. Puedes cambiarlas cuando quieras. Elige las que más te interesen y pulsa Siguiente.",
+
+  "tut.3.title": "Consulta a la Musa",
+  "tut.3.body":  "Arrastra la palanca hacia abajo para tirar. La Musa elegirá una combinación aleatoria entre miles de posibilidades. ¡No hay dos ideas iguales!",
+
+  "tut.4.title": "Tu idea creativa",
+  "tut.4.body":  "¡Aquí está tu reto! La Musa ha combinado las categorías que elegiste. Cada resultado tiene una rareza: Común, Raro, Épico o Legendario. Cuanto más rara, más desafiante.",
+
+  "tut.5.title": "¿Qué haces con tu idea?",
+  "tut.5.body":  "Puedes pedir otra idea, guardar esta para más tarde, o aceptar el reto y ponerte a dibujar ahora. La idea guardada aparecerá en tu lista de inspiraciones. ¡Acepta este reto para continuar!",
+
+  "tut.6.title": "¿Cuánto tiempo tienes?",
+  "tut.6.body":  "Elige una duración para tu sesión. El tiempo limitado te ayuda a concentrarte y evitar el bloqueo creativo. El modo Libre te deja dibujar sin límite. Te recomendamos 25 minutos para empezar.",
+
+  "tut.7.title": "Pon el ambiente",
+  "tut.7.body":  "La música de fondo te ayuda a concentrarte mientras ilustras. Puedes elegir la pista que más te guste y cambiarla durante la sesión. En este recorrido vamos a ver qué pasa cuando inicias el modo Musai.",
+
+  "tut.8.title": "Lluvia de ideas",
+  "tut.8.body":  "Si te quedas atascado, activa la lluvia de ideas. Palabras clave caerán en pantalla para darte chispas de inspiración extra. Puedes activarla y desactivarla cuando quieras, y también cambiar la canción desde aquí.",
+
+  "tut.9.title": "¿Terminaste?",
+  "tut.9.body":  "Cuando termines de dibujar, toca este botón. Pasarás a la pantalla para subir tu obra. Puedes publicarla para que la comunidad la vea y se inspire, o guardarla como privada solo para ti. ¡Lo importante es hacerlo!",
+
+  "tut.10.title": "Comparte tu obra",
+  "tut.10.body":  "Sube una foto de lo que has hecho, elige con qué técnica lo has hecho (lápiz, tinta, digital…) y añade una descripción si quieres. La comunidad podrá ver tu obra, darte likes e inspirarse con tu reto.",
+
+  "tut.11.title": "¡Ya conoces Unlck Art!",
+  "tut.11.body":  "Has completado el recorrido de bienvenida. Ahora sabes cómo funciona todo. Tu obra de hoy no se publicará — era el tour previo a empezar de verdad. Cuando entres mañana, la Musa tendrá un nuevo reto esperándote. ¿Empezamos?",
 
   /* ── Intro ── */
   "intro.skip":          "Saltar →",

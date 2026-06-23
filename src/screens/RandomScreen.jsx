@@ -242,7 +242,10 @@ const VAR_COLORS = { "Común": "var(--paper-2)", "Raro": "var(--sky)", "Épico":
 export function RandomScreen() {
   const { state, dispatch } = useApp();
   const t = useT();
-  const { selectedParams, rollsLeft, activeSeason, apiParams, slotFlow } = state;
+  const { selectedParams, rollsLeft, activeSeason, apiParams, tutorialStep } = state;
+  const inTutorial = tutorialStep !== null;
+  /* Force reveal_first during tutorial so the result shows inline */
+  const slotFlow = inTutorial ? "reveal_first" : state.slotFlow;
   const [rolling, setRolling]       = useState(false);
   const [slots, setSlots]           = useState([null, null, null]);
   const [win, setWin]               = useState(null);
@@ -303,8 +306,8 @@ export function RandomScreen() {
   };
 
   const doRoll = () => {
-    if (rolling || rollsLeft <= 0 || selectedParams.length === 0 || win) return;
-    useRoll();
+    if (rolling || (!inTutorial && rollsLeft <= 0) || selectedParams.length === 0 || win) return;
+    if (!inTutorial) useRoll();
     setRolling(true);
     setSlots([null, null, null]);
     setWin(null);
@@ -312,7 +315,10 @@ export function RandomScreen() {
     setAiPrompt(null);
 
     const prevValues = (state.currentIdea?.variables ?? []).map(v => v.value);
-    const results = pickVariables(selectedParams, activeSeason, paramsMap, prevValues);
+    /* During tutorial step 3, force Común rarity so the result is always simple */
+    const results = inTutorial
+      ? pickVariables(selectedParams, activeSeason, paramsMap, prevValues, "Común")
+      : pickVariables(selectedParams, activeSeason, paramsMap, prevValues);
 
     const computeOverall = (res) => {
       const rarities = res.slice(0, selectedParams.length).map(r => r.rarity);
@@ -327,10 +333,11 @@ export function RandomScreen() {
         setRolling(false);
         const overall = computeOverall(results);
         dispatch({ type: "SET_IDEA", idea: results, params: [...selectedParams] });
-        track('roll', { params: selectedParams, rarity: overall });
-        if (overall === "Común") {
+        if (!inTutorial) track('roll', { params: selectedParams, rarity: overall });
+        if (overall === "Común" || inTutorial) {
           // No suspense banner for common — reveal directly after short flash
-          runReveal(results);
+          // During tutorial always reveal directly and advance to step 4
+          runReveal(results, inTutorial);
         } else {
           setPendingResults(results);
           setWin(overall);
@@ -364,7 +371,7 @@ export function RandomScreen() {
   };
 
   // Reveal-first: animate slots landing then show inline idea panel
-  const runReveal = (results) => {
+  const runReveal = (results, fromTutorial = false) => {
     setWin(null);
     setPhase("landing");
     [350, 600, 850].slice(0, results.length).forEach((tv, i) => {
@@ -374,6 +381,11 @@ export function RandomScreen() {
     });
     setTimeout(() => {
       setPhase("idea_shown");
+      /* During tutorial: advance from step 3 → step 4 when reveal completes */
+      if (fromTutorial) {
+        dispatch({ type: "TUTORIAL_GOTO", step: 4 });
+        return;
+      }
       if (results?.length) {
         setAiLoading(true);
         generateAIPrompt(
@@ -477,7 +489,7 @@ export function RandomScreen() {
 
           {/* Category chips — hidden once result is displayed */}
           {phase !== "idea_shown" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+          <div data-tutorial="tut-cat-chips" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
             {PARAM_CATEGORIES.map((cat) => {
               const active  = selectedParams.includes(cat.id);
               const slot    = selectedParams.indexOf(cat.id);
@@ -520,7 +532,7 @@ export function RandomScreen() {
 
           {/* ── idea_shown: solo la caja blanca con los resultados ── */}
           {phase === "idea_shown" ? (
-            <div style={{ background: "var(--paper-2)", borderRadius: 20, padding: 16, border: "3px solid var(--ink)", boxShadow: "var(--shadow-lg)", position: "relative", overflow: "hidden" }}>
+            <div data-tutorial="tut-result-box" style={{ background: "var(--paper-2)", borderRadius: 20, padding: 16, border: "3px solid var(--ink)", boxShadow: "var(--shadow-lg)", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(transparent 0 2px, rgba(20,17,15,0.03) 2px 3px)", pointerEvents: "none" }}/>
               <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                 {[0, 1, 2].map(i => {
@@ -715,7 +727,7 @@ export function RandomScreen() {
             </div>
 
             {/* Lever — sits in the 46px gap on the right */}
-            <div style={{ position: "absolute", right: 0, top: 80 }}>
+            <div data-tutorial="tut-lever" style={{ position: "absolute", right: 0, top: 80 }}>
               <IdleLever
                 onPull={doRoll}
                 disabled={rolling || rollsLeft <= 0 || !!win}
@@ -732,6 +744,7 @@ export function RandomScreen() {
         <AnimatePresence>
           {phase === "idea_shown" && state.currentIdea && (
             <motion.div
+              data-tutorial="tut-action-bar"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
@@ -746,13 +759,13 @@ export function RandomScreen() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 46px", gap: 8, marginBottom: 8 }}>
                 <button
                   onClick={rerollInline}
-                  disabled={rollsLeft <= 0 || inlineRerolling}
+                  disabled={rollsLeft <= 0 || inlineRerolling || inTutorial}
                   className="stk"
                   style={{
                     height: 44, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 12,
                     fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                    cursor: rollsLeft > 0 && !inlineRerolling ? "pointer" : "not-allowed",
-                    opacity: rollsLeft <= 0 ? 0.4 : 1,
+                    cursor: rollsLeft > 0 && !inlineRerolling && !inTutorial ? "pointer" : "not-allowed",
+                    opacity: (rollsLeft <= 0 || inTutorial) ? 0.4 : 1,
                   }}
                 >
                   {inlineRerolling
@@ -771,19 +784,27 @@ export function RandomScreen() {
               </div>
 
               <button
-                onClick={() => dispatch({ type: "SET_SCREEN", screen: "setupTimer" })}
+                onClick={() => {
+                  if (inTutorial) {
+                    dispatch({ type: "TUTORIAL_GOTO", step: 6, screen: "setupTimer" });
+                  } else {
+                    dispatch({ type: "SET_SCREEN", screen: "setupTimer" });
+                  }
+                }}
                 className="stk"
                 style={{ width: "100%", height: 52, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 16, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "var(--shadow-lg)", cursor: "pointer", marginBottom: 8 }}
               >
                 <IBrush s={18}/> {t("idea.accept")}
               </button>
 
-              <button
-                onClick={resetGame}
-                style={{ width: "100%", height: 42, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
-              >
-                {t("random.play.again")}
-              </button>
+              {!inTutorial && (
+                <button
+                  onClick={resetGame}
+                  style={{ width: "100%", height: 42, background: "var(--paper-2)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+                >
+                  {t("random.play.again")}
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

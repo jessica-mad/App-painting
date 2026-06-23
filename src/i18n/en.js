@@ -333,12 +333,46 @@ export default {
   "public.copied":              "Copied!",
   "public.editProfile":         "Edit profile",
 
-  /* ── Onboarding ── */
-  "onboarding.step":     "STEP 1 / 1",
-  "onboarding.title":    "Choose your 3 favorite techniques",
-  "onboarding.subtitle": "// CUSTOMIZE YOUR EXPERIENCE · CHANGEABLE LATER",
-  "onboarding.selected": "SELECTED",
-  "onboarding.start":    "Start creating!",
+  /* ── Tutorial ── */
+  "tut.next":   "Next →",
+  "tut.skip":   "Skip tutorial",
+  "tut.finish": "Start for real!",
+
+  "tut.0.title": "Welcome to Unlck Art",
+  "tut.0.body":  "We're going to take a quick tour of the app so you know how everything works before you start for real. First: this is your streak. Every day you complete a challenge, it grows. Keep it alive to unlock new levels.",
+
+  "tut.1.title": "The Muse is waiting",
+  "tut.1.body":  "Each day you get a number of visits to the Muse. She'll combine categories of your choice into a unique creative idea. Let's try it now.",
+
+  "tut.2.title": "Choose your ingredients",
+  "tut.2.body":  "Select up to 3 categories. The Muse will combine them to create your challenge. You can change them anytime. Pick the ones that interest you, then tap Next.",
+
+  "tut.3.title": "Consult the Muse",
+  "tut.3.body":  "Drag the lever down to roll. The Muse will pick a random combination from thousands of possibilities. No two ideas are alike!",
+
+  "tut.4.title": "Your creative idea",
+  "tut.4.body":  "Here's your challenge! The Muse combined your chosen categories. Each result has a rarity: Common, Rare, Epic or Legendary. The rarer, the more challenging.",
+
+  "tut.5.title": "What do you do with your idea?",
+  "tut.5.body":  "You can ask for another idea, save this one for later, or accept the challenge and start drawing now. Saved ideas appear in your inspirations list. Accept this challenge to continue!",
+
+  "tut.6.title": "How much time do you have?",
+  "tut.6.body":  "Choose a duration for your session. Limited time helps you focus and avoid creative block. Free mode lets you draw without limits. We recommend 25 minutes to start.",
+
+  "tut.7.title": "Set the mood",
+  "tut.7.body":  "Background music helps you focus while you illustrate. Choose the track you like best — you can change it during your session. In this tour we'll see what happens when you start Musai mode.",
+
+  "tut.8.title": "Idea rain",
+  "tut.8.body":  "If you get stuck, turn on the idea rain. Keywords will fall across your screen to spark extra inspiration. Toggle it on and off anytime, and change the song from here too.",
+
+  "tut.9.title": "All done?",
+  "tut.9.body":  "When you finish drawing, tap this button. You'll go to the screen to share your work. You can publish it for the community to see and get inspired by, or keep it private just for you. The important thing is doing it!",
+
+  "tut.10.title": "Share your work",
+  "tut.10.body":  "Upload a photo of what you made, choose your technique (pencil, ink, digital…) and add a description if you want. The community will see your work, give you likes, and get inspired by your challenge.",
+
+  "tut.11.title": "You know Unlck Art now!",
+  "tut.11.body":  "You've completed the welcome tour. Now you know how everything works. Today's work won't be published — this was the tour before starting for real. When you come back tomorrow, the Muse will have a new challenge waiting. Ready to go?",
 
   /* ── Intro ── */
   "intro.skip":          "Skip →",

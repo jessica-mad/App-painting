@@ -215,7 +215,8 @@ function PhotoCarousel({ images, onRemove }) {
 export function UploadScreen() {
   const { state, dispatch } = useApp();
   const t = useT();
-  const { profile, currentIdea } = state;
+  const { profile, currentIdea, tutorialStep } = state;
+  const inTutorial = tutorialStep !== null;
   const [technique,   setTechnique]   = useState(TECHNIQUES[0].id);
   const [description, setDescription] = useState("");
   const [images,      setImages]      = useState([]);
@@ -354,6 +355,7 @@ export function UploadScreen() {
 
         <div className="scroll" style={{ flex: 1, marginTop: 14 }}>
           {/* Photo zone */}
+          <div data-tutorial="tut-upload-zone">
           {images.length > 0 ? (
             <div>
               <PhotoCarousel images={images} onRemove={removeImage}/>
@@ -369,9 +371,9 @@ export function UploadScreen() {
             </div>
           ) : (
             <button
-              onClick={() => fileRef.current?.click()}
+              onClick={() => !inTutorial && fileRef.current?.click()}
               className="stk"
-              style={{ width: "100%", height: 220, border: "3px dashed var(--ink)", background: "var(--rose)", borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", overflow: "hidden", cursor: "pointer" }}
+              style={{ width: "100%", height: 220, border: "3px dashed var(--ink)", background: "var(--rose)", borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", overflow: "hidden", cursor: inTutorial ? "default" : "pointer" }}
             >
               <div className="halftone" style={{ position: "absolute", inset: 0, opacity: 0.2 }}/>
               <div style={{ width: 56, height: 56, borderRadius: 14, border: "2px solid var(--ink)", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
@@ -381,6 +383,7 @@ export function UploadScreen() {
               <p className="mono" style={{ fontSize: 9, fontWeight: 700, color: "rgba(20,17,15,.55)" }}>{t("upload.formats")}</p>
             </button>
           )}
+          </div>{/* end tut-upload-zone */}
 
           {/* Prompt tags */}
           {currentIdea && (
@@ -451,21 +454,34 @@ export function UploadScreen() {
             ⚠ {uploadError}
           </div>
         )}
-        <button
-          onClick={publish}
-          disabled={saving || images.length === 0}
-          className="stk"
-          style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: saving || images.length === 0 ? "not-allowed" : "pointer", opacity: saving || images.length === 0 ? 0.45 : 1 }}
-        >
-          <IShare s={18}/> {saving ? t("upload.publishing") : t("upload.publish")}
-        </button>
-        <button
-          onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
-          disabled={saving}
-          style={{ marginTop: 8, height: 44, background: "transparent", border: "2px solid rgba(20,17,15,.25)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.4 : 1 }}
-        >
-          {t("common.cancel")}
-        </button>
+        {inTutorial ? (
+          <button
+            data-tutorial="tut-finish-btn"
+            onClick={() => dispatch({ type: "TUTORIAL_END" })}
+            className="stk"
+            style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}
+          >
+            <IShare s={18}/> {t("tut.finish")}
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={publish}
+              disabled={saving || images.length === 0}
+              className="stk"
+              style={{ marginTop: 10, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: saving || images.length === 0 ? "not-allowed" : "pointer", opacity: saving || images.length === 0 ? 0.45 : 1 }}
+            >
+              <IShare s={18}/> {saving ? t("upload.publishing") : t("upload.publish")}
+            </button>
+            <button
+              onClick={() => dispatch({ type: "SET_SCREEN", screen: "feed" })}
+              disabled={saving}
+              style={{ marginTop: 8, height: 44, background: "transparent", border: "2px solid rgba(20,17,15,.25)", borderRadius: 14, fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.4 : 1 }}
+            >
+              {t("common.cancel")}
+            </button>
+          </>
+        )}
       </div>
     </Phone>
   );
