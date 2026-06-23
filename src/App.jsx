@@ -159,7 +159,7 @@ export default function App() {
           <AnimatePresence mode="wait">
             <motion.div
               key={guardedDesktop}
-              initial={{ opacity: 0, y: 8 }}
+              initial={state.tutorialStep !== null ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ type: "spring", stiffness: 380, damping: 32 }}
@@ -183,7 +183,7 @@ export default function App() {
         <AnimatePresence mode="wait">
           <motion.div
             key={guardedScreen}
-            initial={{ opacity: 0, y: 14 }}
+            initial={state.tutorialStep !== null ? false : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -14 }}
             transition={{ type: "spring", stiffness: 380, damping: 32 }}

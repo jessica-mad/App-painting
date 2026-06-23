@@ -2,37 +2,43 @@ import { useEffect, useState, useRef } from "react";
 import { useApp } from "../data/store";
 import { useT } from "../i18n";
 import { TUTORIAL_STEPS } from "../data/tutorial";
+import { track } from "../utils/track";
+
+const RETRY_DELAYS = [0, 100, 250, 500, 900];
 
 function useTargetRect(target, screen, tutorialStep) {
   const [rect, setRect] = useState(null);
-  const roRef = useRef(null);
 
   useEffect(() => {
     if (!target) { setRect(null); return; }
 
+    const timers = [];
+
     function measure() {
       const el = document.querySelector(`[data-tutorial="${target}"]`);
       if (el) {
-        setRect(el.getBoundingClientRect());
-      } else {
-        setRect(null);
+        const r = el.getBoundingClientRect();
+        /* Only accept a rect that has been fully painted (width or height > 0) */
+        if (r.width > 0 || r.height > 0) {
+          setRect(r);
+          return true;
+        }
       }
+      return false;
     }
 
-    measure();
-    const timer = setTimeout(measure, 120);
+    RETRY_DELAYS.forEach(d => {
+      timers.push(setTimeout(measure, d));
+    });
 
-    const el = document.querySelector(`[data-tutorial="${target}"]`);
-    if (el) {
-      roRef.current = new ResizeObserver(measure);
-      roRef.current.observe(el);
-      roRef.current.observe(document.body);
-    }
+    /* ResizeObserver as a continuous safety-net for layout shifts */
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
 
     return () => {
-      clearTimeout(timer);
-      roRef.current?.disconnect();
-      roRef.current = null;
+      timers.forEach(clearTimeout);
+      ro.disconnect();
+      setRect(null);
     };
   }, [target, screen, tutorialStep]);
 
@@ -40,11 +46,21 @@ function useTargetRect(target, screen, tutorialStep) {
 }
 
 const PAD = 8;
+const TOOLTIP_ESTIMATED_H = 210;
 
 export function TutorialOverlay() {
   const { state, dispatch } = useApp();
   const t = useT();
   const { tutorialStep, screen } = state;
+  const trackedStartRef = useRef(false);
+
+  /* Track tutorial_started once when the overlay first mounts at step 0 */
+  useEffect(() => {
+    if (tutorialStep === 0 && !trackedStartRef.current) {
+      trackedStartRef.current = true;
+      track('tutorial_started', {});
+    }
+  }, [tutorialStep]);
 
   const step = tutorialStep !== null ? TUTORIAL_STEPS[tutorialStep] : null;
   const rect = useTargetRect(step?.target ?? null, screen, tutorialStep);
@@ -52,7 +68,8 @@ export function TutorialOverlay() {
   if (tutorialStep === null || !step) return null;
 
   const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  /* Use clientHeight — more stable on mobile with dynamic toolbars */
+  const vh = document.documentElement.clientHeight || window.innerHeight;
 
   /* ── Spotlight cutout (with padding) ── */
   const spot = rect
@@ -62,12 +79,11 @@ export function TutorialOverlay() {
         width:  Math.min(vw, rect.width  + PAD * 2),
         height: Math.min(vh, rect.height + PAD * 2),
       }
-    : { top: vh / 2 - 40, left: vw / 2 - 40, width: 80, height: 80 };
+    : null; /* null → no bands, no highlight until element is found */
 
-  const spotBottom = spot.top + spot.height;
-  const spotRight  = spot.left + spot.width;
+  const spotBottom = spot ? spot.top + spot.height : 0;
+  const spotRight  = spot ? spot.left + spot.width : 0;
 
-  /* pointer events on bands: block all if not interactive, pass-through if interactive */
   const bandsPtr = step.interactive ? "none" : "auto";
 
   const BAND = {
@@ -79,52 +95,74 @@ export function TutorialOverlay() {
 
   /* ── Tooltip position ── */
   const TOOLTIP_W = Math.min(300, vw - 32);
-  const spaceBelow = vh - spotBottom - 16;
-  const spaceAbove = spot.top - 16;
-  const tooltipAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
-  const tooltipTop = tooltipAbove
-    ? spot.top - 16
-    : spotBottom + 16;
-  const tooltipLeft = Math.min(
-    Math.max(16, spot.left + spot.width / 2 - TOOLTIP_W / 2),
-    vw - TOOLTIP_W - 16,
-  );
+
+  let tooltipTop;
+  if (spot) {
+    const spaceBelow = vh - spotBottom - 16;
+    const spaceAbove = spot.top - 16;
+    const wantAbove  = spaceBelow < TOOLTIP_ESTIMATED_H && spaceAbove > spaceBelow;
+    const rawTop     = wantAbove ? spot.top - TOOLTIP_ESTIMATED_H - 12 : spotBottom + 12;
+    tooltipTop = Math.max(8, Math.min(rawTop, vh - TOOLTIP_ESTIMATED_H - 8));
+  } else {
+    /* No rect yet — center vertically */
+    tooltipTop = Math.max(8, vh / 2 - TOOLTIP_ESTIMATED_H / 2);
+  }
+
+  const tooltipLeft = spot
+    ? Math.min(Math.max(16, spot.left + spot.width / 2 - TOOLTIP_W / 2), vw - TOOLTIP_W - 16)
+    : Math.max(16, vw / 2 - TOOLTIP_W / 2);
 
   const isLast = step.isLast;
 
+  const handleNext = () => {
+    if (isLast) {
+      track('tutorial_completed', {});
+      dispatch({ type: "TUTORIAL_END" });
+    } else {
+      track('tutorial_step_done', { step: tutorialStep, screen: step.screen });
+      dispatch({ type: "TUTORIAL_NEXT" });
+    }
+  };
+
+  const handleSkip = () => {
+    track('tutorial_skipped', { at_step: tutorialStep });
+    dispatch({ type: "TUTORIAL_SKIP" });
+  };
+
   return (
     <>
-      {/* Top band */}
-      <div style={{ ...BAND, top: 0, left: 0, right: 0, height: spot.top }} />
-      {/* Bottom band */}
-      <div style={{ ...BAND, top: spotBottom, left: 0, right: 0, bottom: 0 }} />
-      {/* Left band */}
-      <div style={{ ...BAND, top: spot.top, left: 0, width: spot.left, height: spot.height }} />
-      {/* Right band */}
-      <div style={{ ...BAND, top: spot.top, left: spotRight, right: 0, height: spot.height }} />
+      {/* Dark overlay bands — only render once we have a valid rect */}
+      {spot ? (
+        <>
+          <div style={{ ...BAND, top: 0, left: 0, right: 0, height: spot.top }} />
+          <div style={{ ...BAND, top: spotBottom, left: 0, right: 0, bottom: 0 }} />
+          <div style={{ ...BAND, top: spot.top, left: 0, width: spot.left, height: spot.height }} />
+          <div style={{ ...BAND, top: spot.top, left: spotRight, right: 0, height: spot.height }} />
 
-      {/* Spotlight border highlight */}
-      {rect && (
-        <div style={{
-          position: "fixed",
-          top: spot.top,
-          left: spot.left,
-          width: spot.width,
-          height: spot.height,
-          border: "2.5px solid #DFFF23",
-          borderRadius: 16,
-          zIndex: 9991,
-          pointerEvents: "none",
-          boxShadow: "0 0 0 3px rgba(223,255,35,0.18)",
-        }} />
+          {/* Yellow spotlight border */}
+          <div style={{
+            position: "fixed",
+            top: spot.top,
+            left: spot.left,
+            width: spot.width,
+            height: spot.height,
+            border: "2.5px solid #DFFF23",
+            borderRadius: 16,
+            zIndex: 9991,
+            pointerEvents: "none",
+            boxShadow: "0 0 0 3px rgba(223,255,35,0.18)",
+          }} />
+        </>
+      ) : (
+        /* Full-screen dim while waiting for element */
+        <div style={{ ...BAND, inset: 0, top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "auto" }} />
       )}
 
       {/* Tooltip card */}
       <div
         style={{
           position: "fixed",
-          top: tooltipAbove ? undefined : tooltipTop,
-          bottom: tooltipAbove ? vh - tooltipTop : undefined,
+          top: tooltipTop,
           left: tooltipLeft,
           width: TOOLTIP_W,
           background: "#FFFDF3",
@@ -145,19 +183,16 @@ export function TutorialOverlay() {
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <button
-            onClick={() => dispatch({ type: "TUTORIAL_SKIP" })}
+            onClick={handleSkip}
             style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: "rgba(20,17,15,.45)", cursor: "pointer", padding: 0 }}
           >
             {t("tut.skip")}
           </button>
 
-          {/* Don't show Next button for interactive+waitForAction steps (user must act) */}
-          {(!step.waitForAction) && (
+          {/* Only show Next button when the step doesn't require a screen interaction */}
+          {!step.waitForAction && (
             <button
-              onClick={() => isLast
-                ? dispatch({ type: "TUTORIAL_END" })
-                : dispatch({ type: "TUTORIAL_NEXT" })
-              }
+              onClick={handleNext}
               style={{
                 background: "#DFFF23", border: "2px solid #14110F", borderRadius: 10,
                 padding: "8px 16px", fontWeight: 900, fontSize: 13, cursor: "pointer",

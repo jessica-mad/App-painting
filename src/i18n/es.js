@@ -357,7 +357,7 @@ export default {
   "tut.5.body":  "Puedes pedir otra idea, guardar esta para más tarde, o aceptar el reto y ponerte a dibujar ahora. La idea guardada aparecerá en tu lista de inspiraciones. ¡Acepta este reto para continuar!",
 
   "tut.6.title": "¿Cuánto tiempo tienes?",
-  "tut.6.body":  "Elige una duración para tu sesión. El tiempo limitado te ayuda a concentrarte y evitar el bloqueo creativo. El modo Libre te deja dibujar sin límite. Te recomendamos 25 minutos para empezar.",
+  "tut.6.body":  "Elige una duración para tu sesión. El tiempo limitado te ayuda a concentrarte y evitar el bloqueo creativo. El modo Libre te deja dibujar sin límite. Te recomendamos 30 minutos para empezar.",
 
   "tut.7.title": "Pon el ambiente",
   "tut.7.body":  "La música de fondo te ayuda a concentrarte mientras ilustras. Puedes elegir la pista que más te guste y cambiarla durante la sesión. En este recorrido vamos a ver qué pasa cuando inicias el modo Musai.",
