@@ -234,6 +234,7 @@ export function TimerSetupScreen() {
         </div>
 
         <button
+          data-tutorial="tut-start"
           onClick={start}
           className="stk"
           style={{ marginTop: 14, height: 54, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 18, fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "var(--shadow-lg)", cursor: "pointer" }}

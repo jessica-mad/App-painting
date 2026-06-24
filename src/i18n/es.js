@@ -361,6 +361,8 @@ export default {
 
   "tut.7.title": "Pon el ambiente",
   "tut.7.body":  "La música de fondo te ayuda a concentrarte mientras ilustras. Puedes elegir la pista que más te guste y cambiarla durante la sesión. En este recorrido vamos a ver qué pasa cuando inicias el modo Musai.",
+  "tut.7b.title": "¡Empieza a dibujar!",
+  "tut.7b.body":  "Pulsa este botón para arrancar tu sesión. El temporizador empezará a contar y la música sonará de fondo. ¡Vamos allá!",
 
   "tut.8.title": "Lluvia de ideas",
   "tut.8.body":  "Si te quedas atascado, activa la lluvia de ideas. Palabras clave caerán en pantalla para darte chispas de inspiración extra. Puedes activarla y desactivarla cuando quieras, y también cambiar la canción desde aquí.",

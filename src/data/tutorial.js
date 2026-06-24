@@ -13,8 +13,10 @@ export const TUTORIAL_STEPS = [
   { screen: "random",     target: "tut-action-bar",  textKey: "tut.5",  interactive: true,  waitForAction: "accept" },
   // 6 — SetupTimer: selección de duración
   { screen: "setupTimer", target: "tut-duration",    textKey: "tut.6",  interactive: true },
-  // 7 — SetupTimer: sección de música → el usuario elige pista y pulsa Iniciar
-  { screen: "setupTimer", target: "tut-music",       textKey: "tut.7",  interactive: true,  waitForAction: "start" },
+  // 7 — SetupTimer: sección de música (informativo, Siguiente →)
+  { screen: "setupTimer", target: "tut-music",       textKey: "tut.7",  interactive: true },
+  // 7b — SetupTimer: botón Iniciar → el usuario lo pulsa para arrancar
+  { screen: "setupTimer", target: "tut-start",       textKey: "tut.7b", interactive: true,  waitForAction: "start" },
   // 8 — Timer: lluvia de ideas y cambio de canción
   { screen: "timer",      target: "tut-brainstorm",  textKey: "tut.8",  interactive: false },
   // 9 — Timer: botón "Ya terminé"
