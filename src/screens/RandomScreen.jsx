@@ -256,6 +256,7 @@ export function RandomScreen() {
   const [inlineRerolling, setInlineRerolling] = useState(false);
   const [aiPrompt, setAiPrompt]     = useState(null);
   const [aiLoading, setAiLoading]   = useState(false);
+  const [conflictModal, setConflictModal]   = useState(false);
   const toastTimer  = useRef(null);
   const totalRolls  = WP_ROLLS || 3;
 
@@ -787,6 +788,8 @@ export function RandomScreen() {
                 onClick={() => {
                   if (inTutorial) {
                     dispatch({ type: "TUTORIAL_GOTO", step: 6, screen: "setupTimer" });
+                  } else if (state.activeChallenge) {
+                    setConflictModal(true);
                   } else {
                     dispatch({ type: "SET_SCREEN", screen: "setupTimer" });
                   }
@@ -796,6 +799,61 @@ export function RandomScreen() {
               >
                 <IBrush s={18}/> {t("idea.accept")}
               </button>
+
+              {/* Conflict modal — active challenge exists */}
+              {conflictModal && (
+                <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+                  onClick={() => setConflictModal(false)}
+                >
+                  <div style={{ position: "absolute", inset: 0, background: "rgba(20,17,15,.55)" }}/>
+                  <div
+                    style={{ position: "relative", width: "100%", maxWidth: 430, background: "var(--paper)", border: "2.5px solid var(--ink)", borderRadius: "24px 24px 0 0", padding: "24px 22px max(24px, env(safe-area-inset-bottom))", boxShadow: "0 -4px 0 var(--ink)" }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <p style={{ fontWeight: 900, fontSize: 16, lineHeight: 1.2, marginBottom: 8 }}>
+                      {t("random.conflict.title")}
+                    </p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(20,17,15,.6)", lineHeight: 1.5, marginBottom: 20 }}>
+                      {t("random.conflict.body")}
+                    </p>
+
+                    {/* Option A: start new, discard old */}
+                    <button
+                      onClick={() => {
+                        setConflictModal(false);
+                        dispatch({ type: "DISMISS_ACTIVE_CHALLENGE" });
+                        dispatch({ type: "SET_SCREEN", screen: "setupTimer" });
+                      }}
+                      className="stk"
+                      style={{ width: "100%", height: 52, background: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", marginBottom: 10 }}
+                    >
+                      {t("random.conflict.startNew")}
+                    </button>
+
+                    {/* Option B: save new idea, keep old challenge */}
+                    <button
+                      onClick={() => {
+                        setConflictModal(false);
+                        if (state.currentIdea) {
+                          dispatch({ type: "SAVE_IDEA", idea: state.currentIdea });
+                        }
+                        dispatch({ type: "SET_SCREEN", screen: "home" });
+                      }}
+                      style={{ width: "100%", height: 52, background: "var(--lilac)", border: "2px solid var(--ink)", borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: "pointer", marginBottom: 10, boxShadow: "2px 2px 0 var(--ink)" }}
+                    >
+                      {t("random.conflict.saveAndResume")}
+                    </button>
+
+                    {/* Cancel */}
+                    <button
+                      onClick={() => setConflictModal(false)}
+                      style={{ width: "100%", height: 40, background: "none", border: "none", fontWeight: 700, fontSize: 13, color: "rgba(20,17,15,.45)", cursor: "pointer" }}
+                    >
+                      {t("random.conflict.cancel")}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {!inTutorial && (
                 <button
