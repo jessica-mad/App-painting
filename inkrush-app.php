@@ -365,10 +365,41 @@ add_action( 'add_meta_boxes', function() {
         'inkrush_artwork', 'side', 'high'
     );
     add_meta_box(
+        'inkrush_artwork_author', 'Autor', 'inkrush_artwork_author_metabox',
+        'inkrush_artwork', 'side', 'high'
+    );
+    add_meta_box(
         'inkrush_artwork_meta', 'Datos de la obra', 'inkrush_artwork_metabox',
         'inkrush_artwork', 'normal', 'default'
     );
 } );
+
+function inkrush_artwork_author_metabox( $post ) {
+    $users = get_users( [ 'fields' => [ 'ID', 'display_name', 'user_email' ], 'orderby' => 'display_name', 'order' => 'ASC' ] );
+    wp_nonce_field( 'inkrush_change_author', 'inkrush_author_nonce' );
+    ?>
+    <select name="inkrush_post_author_id" style="width:100%;padding:4px 6px;border:1px solid #ccc;border-radius:4px;">
+        <?php foreach ( $users as $u ) : ?>
+            <option value="<?php echo (int) $u->ID; ?>" <?php selected( $post->post_author, $u->ID ); ?>>
+                <?php echo esc_html( $u->display_name . ' (' . $u->user_email . ')' ); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <?php
+}
+
+add_action( 'save_post_inkrush_artwork', function( $post_id ) {
+    if ( ! isset( $_POST['inkrush_author_nonce'] ) ) return;
+    if ( ! wp_verify_nonce( $_POST['inkrush_author_nonce'], 'inkrush_change_author' ) ) return;
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+    if ( ! current_user_can( 'manage_options' ) ) return;
+    if ( isset( $_POST['inkrush_post_author_id'] ) ) {
+        $new_author = (int) $_POST['inkrush_post_author_id'];
+        if ( $new_author > 0 ) {
+            wp_update_post( [ 'ID' => $post_id, 'post_author' => $new_author ] );
+        }
+    }
+}, 20 );
 
 function inkrush_artwork_image_metabox( $post ) {
     $thumb_id  = get_post_thumbnail_id( $post->ID );
