@@ -227,6 +227,34 @@ export function HomeScreen() {
           {/* Normal content (hidden while searching) */}
           {!searchMode && (
             <>
+              {/* Reto en curso — resume banner */}
+              {state.activeChallenge && (
+                <div style={{ border: "2px solid var(--ink)", borderRadius: 16, background: "var(--butter)", padding: "12px 14px", marginBottom: 14, boxShadow: "3px 3px 0 var(--ink)", display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 900, fontSize: 12, lineHeight: 1, marginBottom: 3 }}>⏱ {t("home.resume.title")}</p>
+                    {state.activeChallenge.currentIdea?.variables?.length > 0 && (
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(20,17,15,.6)", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {state.activeChallenge.currentIdea.variables.map(v => v.value).join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button
+                      onClick={() => dispatch({ type: "DISMISS_ACTIVE_CHALLENGE" })}
+                      style={{ background: "none", border: "1.5px solid rgba(20,17,15,.3)", borderRadius: 10, padding: "6px 10px", fontWeight: 700, fontSize: 11, cursor: "pointer", color: "rgba(20,17,15,.5)" }}
+                    >
+                      ✕
+                    </button>
+                    <button
+                      onClick={() => dispatch({ type: "RESUME_CHALLENGE" })}
+                      style={{ background: "var(--ink)", color: "var(--acid)", border: "2px solid var(--ink)", borderRadius: 10, padding: "6px 14px", fontWeight: 900, fontSize: 12, cursor: "pointer" }}
+                    >
+                      {t("home.resume.cta")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Progress strip */}
               <div data-tutorial="tut-streak" style={{ border: "2px dashed rgba(20,17,15,.25)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ flex: 1 }}>

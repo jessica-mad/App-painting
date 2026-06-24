@@ -32,6 +32,8 @@ export default {
   /* ── Home screen ── */
   "home.greeting":           "Hello, {name} 🪶",
   "home.streak":             "// day {n} streak · {level}",
+  "home.resume.title":       "Challenge in progress",
+  "home.resume.cta":         "Resume →",
   "home.cta.tag":            "DAILY CHALLENGE",
   "home.cta.headline":       "The page is already waiting.",
   "home.cta.rollsLeft":      "{n} visits to the Muse · resets in 23h 41m",

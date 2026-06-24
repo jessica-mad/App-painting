@@ -24,6 +24,36 @@ function getLocalRolls(maxRolls) {
 function saveLocalRolls(rolls) {
   localStorage.setItem("musai_daily_rolls", JSON.stringify({ date: new Date().toDateString(), rolls }));
 }
+
+const ACTIVE_KEY = "musai_active_challenge";
+
+export function saveActiveChallenge({ currentIdea, timerConfig, secondsLeft }) {
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify({
+    date: new Date().toDateString(),
+    currentIdea,
+    timerConfig,
+    secondsLeft,
+    savedAt: Date.now(),
+  }));
+}
+
+export function clearActiveChallenge() {
+  localStorage.removeItem(ACTIVE_KEY);
+}
+
+function loadActiveChallenge() {
+  try {
+    const raw = localStorage.getItem(ACTIVE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data.date !== new Date().toDateString()) { clearActiveChallenge(); return null; }
+    const isFree = data.timerConfig?.duration?.seconds == null;
+    const elapsed = Math.floor((Date.now() - (data.savedAt ?? Date.now())) / 1000);
+    const adjusted = isFree ? data.secondsLeft : Math.max(0, (data.secondsLeft ?? 0) - elapsed);
+    if (!isFree && adjusted <= 0) { clearActiveChallenge(); return null; }
+    return { ...data, secondsLeft: adjusted };
+  } catch { return null; }
+}
 const wpUser   = parseInt(wpConfig.userId) ? {
   id:       wpConfig.userId,
   name:     wpConfig.userName ?? "Artista",
@@ -93,6 +123,8 @@ export const initialState = {
   selectedParams:   ["Emociones", "Animales", "Eventos"],
   /* idea = { variables: [...], params: [...] } — guarda los params usados */
   currentIdea:      null,
+  activeChallenge:  loadActiveChallenge(),
+  resumeSeconds:    null,
   musicSrcs:        { ...(wpConfig.musicSrcs ?? {}) },
   rollsLeft:        wpConfig.userId
     ? Math.max(0, WP_ROLLS - WP_ROLLS_USED)
@@ -156,15 +188,38 @@ export function reducer(state, action) {
       return { ...state, timerConfig: action.config };
 
     case "COMPLETE_CHALLENGE":
+      clearActiveChallenge();
       return {
         ...state,
         screen: "upload",
+        activeChallenge: null,
         profile: {
           ...state.profile,
           completedChallenges: state.profile.completedChallenges + 1,
           pomodorosCompleted:  state.profile.pomodorosCompleted + 1,
         },
       };
+
+    case "RESUME_CHALLENGE": {
+      const ac = state.activeChallenge;
+      if (!ac) return state;
+      clearActiveChallenge();
+      return {
+        ...state,
+        currentIdea:    ac.currentIdea,
+        timerConfig:    ac.timerConfig,
+        screen:         "timer",
+        activeChallenge: null,
+        resumeSeconds:  ac.secondsLeft,
+      };
+    }
+
+    case "DISMISS_ACTIVE_CHALLENGE":
+      clearActiveChallenge();
+      return { ...state, activeChallenge: null };
+
+    case "CLEAR_RESUME_SECONDS":
+      return { ...state, resumeSeconds: null };
 
     case "UPDATE_PROFILE":
       return { ...state, profile: { ...state.profile, ...action.data } };
@@ -262,7 +317,8 @@ export function reducer(state, action) {
     case "TUTORIAL_END": {
       localStorage.setItem("musai_tutorial_done", "1");
       markTutorialDone().catch(() => {});
-      return { ...state, tutorialStep: null, screen: "home" };
+      clearActiveChallenge();
+      return { ...state, tutorialStep: null, screen: "home", activeChallenge: null };
     }
 
     default:

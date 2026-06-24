@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Phone } from "../components/Phone";
-import { useApp } from "../data/store";
+import { useApp, saveActiveChallenge, clearActiveChallenge } from "../data/store";
 import { MUSIC_TRACKS, generatePrompt, getOverallRarity } from "../data/parameters";
 import { generateAIKeywords } from "../utils/api";
 import { track } from "../utils/track";
@@ -142,7 +142,11 @@ export function TimerScreen() {
   const isFree       = timerConfig?.duration?.seconds == null;
   const totalSeconds = timerConfig?.duration?.seconds || 1;
 
-  const [seconds,   setSeconds]   = useState(isFree ? 0 : (timerConfig?.duration?.seconds ?? 0));
+  const initSeconds  = state.resumeSeconds != null
+    ? state.resumeSeconds
+    : (isFree ? 0 : (timerConfig?.duration?.seconds ?? 0));
+
+  const [seconds,   setSeconds]   = useState(initSeconds);
   const [running,   setRunning]   = useState(false);
   const [finished,  setFinished]  = useState(false);
   const [musicOn,   setMusicOn]   = useState(timerConfig?.musicOn ?? true);
@@ -151,7 +155,7 @@ export function TimerScreen() {
   const [keywords,  setKeywords]  = useState([]);
   const audioRef = useRef(null);
   const finishedRef  = useRef(false);
-  const secondsRef   = useRef(isFree ? 0 : (timerConfig?.duration?.seconds ?? 0));
+  const secondsRef   = useRef(initSeconds);
 
   const availableTracks = useMemo(
     () => MUSIC_TRACKS.filter(t => musicSrcs?.[t.id]),
@@ -161,8 +165,11 @@ export function TimerScreen() {
     timerConfig?.music ?? availableTracks[0] ?? null
   );
 
-  /* Track timer_started on mount */
+  /* Track timer_started on mount + clear resumeSeconds flag */
   useEffect(() => {
+    if (state.resumeSeconds != null) {
+      dispatch({ type: "CLEAR_RESUME_SECONDS" });
+    }
     const ideaVarsOnMount = state.currentIdea?.variables ?? [];
     track('timer_started', {
       duration: timerConfig?.duration?.seconds ?? 'free',
@@ -173,6 +180,33 @@ export function TimerScreen() {
       if (!finishedRef.current) {
         track('timer_abandoned', { atSecond: secondsRef.current });
       }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Persist reto en proceso every 30s + on page hide — only outside tutorial */
+  useEffect(() => {
+    const inTutorial = state.tutorialStep !== null;
+    if (inTutorial || !timerConfig) return;
+
+    const persist = () => {
+      if (!finishedRef.current) {
+        saveActiveChallenge({
+          currentIdea: state.currentIdea,
+          timerConfig,
+          secondsLeft: secondsRef.current,
+        });
+      }
+    };
+
+    persist(); // save immediately on mount
+    const id = setInterval(persist, 30000);
+
+    const onHide = () => { if (document.visibilityState === "hidden") persist(); };
+    document.addEventListener("visibilitychange", onHide);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onHide);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -244,6 +278,7 @@ export function TimerScreen() {
 
   const finish  = () => {
     finishedRef.current = true;
+    clearActiveChallenge();
     if (inTutorial) {
       dispatch({ type: "TUTORIAL_GOTO", step: 10, screen: "upload" });
     } else {

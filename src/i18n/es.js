@@ -32,6 +32,8 @@ export default {
   /* ── Home screen ── */
   "home.greeting":           "Hola, {name} 🪶",
   "home.streak":             "// día {n} de racha · {level}",
+  "home.resume.title":       "Reto en curso",
+  "home.resume.cta":         "Reanudar →",
   "home.cta.tag":            "RETO DEL DÍA",
   "home.cta.headline":       "La hoja ya está esperando.",
   "home.cta.rollsLeft":      "{n} visitas a la Musa · recarga en 23h 41m",
