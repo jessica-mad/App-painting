@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Phone } from "../components/Phone";
 import { BottomNav } from "../components/BottomNav";
 import { RarityBadge } from "../components/RarityBadge";
+import { TUTORIAL_STEPS } from "../data/tutorial";
 import { useApp } from "../data/store";
 import { PARAM_CATEGORIES, PARAMETERS, RARITY as RARITY_ENUM, pickVariables, getVarLabel, getRarityName, getOverallRarity, generatePrompt } from "../data/parameters";
 import { IDice, IHeart, IFlame, IDiamond, IBolt, IStar, IBrush, IX, ISpark, IBookmark, IUndo } from "../components/Icons";
@@ -384,7 +385,7 @@ export function RandomScreen() {
       setPhase("idea_shown");
       /* During tutorial: advance from step 3 → step 4 when reveal completes */
       if (fromTutorial) {
-        dispatch({ type: "TUTORIAL_GOTO", step: 4 });
+        dispatch({ type: "TUTORIAL_GOTO", step: TUTORIAL_STEPS.findIndex(s => s.target === "tut-result-box") });
         return;
       }
       if (results?.length) {
@@ -787,7 +788,7 @@ export function RandomScreen() {
               <button
                 onClick={() => {
                   if (inTutorial) {
-                    dispatch({ type: "TUTORIAL_GOTO", step: 6, screen: "setupTimer" });
+                    dispatch({ type: "TUTORIAL_GOTO", step: TUTORIAL_STEPS.findIndex(s => s.target === "tut-duration"), screen: "setupTimer" });
                   } else if (state.activeChallenge) {
                     setConflictModal(true);
                   } else {

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Phone } from "../components/Phone";
 import { useApp, saveActiveChallenge, clearActiveChallenge } from "../data/store";
 import { MUSIC_TRACKS, generatePrompt, getOverallRarity } from "../data/parameters";
+import { TUTORIAL_STEPS } from "../data/tutorial";
 import { generateAIKeywords } from "../utils/api";
 import { track } from "../utils/track";
 import { useT } from "../i18n";
@@ -280,7 +281,8 @@ export function TimerScreen() {
     finishedRef.current = true;
     clearActiveChallenge();
     if (inTutorial) {
-      dispatch({ type: "TUTORIAL_GOTO", step: 10, screen: "upload" });
+      const nextStep = TUTORIAL_STEPS.findIndex(s => s.target === "tut-upload-zone");
+      dispatch({ type: "TUTORIAL_GOTO", step: nextStep, screen: "upload" });
     } else {
       track('timer_completed', { duration: timerConfig?.duration?.seconds ?? 'free' });
       dispatch({ type: "COMPLETE_CHALLENGE" });

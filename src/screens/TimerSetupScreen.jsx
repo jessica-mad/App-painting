@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Phone } from "../components/Phone";
 import { useApp } from "../data/store";
 import { DURATIONS, MUSIC_TRACKS } from "../data/parameters";
+import { TUTORIAL_STEPS } from "../data/tutorial";
 import { IArrowL, ITimer, IMusic, IPlay, IPause } from "../components/Icons";
 import { useT } from "../i18n";
 import { track } from "../utils/track";
@@ -63,7 +64,8 @@ export function TimerSetupScreen() {
     if (!inTutorial) track('timer_setup_completed', { duration: duration?.seconds ?? 'free', music: music?.id ?? 'none' });
     dispatch({ type: "SET_TIMER_CONFIG", config: { duration, music, musicOn } });
     if (inTutorial) {
-      dispatch({ type: "TUTORIAL_GOTO", step: 8, screen: "timer" });
+      const nextStep = TUTORIAL_STEPS.findIndex(s => s.target === "tut-brainstorm");
+      dispatch({ type: "TUTORIAL_GOTO", step: nextStep, screen: "timer" });
     } else {
       dispatch({ type: "SET_SCREEN", screen: "timer" });
     }
