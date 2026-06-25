@@ -75,7 +75,10 @@ function shouldShowTutorial() {
   if (!wpUser) return false;
   if (WP_TUTORIAL_PENDING) return true;
   if (WP_TUTORIAL_DONE) return false;
-  return !localStorage.getItem("musai_tutorial_done");
+  // WP meta says neither done nor pending → user is new.
+  // Don't rely on localStorage here: it's device-shared and may belong
+  // to a different user who previously completed the tutorial on this browser.
+  return true;
 }
 
 const initialProfile = wpConfig.userId ? {
